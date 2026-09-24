@@ -36,7 +36,7 @@ struct ActionCatalogTests {
     @Test("offers unlabelled input fields so pasted text has a target")
     func unlabelledInput() {
         let field = UIEntry(
-            aliases: ElementAliases(alias: 7), role: "TextField", label: "", states: [], value: nil, uniqueId: nil, region: nil,
+            aliases: ElementAliases(alias: 7), role: "TextField", label: "", states: [], value: nil, uniqueId: nil, region: nil, frame: nil,
         )
         let actions = ActionCatalog.actions(for: Fixtures.snapshot(entries: [field]), texts: [])
         #expect(actions.first == .tap(alias: 7, role: "TextField", label: "empty input field"))

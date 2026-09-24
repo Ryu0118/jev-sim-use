@@ -58,8 +58,7 @@ struct SimUseClientTests {
     @Test("taps an iOS switch on its trailing edge with a short hold, which a row-centre instant tap does not flip")
     func switchTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
-        var toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox")
-        toggle.frame = ElementFrame(x: 36, y: 184, width: 330, height: 28)
+        let toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
         let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Wi-Fi")])
         _ = try await client(runner).tap(alias: 9, on: snapshot)
         _ = try await client(runner).tap(alias: 4, on: snapshot)

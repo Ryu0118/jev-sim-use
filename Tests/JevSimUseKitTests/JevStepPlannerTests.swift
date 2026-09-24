@@ -63,7 +63,7 @@ struct PlanningStateTests {
     func toggleValues(raw: String, expected: String) {
         let entry = UIEntry(
             aliases: ElementAliases(alias: 9), role: "CheckBox", label: "Dark", states: [], value: raw,
-            uniqueId: nil, region: nil,
+            uniqueId: nil, region: nil, frame: nil,
         )
         #expect(PlanningState.Element.readableValue(entry) == expected)
     }

@@ -15,7 +15,7 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     /// Where on screen sim-use placed the element; absent in older fixtures.
     package let region: ElementRegion?
     /// The element's rectangle; absent in older fixtures.
-    package var frame: ElementFrame?
+    package let frame: ElementFrame?
 
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]

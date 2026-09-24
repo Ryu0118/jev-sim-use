@@ -63,26 +63,17 @@ struct AgentProgressResumeTests {
 }
 
 @Suite("A scroll that only moves frames at the end of a list is not a new screen")
-struct AgentProgressScreenKeyTests {
-    @Test("ignores frames and band headings")
+struct ScreenIdentityTests {
+    private func entry(_ label: String, y: Double, band: String) -> UIEntry {
+        Fixtures.entry(1, label, frame: ElementFrame(x: 16, y: y, width: 370, height: 52), band: band)
+    }
+
+    @Test("ignores frames and bands, but not the elements shown")
     func bounce() {
-        let before = """
-        App: Settings  402x874
-
-        [Top  y<120]
-          @1  Button  "Camera"  (16,0 370x52)
-
-        [Content  y=120..754]
-          @2  Button  "StandBy"  (16,105 370x52)
-        """
-        let after = """
-        App: Settings  402x874
-
-        [Top  y<120]
-          @1  Button  "Camera"  (16,-35 370x52)
-          @2  Button  "StandBy"  (16,70 370x52)
-        """
-        #expect(AgentProgress.screenKey(before) == AgentProgress.screenKey(after))
-        #expect(AgentProgress.screenKey(before) != AgentProgress.screenKey(after.replacing("StandBy", with: "Search")))
+        let before = Fixtures.snapshot(outline: "a", entries: [entry("Camera", y: 0, band: "Top"), entry("StandBy", y: 105, band: "Content")])
+        let after = Fixtures.snapshot(outline: "b", entries: [entry("Camera", y: -35, band: "Top"), entry("StandBy", y: 70, band: "Top")])
+        let other = Fixtures.snapshot(outline: "a", entries: [entry("Camera", y: 0, band: "Top"), entry("Search", y: 105, band: "Content")])
+        #expect(before.identity == after.identity)
+        #expect(before.identity != other.identity)
     }
 }

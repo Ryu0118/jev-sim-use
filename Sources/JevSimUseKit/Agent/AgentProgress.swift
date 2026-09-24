@@ -36,7 +36,7 @@ struct AgentProgress: Sendable {
         if let dialog = observation.snapshot.crashDialog {
             return .appCrashed(detail: "a crash dialog is on screen (\(dialog.title ?? "untitled")).")
         }
-        let outline = Self.screenKey(observation.snapshot.outline)
+        let outline = observation.snapshot.identity
         if let previous = currentOutline, let action = lastActionName {
             triedActions[previous, default: []].insert(action)
             history[history.count - 1].screenChanged = previous != outline
@@ -52,14 +52,5 @@ struct AgentProgress: Sendable {
         steps += 1
         lastActionName = action.optionName
         pendingDisappearances = disappeared
-    }
-
-    /// The outline without frames and band headings. A scroll that bounces at the end of a list moves every frame
-    /// and can move an element into another band, yet shows the same elements: that must count as the same screen.
-    static func screenKey(_ outline: String) -> String {
-        outline.split(separator: "\n")
-            .filter { !$0.hasPrefix("[") }
-            .map { $0.replacing(/\s*\(-?[\d.]+,-?[\d.]+ [\d.]+x[\d.]+\)/, with: "") }
-            .joined(separator: "\n")
     }
 }

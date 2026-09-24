@@ -23,7 +23,17 @@ enum Fixtures {
         UISnapshot(platform: "ios", outline: outline, appLabel: "Settings", entries: entries, crashDialog: nil)
     }
 
-    static func entry(_ alias: Int, _ label: String, role: String = "Button", states: [String] = []) -> UIEntry {
-        UIEntry(aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, uniqueId: nil, region: nil)
+    static func entry(
+        _ alias: Int,
+        _ label: String,
+        role: String = "Button",
+        states: [String] = [],
+        frame: ElementFrame? = nil,
+        band: String? = nil,
+    ) -> UIEntry {
+        UIEntry(
+            aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, uniqueId: nil,
+            region: band.map { ElementRegion(kind: $0, label: nil) }, frame: frame,
+        )
     }
 }

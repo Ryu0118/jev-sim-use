@@ -17,7 +17,9 @@ final class FakeDriver: DeviceDriving {
         disappearedAfterEachAction: [String] = [],
     ) {
         observations = outlines.map { outline in
-            let snapshot = Fixtures.snapshot(outline: outline, entries: entries)
+            // The outline names the screen, so it is also an element: screens are compared by their elements.
+            let heading = Fixtures.entry(0, outline, role: "Heading")
+            let snapshot = Fixtures.snapshot(outline: outline, entries: entries + [heading])
             return ScreenObservation(snapshot: snapshot, disappearedApps: [])
         }
         disappearedAfterAction = disappearedAfterEachAction
