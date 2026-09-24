@@ -26,6 +26,18 @@ struct OcclusionTests {
         #expect(json.contains(#""covered_by":"検索""#))
     }
 
+    @Test("the search bar covers a row whose centre sits just above the bar's text field")
+    func centreAboveSearchBar() {
+        let developer = entry(15, "デベロッパ", ElementFrame(x: 16, y: 775, width: 370, height: 52))
+        #expect(Fixtures.snapshot(entries: [developer, search]).cover(of: developer)?.label == "検索")
+    }
+
+    @Test("a neighbouring row that only touches the edge does not cover it")
+    func touchingNeighbour() {
+        let above = entry(14, "アプリ", ElementFrame(x: 16, y: 737, width: 370, height: 52), depth: 1)
+        #expect(Fixtures.snapshot(entries: [above, row]).cover(of: row) == nil)
+    }
+
     @Test("a row's own children do not cover it")
     func children() {
         let label = entry(2, "Wi-Fi", ElementFrame(x: 150, y: 800, width: 100, height: 20), role: "StaticText", depth: 3)
