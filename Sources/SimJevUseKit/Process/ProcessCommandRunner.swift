@@ -1,16 +1,16 @@
 import Foundation
 
 /// Runs commands with `Foundation.Process`, draining stdout and stderr concurrently.
-public struct ProcessCommandRunner: CommandRunning {
+package struct ProcessCommandRunner: CommandRunning {
     /// How long to keep reading after exit. A grandchild that inherited the pipes
     /// would otherwise hold back end of file until it exits too.
     static let drainGracePeriod = DispatchTimeInterval.milliseconds(300)
 
     /// Creates a runner.
-    public init() {}
+    package init() {}
 
     /// Launches `executable` and terminates it if the calling task is cancelled.
-    public func run(_ executable: URL, arguments: [String]) async throws -> CommandOutput {
+    package func run(_ executable: URL, arguments: [String]) async throws -> CommandOutput {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments

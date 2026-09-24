@@ -1,16 +1,16 @@
 import Foundation
 
 /// The captured result of one finished child process.
-public struct CommandOutput: Sendable, Hashable {
+package struct CommandOutput: Sendable, Hashable {
     /// The process exit status.
-    public var exitCode: Int32
+    package var exitCode: Int32
     /// Everything the process wrote to standard output.
-    public var stdout: Data
+    package var stdout: Data
     /// Everything the process wrote to standard error, decoded as UTF-8.
-    public var stderr: String
+    package var stderr: String
 
     /// Creates an output from already captured streams.
-    public init(exitCode: Int32, stdout: Data, stderr: String) {
+    package init(exitCode: Int32, stdout: Data, stderr: String) {
         self.exitCode = exitCode
         self.stdout = stdout
         self.stderr = stderr
