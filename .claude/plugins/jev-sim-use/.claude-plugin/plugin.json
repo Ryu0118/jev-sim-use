@@ -1,0 +1,11 @@
+{
+  "name": "jev-sim-use",
+  "version": "0.0.0",
+  "description": "Teaches agents to reach simulator screens with one jev-sim-use command instead of driving sim-use tap by tap.",
+  "author": {
+    "name": "Ryu0118"
+  },
+  "homepage": "https://github.com/Ryu0118/jev-sim-use",
+  "repository": "https://github.com/Ryu0118/jev-sim-use",
+  "keywords": ["ios-simulator", "android", "sim-use", "ui-automation", "agent"]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "jev-sim-use",
+  "owner": {
+    "name": "Ryu0118"
+  },
+  "metadata": {
+    "description": "jev-sim-use agent skill for Claude Code",
+    "version": "0.0.0"
+  },
+  "plugins": [
+    {
+      "name": "jev-sim-use",
+      "source": "./.claude/plugins/jev-sim-use",
+      "category": "productivity"
+    }
+  ]
+}
