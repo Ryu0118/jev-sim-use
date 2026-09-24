@@ -37,7 +37,7 @@ package struct AgentLoop: Sendable {
             case let .stop(outcome):
                 return AgentRunResult(outcome: outcome, history: progress.history)
             case let .act(action):
-                let disappeared = try await execute(action, platform: observation.snapshot.platform)
+                let disappeared = try await execute(action, on: observation.snapshot)
                 progress.recordAction(action, disappeared: disappeared)
             }
         }

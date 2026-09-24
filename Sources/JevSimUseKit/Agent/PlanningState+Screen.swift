@@ -33,11 +33,9 @@ extension PlanningState {
 }
 
 extension PlanningState.Element {
-    /// Toggle roles report `"1"` / `"0"`; Jev reads `"on"` / `"off"` as a state far more reliably.
-    static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]
-
+    /// Jev reads `"on"` / `"off"` as a state far more reliably than a toggle's `"1"` / `"0"`.
     static func readableValue(_ entry: UIEntry) -> String? {
-        guard toggleRoles.contains(entry.role) else { return entry.value }
+        guard entry.isToggle else { return entry.value }
         return switch entry.value {
         case "1": "on"
         case "0": "off"

@@ -22,6 +22,15 @@ package enum SimUseContract {
         static let paste = "paste"
     }
 
+    /// `tap` options for a coordinate tap that is held briefly.
+    enum Tap {
+        static let x = "-x"
+        static let y = "-y"
+        static let duration = "--duration"
+        /// sim-use's help: UISwitch (`CheckBox`) ignores zero-duration taps; hold for 0.05 s.
+        static let switchHoldSeconds = "0.05"
+    }
+
     /// Gesture presets, named by finger direction: `scroll-up` pages down.
     enum Gesture {
         static let scrollUp = "scroll-up"

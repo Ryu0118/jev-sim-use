@@ -54,4 +54,11 @@ struct SimUseClientTests {
         _ = try await client(runner).paste("-5")
         #expect(runner.recordedCalls == [["paste"] + device + ["--json", "--", "-5"]])
     }
+
+    @Test("taps an iOS switch on its trailing edge with a short hold, which a row-centre instant tap does not flip")
+    func switchTap() async throws {
+        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
+        _ = try await client(runner).tapSwitch(in: ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        #expect(runner.recordedCalls == [["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"]])
+    }
 }

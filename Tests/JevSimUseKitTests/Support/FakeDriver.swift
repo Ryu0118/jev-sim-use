@@ -11,9 +11,13 @@ final class FakeDriver: DeviceDriving {
         state.withLock { $0.actions }
     }
 
-    init(outlines: [String], disappearedAfterEachAction: [String] = []) {
+    init(
+        outlines: [String],
+        entries: [UIEntry] = [Fixtures.entry(1, "Next")],
+        disappearedAfterEachAction: [String] = [],
+    ) {
         observations = outlines.map { outline in
-            let snapshot = Fixtures.snapshot(outline: outline, entries: [Fixtures.entry(1, "Next")])
+            let snapshot = Fixtures.snapshot(outline: outline, entries: entries)
             return ScreenObservation(snapshot: snapshot, disappearedApps: [])
         }
         disappearedAfterAction = disappearedAfterEachAction
@@ -28,6 +32,10 @@ final class FakeDriver: DeviceDriving {
 
     func tap(alias: Int) async throws -> [String] {
         record("tap @\(alias)")
+    }
+
+    func tapSwitch(in frame: ElementFrame) async throws -> [String] {
+        record("tap switch \(frame.switchCenter.x),\(frame.switchCenter.y)")
     }
 
     func perform(_ action: SimUseDeviceAction, platform _: String) async throws -> [String] {

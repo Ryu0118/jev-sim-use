@@ -7,6 +7,8 @@ package protocol DeviceDriving: Sendable {
     func observe() async throws -> ScreenObservation
     /// Taps the element with alias `@alias` from the latest observation.
     func tap(alias: Int) async throws -> [String]
+    /// Flips the iOS switch in a row with `frame`: a held tap on the switch itself, since a row-centre tap is ignored.
+    func tapSwitch(in frame: ElementFrame) async throws -> [String]
     /// Performs a device-level action on `platform`.
     func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String]
     /// Pastes `text` into the focused field. Paste handles Unicode on iOS, unlike `type`.

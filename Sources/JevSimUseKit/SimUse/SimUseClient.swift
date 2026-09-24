@@ -26,6 +26,15 @@ package struct SimUseClient: DeviceDriving {
         try await run([SimUseContract.Command.tap, "@\(alias)"])
     }
 
+    /// Runs `sim-use tap -x -y --duration` on the switch at the row's trailing edge.
+    package func tapSwitch(in frame: ElementFrame) async throws -> [String] {
+        let point = frame.switchCenter
+        return try await run([
+            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(point.x)", SimUseContract.Tap.y, "\(point.y)",
+            SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
+        ])
+    }
+
     /// Runs the sim-use gesture or button for `action`.
     package func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
         try await run(action.arguments(platform: platform))
