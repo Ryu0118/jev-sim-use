@@ -13,7 +13,7 @@ package struct SimUseBootstrap: Sendable {
     /// Creates a bootstrap that finds sim-use with `locator`.
     package init(
         locator: ExecutableLocator,
-        runner: any CommandRunning = ProcessCommandRunner(),
+        runner: any CommandRunning = SubprocessCommandRunner(),
     ) {
         self.locator = locator
         self.runner = runner

@@ -1,5 +1,5 @@
 {
-  "originHash" : "a8da97bc2070ff398bef05ee39394bf49d5de61398a989f332c2e2d50f28e1dc",
+  "originHash" : "7a7224adf88bc22e0ebc9d5610d3d2b7e1ddc297f4361af00498d0e01d40447e",
   "pins" : [
     {
       "identity" : "filemanagerprotocol",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "64a9b362f9dcd933f6dad82603c2ab0ff23863fc",
         "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "processrunning",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Ryu0118/ProcessRunning",
+      "state" : {
+        "revision" : "fec5971f45d9d9ae140b769acdaa5483c238f6a3",
+        "version" : "0.3.0"
       }
     },
     {
@@ -26,6 +35,24 @@
       "state" : {
         "revision" : "d5d2280c01a33b08888958bbeb866ae7ca50f883",
         "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-subprocess",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/swiftlang/swift-subprocess",
+      "state" : {
+        "revision" : "b3937ab85dd32f6e9435914599c1519074769c1a",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-system",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-system",
+      "state" : {
+        "revision" : "869129b7bf4ecc57b97d0193ad29690ca2134750",
+        "version" : "1.8.1"
       }
     }
   ],

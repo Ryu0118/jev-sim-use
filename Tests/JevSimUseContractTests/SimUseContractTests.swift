@@ -11,7 +11,7 @@ import Testing
 )
 struct SimUseContractTests {
     private let environment = ProcessInfo.processInfo.environment
-    private let runner = ProcessCommandRunner()
+    private let runner = SubprocessCommandRunner()
 
     private var bootstrap: SimUseBootstrap {
         SimUseBootstrap(locator: ExecutableLocator(environment: environment), runner: runner)

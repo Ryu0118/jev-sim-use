@@ -2,10 +2,10 @@ import Foundation
 @testable import JevSimUseKit
 import Testing
 
-struct ProcessCommandRunnerTests {
+struct SubprocessCommandRunnerTests {
     @Test("drains output larger than the pipe buffer without deadlocking")
     func largeOutput() async throws {
-        let output = try await ProcessCommandRunner().run(
+        let output = try await SubprocessCommandRunner().run(
             URL(filePath: "/bin/sh"),
             arguments: ["-c", "head -c 300000 /dev/zero | tr '\\0' x; echo oops >&2; exit 3"],
         )
@@ -18,11 +18,17 @@ struct ProcessCommandRunnerTests {
     func grandchildHoldsPipes() async throws {
         let clock = ContinuousClock()
         let start = clock.now
-        let output = try await ProcessCommandRunner().run(
+        let output = try await SubprocessCommandRunner().run(
             URL(filePath: "/bin/sh"),
             arguments: ["-c", "sleep 5 & echo done"],
         )
         #expect(clock.now - start < .seconds(3))
         #expect(output.stdout == Data("done\n".utf8))
+    }
+
+    @Test("reports a signalled child as 128 plus the signal, like a shell")
+    func signalledChild() async throws {
+        let output = try await SubprocessCommandRunner().run(URL(filePath: "/bin/sh"), arguments: ["-c", "kill -TERM $$"])
+        #expect(output.exitCode == 128 + SIGTERM)
     }
 }
