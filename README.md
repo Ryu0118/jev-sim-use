@@ -63,6 +63,14 @@ and every `--text` value to the Jev endpoint. Do not run it on screens with data
 A run also stops when three actions in a row leave the screen unchanged, when the app
 disappears, or when an Android crash dialog appears.
 
+## When sim-use changes
+
+jev-sim-use talks to sim-use only through its CLI and `--json` output; every name it passes lives in
+`SimUseContract`. It was verified against sim-use 0.14.0, warns (without stopping) on newer versions, and
+`jev-sim-use doctor` reads the screen once to catch output changes early. After upgrading sim-use, run
+`mise run contract-test` with a booted device: it checks each subcommand's `--help` and decodes real
+`devices` / `ui` output.
+
 ## License
 
 This repository does not declare a license yet. Third-party notices are in

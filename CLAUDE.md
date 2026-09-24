@@ -9,6 +9,7 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 - `mise run setup` — install tools, configure Git hooks
 - `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
+- `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
 - Keep commits small and easy to revert

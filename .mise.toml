@@ -46,6 +46,10 @@ run = "swift build"
 description = "Run the test suite"
 run = "swift test"
 
+[tasks.contract-test]
+description = "Check the installed sim-use against SimUseContract (needs sim-use and a booted device)"
+run = "JEV_SIM_USE_CONTRACT=1 swift test --filter JevSimUseContractTests"
+
 [tasks.check]
 description = "Format, lint, build, and test"
 run = [

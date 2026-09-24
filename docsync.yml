@@ -4,19 +4,19 @@ rules:
   - Package.swift
   doc: README.md
   message: Package.swift changed; review the user-facing package commands in README.md.
-  checksum: 99e85ee7a47853b175f68a666fbdfd38c789dcb2ebd8e2d335c35a90da11226f
+  checksum: 26f79b16ba39ab9114a93af02f466192c074823498b008f728140ed92a6ff2e7
 - name: claude-package
   sources:
   - Package.swift
   doc: CLAUDE.md
   message: Package.swift changed; review the package architecture in CLAUDE.md.
-  checksum: 99e85ee7a47853b175f68a666fbdfd38c789dcb2ebd8e2d335c35a90da11226f
+  checksum: 26f79b16ba39ab9114a93af02f466192c074823498b008f728140ed92a6ff2e7
 - name: claude-mise-tasks
   sources:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: 56e8454d0d056ac5fa7f03fde528b836ff06021b2c7a84fb490b70604751e752
+  checksum: 59294432e804ba081e834baa55eb7a6615f8f1ec0a31fa4af9f480abd4c42152
 - name: rules-lint-and-format
   sources:
   - .swiftformat

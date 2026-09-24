@@ -39,6 +39,10 @@ let package = Package(
             dependencies: ["JevSimUseCLI"],
         ),
         .testTarget(
+            name: "JevSimUseContractTests",
+            dependencies: ["JevSimUseKit"],
+        ),
+        .testTarget(
             name: "JevSimUseKitTests",
             dependencies: ["JevSimUseKit"],
         ),
