@@ -54,6 +54,32 @@ struct JevStepPlannerTests {
         #expect(abs(support - 0.85) < 0.0001)
     }
 
+    @Test("adds up the two rotation directions, which both reach any heading")
+    func pooledRotation() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(2, "マップ", role: "Image")])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [])
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"rotate_clockwise","probabilities":{"rotate_clockwise":0.4,"rotate_counterclockwise":0.35,"pinch_out":0.25},"confidence":0.4},"element_target":{"type":"choice","choice":"e2","probabilities":{"e2":0.95},"confidence":0.95}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        #expect(plan.action == .gesture(.rotateClockwise, alias: 2, role: "Image", label: "マップ"))
+        #expect(abs(plan.support - 0.75) < 0.0001)
+    }
+
+    @Test("two rotation directions together beat a scroll that is individually more probable")
+    func groupArgmax() throws {
+        let body = #"{"model":"m","answers":{"operation":{"type":"choice","choice":"scroll_to_reveal_above","probabilities":{"scroll_to_reveal_above":0.3,"rotate_clockwise":0.25,"rotate_counterclockwise":0.2},"confidence":0.3}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let answer = try #require({ () -> Answer.Choice? in
+            if case let .choice(choice) = try JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)).answers["operation"] {
+                return choice
+            }
+            return nil
+        }())
+        let (operation, support) = JevStepPlanner.pooledOperation(answer, among: [
+            .device(.revealContentAbove), .gesture(.rotateClockwise), .gesture(.rotateCounterclockwise),
+        ])
+        #expect(operation == .gesture(.rotateClockwise))
+        #expect(abs(support - 0.45) < 0.0001)
+    }
+
     @Test("every question carries the shared rules, since target questions cannot see the operation answer")
     func sharedRules() throws {
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: request(texts: []).menu))

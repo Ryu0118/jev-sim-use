@@ -28,6 +28,17 @@ package enum Operation: Sendable, Hashable {
         }
     }
 
+    /// Operations that make the same progress, whose probabilities add up. Rotating either way reaches any heading
+    /// (a wrong direction only costs steps), so a goal like "face west" splits Jev between the two without making
+    /// rotating any less clear. Zooming in and out have opposite effects and stay apart.
+    var equivalents: [Operation] {
+        switch self {
+        case .gesture(.rotateClockwise), .gesture(.rotateCounterclockwise):
+            [.gesture(.rotateClockwise), .gesture(.rotateCounterclockwise)]
+        default: [self]
+        }
+    }
+
     /// The criteria Jev reads for this option.
     var optionDescription: String {
         switch self {
