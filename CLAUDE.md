@@ -4,6 +4,9 @@ CLI that drives an iOS Simulator / Android device toward a natural-language goal
 [sim-use](https://github.com/lycorp-jp/sim-use) (lycorp-jp, Apache-2.0) to observe and act, and asks
 Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action to take next.
 
+Why it exists: speed. Each step is one small typed Jev call instead of a frontier LLM agent spending a reasoning turn
+per tap. Keep it that way: one Jev request per step, no extra round trips, and deterministic work stays in code.
+
 ## Development workflow
 
 - `mise run setup` — install tools, configure Git hooks
