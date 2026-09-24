@@ -21,6 +21,8 @@ enum ActionCatalog {
         let elements = entries
             .filter { snapshot.platform != SimUseContract.Platform.ios || $0.uniqueId != iOSBackButtonIdentifier }
             .filter { !label(for: $0).isEmpty || $0.frame != nil }
+            // A covered element cannot be tapped until scrolled into view; `covered_by` in the state says so.
+            .filter { snapshot.cover(of: $0) == nil }
             .prefix(maximumOptions)
             .map { ElementTarget(alias: $0.aliases.alias, role: $0.role, label: label(for: $0)) }
         let fields = entries.filter(isEditable).prefix(maximumOptions)
