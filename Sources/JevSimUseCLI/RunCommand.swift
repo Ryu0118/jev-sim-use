@@ -22,9 +22,7 @@ struct RunCommand: ContextualCommand {
     @OptionGroup var agent: AgentOptions
 
     func run(context: CLIContext) async throws {
-        try await RunGoalRequest(
-            session: .new(goal: goal, texts: texts), maxSteps: agent.maxSteps, minConfidence: agent.minConfidence,
-            deviceID: connection.device, baseURL: connection.baseURL, model: connection.model,
-        ).perform(context: context)
+        try await RunGoalRequest(session: .new(goal: goal, texts: texts), connection: connection, agent: agent)
+            .perform(context: context)
     }
 }
