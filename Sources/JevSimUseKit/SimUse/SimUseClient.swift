@@ -25,7 +25,7 @@ package struct SimUseClient: DeviceDriving {
     /// on the switch itself, at the row's trailing edge, with a short hold.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
-            return try await revealThenTap(entry, under: cover, platform: snapshot.platform)
+            return try await revealThenTap(entry, under: cover, in: snapshot)
         }
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle, let frame = entry.frame
@@ -60,10 +60,14 @@ package struct SimUseClient: DeviceDriving {
 
     /// Scrolls a covered element out from under its overlay, then taps it by a fresh selector: the scroll made the
     /// cached alias stale. Falls back to the alias when the element has neither an identifier nor a label.
-    private func revealThenTap(_ entry: UIEntry, under cover: UIEntry, platform: String) async throws -> [String] {
-        // An overlay over the lower part (a bottom search bar) needs the row moved up, which reveals content below.
-        let overlayIsLower = (cover.frame?.center.y ?? 0) >= (entry.frame?.center.y ?? 0)
-        var disappeared = try await perform(overlayIsLower ? .revealContentBelow : .revealContentAbove, platform: platform)
+    private func revealThenTap(_ entry: UIEntry, under cover: UIEntry, in snapshot: UISnapshot) async throws -> [String] {
+        // An overlay in the lower half (a bottom search bar) needs the row moved up, which reveals content below.
+        // Comparing the overlay with the row itself flipped when the row sat a few points lower.
+        let screenHeight = (snapshot.entries ?? []).compactMap(\.frame).map { $0.y + $0.height }.max() ?? 0
+        let overlayIsLower = (cover.frame?.center.y ?? 0) >= screenHeight / 2
+        var disappeared = try await perform(
+            overlayIsLower ? .revealContentBelow : .revealContentAbove, platform: snapshot.platform,
+        )
         let selector: [String]? = if let id = entry.uniqueId {
             [SimUseContract.Tap.id, id]
         } else if !entry.label.isEmpty {

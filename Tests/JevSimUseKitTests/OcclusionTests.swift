@@ -49,4 +49,21 @@ struct OcclusionTests {
             ["gesture", "scroll-up", "--device"], ["tap", "--id", "com.apple.settings.developer"],
         ])
     }
+
+    @Test("reveals content below for a bottom overlay even when the row's centre sits below the overlay's")
+    func directionFromScreenHalf() async throws {
+        let runner = FakeCommandRunner(["gesture": .json(#"{"ok":true,"data":{}}"#), "tap": .json(#"{"ok":true,"data":{}}"#)])
+        let low = UIEntry(
+            aliases: ElementAliases(alias: 15), role: "Button", label: "デベロッパ", states: [], value: nil,
+            uniqueId: "com.apple.settings.developer", region: nil,
+            frame: ElementFrame(x: 16, y: 800, width: 370, height: 52), depth: 2,
+        )
+        let screen = entry(9, "", ElementFrame(x: 0, y: 0, width: 402, height: 874), role: "Group", depth: 0)
+        let client = SimUseClient(
+            device: SimUseDevice(deviceId: "D", name: "iPhone", platform: "ios", kind: "simulator", state: "Booted"),
+            invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner),
+        )
+        _ = try await client.tap(alias: 15, on: Fixtures.snapshot(entries: [screen, low, search]))
+        #expect(runner.recordedCalls.first?.prefix(2) == ["gesture", "scroll-up"])
+    }
 }
