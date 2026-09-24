@@ -2,9 +2,9 @@
 ///
 /// Every call passes the same `--device`, because `tap @N` resolves against the
 /// outline sim-use cached for that device on the previous `ui` call.
-public struct SimUseClient: DeviceDriving {
+package struct SimUseClient: DeviceDriving {
     /// The device every command targets.
-    public let device: SimUseDevice
+    package let device: SimUseDevice
     private let invoker: SimUseInvoker
 
     init(device: SimUseDevice, invoker: SimUseInvoker) {
@@ -13,7 +13,7 @@ public struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use ui --no-raw`, which also refreshes the alias cache `tap` uses.
-    public func observe() async throws -> ScreenObservation {
+    package func observe() async throws -> ScreenObservation {
         let envelope = try await invoker.invoke(["ui", "--no-raw"] + deviceArguments, as: UISnapshot.self)
         guard let snapshot = envelope.data else {
             throw SimUseError.malformedOutput(arguments: ["ui"], detail: "the envelope has no data")
@@ -22,17 +22,17 @@ public struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use tap @alias`.
-    public func tap(alias: Int) async throws -> [String] {
+    package func tap(alias: Int) async throws -> [String] {
         try await run(["tap", "@\(alias)"])
     }
 
     /// Runs the sim-use gesture or button for `action`.
-    public func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
+    package func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
         try await run(action.arguments(platform: platform))
     }
 
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
-    public func paste(_ text: String) async throws -> [String] {
+    package func paste(_ text: String) async throws -> [String] {
         try await run(["paste"], operands: [text])
     }
 

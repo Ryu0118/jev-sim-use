@@ -2,7 +2,7 @@
 ///
 /// Every call returns the bundle ids of apps sim-use saw disappear, because sim-use
 /// reports liveness events on whichever command runs next.
-public protocol DeviceDriving: Sendable {
+package protocol DeviceDriving: Sendable {
     /// Reads the current screen.
     func observe() async throws -> ScreenObservation
     /// Taps the element with alias `@alias` from the latest observation.
@@ -14,14 +14,14 @@ public protocol DeviceDriving: Sendable {
 }
 
 /// One `sim-use ui` reading.
-public struct ScreenObservation: Sendable, Hashable {
+package struct ScreenObservation: Sendable, Hashable {
     /// The decoded describe-ui payload.
-    public var snapshot: UISnapshot
+    package var snapshot: UISnapshot
     /// Apps sim-use saw disappear since the previous command.
-    public var disappearedApps: [String]
+    package var disappearedApps: [String]
 
     /// Creates an observation.
-    public init(snapshot: UISnapshot, disappearedApps: [String]) {
+    package init(snapshot: UISnapshot, disappearedApps: [String]) {
         self.snapshot = snapshot
         self.disappearedApps = disappearedApps
     }

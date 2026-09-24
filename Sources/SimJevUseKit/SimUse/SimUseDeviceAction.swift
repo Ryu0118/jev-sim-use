@@ -1,5 +1,5 @@
 /// A device-level action that does not target a specific element.
-public enum SimUseDeviceAction: Sendable, Hashable {
+package enum SimUseDeviceAction: Sendable, Hashable {
     /// Scroll so that content further down comes into view.
     case revealContentBelow
     /// Scroll so that content further up comes into view.

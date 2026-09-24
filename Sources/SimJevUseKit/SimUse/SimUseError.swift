@@ -1,5 +1,5 @@
 /// Everything that can go wrong locating or driving `sim-use`.
-public enum SimUseError: Error, Sendable, Equatable {
+package enum SimUseError: Error, Sendable, Equatable {
     /// `sim-use` is not on `PATH`.
     case notInstalled(searchedPath: String)
     /// `sim-use --version` printed nothing that parses as a version.

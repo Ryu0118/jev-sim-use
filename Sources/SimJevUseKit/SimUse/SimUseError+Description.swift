@@ -3,7 +3,7 @@ extension SimUseError: CustomStringConvertible {
     static let upgradeCommand = "brew update && brew upgrade lycorp-jp/tap/sim-use"
 
     /// A message that says what went wrong and how to fix it.
-    public var description: String {
+    package var description: String {
         switch self {
         case let .notInstalled(searchedPath):
             """
