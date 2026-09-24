@@ -16,6 +16,7 @@ struct AgentProgress: Sendable {
     /// that title means the branch did not finish the goal, and the scroll position there may differ, so the
     /// identity-keyed `triedActions` cannot catch a second visit.
     private var exploredBranches: [String: Set<String>] = [:]
+    private var scannedTitles: Set<String> = []
     private var pendingDisappearances: [String] = []
 
     init(history: [HistoryEntry] = []) {
@@ -36,6 +37,15 @@ struct AgentProgress: Sendable {
     /// Labels of elements whose branch was already explored from a screen with the current title.
     var exploredElements: Set<String> {
         currentTitle.flatMap { exploredBranches[$0] } ?? []
+    }
+
+    /// Whether `ScanFirst` already looked further down a screen with the current title.
+    var hasScannedCurrentTitle: Bool {
+        currentTitle.map(scannedTitles.contains) ?? false
+    }
+
+    mutating func markScanned() {
+        currentTitle.map { _ = scannedTitles.insert($0) }
     }
 
     /// Returns an outcome when the observation means the run must stop.

@@ -41,6 +41,17 @@ package struct AgentLoop: Sendable {
             }
             let plan = try await plan(for: observation.snapshot, progress: progress)
             expectedToFinish = plan.finishes.value >= ActionPolicy.finishMinimum
+            if let scan = ScanFirst.override(
+                plan, on: observation.snapshot, goal: configuration.goal, notes: configuration.notes,
+                alreadyScanned: progress.hasScannedCurrentTitle, tried: progress.ineffectiveActions,
+            ), progress.steps < configuration.maxSteps {
+                report(.scanning(step: progress.nextStep))
+                progress.markScanned()
+                expectedToFinish = false
+                let disappeared = try await execute(scan, on: observation.snapshot)
+                progress.recordAction(scan, disappeared: disappeared)
+                continue
+            }
             switch decide(on: plan, progress: progress) {
             case let .stop(outcome):
                 return AgentRunResult(outcome: outcome, history: progress.history)

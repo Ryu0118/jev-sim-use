@@ -115,7 +115,11 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
   anyway hands over, and landing on screens already seen counts toward the stall limit. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
-  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen.
+  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. One
+  narrow exception, `ScanFirst`: when the goal names items in the UI's script, none is visible, the screen is a list,
+  and Jev would tap an unnamed element, code scrolls that list once per title first (Jev's prior sent it into 一般
+  for デベロッパ at 0.51-0.77, and wording did not move it). Sections entered and left are not offered again from
+  the same title (`AgentProgress.exploredElements`).
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev
   judges them correctly once the switch really flips. iOS switches ignore sim-use's instant row-centre tap, so

@@ -2,6 +2,8 @@
 package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     /// A plan was made for `step`.
     case planned(step: Int, plan: StepPlan)
+    /// The goal names an item not on this list, so code scrolls once before Jev opens an unnamed section.
+    case scanning(step: Int)
     /// `action` is about to run although confidence is in the confirm band.
     case lowConfidence(step: Int, confidence: Double)
 
@@ -13,6 +15,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
                 + "finishes p=\(Self.format(plan.finishes.value)), ~$\(plan.costUSD.formatted())"
                 + (plan.model.isEmpty ? "" : ", \(plan.model)")
                 + plan.alternatives.map { "; also \($0.name) \(Self.format($0.probability))" }.joined() + ")"
+        case let .scanning(step):
+            "[\(step)] the goal's item is not on screen; scrolling this list once before opening another section"
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
         }
