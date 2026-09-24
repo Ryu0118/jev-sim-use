@@ -1,14 +1,18 @@
 /// Builds the choice options offered to Jev for one screen.
 enum ActionCatalog {
-    /// Jev's state plus the longest question must fit in 32k tokens, and the outline
-    /// already carries the whole screen, so the tap options are capped.
-    static let maximumTapTargets = 40
-    /// Labels are shortened in option rubrics; the full text stays in the outline.
+    /// Jev accepts at most 255 choice options; leave room for pastes, gestures, and `none_of_these`.
+    static let maximumOptions = 255
+    static let maximumTapTargets = 200
+    /// Labels are shortened in option rubrics; the full text stays in the state.
     static let maximumLabelLength = 60
+    /// Roles that describe content rather than something to press. An option Jev cannot sensibly pick only
+    /// dilutes the distribution (a heading tap looked like progress but changed nothing).
+    static let nonInteractiveRoles: Set = ["StaticText", "Heading", "GenericElement", "Group", "Image"]
 
-    static func actions(for snapshot: UISnapshot, texts: [String]) -> [AgentAction] {
+    /// Options for `snapshot`, minus `excluded` option names that already failed to change this screen.
+    static func actions(for snapshot: UISnapshot, texts: [String], excluding excluded: Set<String> = []) -> [AgentAction] {
         let taps = (snapshot.entries ?? [])
-            .filter { !$0.isDisabled && !rubricLabel(for: $0).isEmpty }
+            .filter { !$0.isDisabled && !nonInteractiveRoles.contains($0.role) && !rubricLabel(for: $0).isEmpty }
             .prefix(maximumTapTargets)
             .map { entry in
                 let label = String(rubricLabel(for: entry).prefix(maximumLabelLength))
@@ -16,7 +20,8 @@ enum ActionCatalog {
             }
         let pastes = texts.enumerated().map { AgentAction.paste(index: $0.offset, text: $0.element) }
         let gestures: [SimUseDeviceAction] = [.revealContentBelow, .revealContentAbove, .goBack]
-        return taps + pastes + gestures.map(AgentAction.device)
+        let candidates = (taps + pastes + gestures.map(AgentAction.device)).filter { !excluded.contains($0.optionName) }
+        return Array(candidates.prefix(maximumOptions - 1)) + [.noneApplies]
     }
 
     /// Unlabelled elements are skipped, except input fields: tapping one focuses it for `--text`.

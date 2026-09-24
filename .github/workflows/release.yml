@@ -78,6 +78,21 @@ jobs:
             .build/apple/Products/Release/jev-sim-use-${{ inputs.version }}-darwin-universal.tar.gz.sha256
           if-no-files-found: error
 
+      # nest installs from this .artifactbundle.zip release asset.
+      - uses: giginet/github-action-artifactbundle@97117bc42b44f33e0d04b543b815ad9f3079f25e # v2
+        id: artifactbundle
+        with:
+          artifact_name: jev-sim-use
+          version: ${{ inputs.version }}
+
+      - name: Upload artifact bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: jev-sim-use-artifactbundle
+          path: |
+            ${{ steps.artifactbundle.outputs.bundle_path }}
+          if-no-files-found: error
+
   # Version bump + push only after the build succeeds.
   commit-version:
     needs: build-macos
@@ -134,6 +149,12 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           name: jev-sim-use-darwin-universal
+          path: /tmp/release-assets
+
+      - name: Download artifact bundle
+        uses: actions/download-artifact@v6
+        with:
+          name: jev-sim-use-artifactbundle
           path: /tmp/release-assets
 
       - name: Create GitHub Release with all assets

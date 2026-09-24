@@ -10,6 +10,8 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     package let states: [String]
     /// Current value, when the element has one.
     package let value: String?
+    /// Where on screen sim-use placed the element; absent in older fixtures.
+    package let region: ElementRegion?
 
     /// Whether sim-use reported the element as disabled.
     package var isDisabled: Bool {

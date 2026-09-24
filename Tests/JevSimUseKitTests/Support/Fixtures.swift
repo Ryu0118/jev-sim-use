@@ -23,7 +23,7 @@ enum Fixtures {
         UISnapshot(platform: "ios", outline: outline, entries: entries, crashDialog: nil)
     }
 
-    static func entry(_ alias: Int, _ label: String, states: [String] = []) -> UIEntry {
-        UIEntry(aliases: ElementAliases(alias: alias), role: "Button", label: label, states: states, value: nil)
+    static func entry(_ alias: Int, _ label: String, role: String = "Button", states: [String] = []) -> UIEntry {
+        UIEntry(aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, region: nil)
     }
 }

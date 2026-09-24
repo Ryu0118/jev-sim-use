@@ -10,6 +10,8 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case escalated(step: Int, action: AgentAction, confidence: Double)
     /// The app under test disappeared or showed a crash dialog.
     case appCrashed(detail: String)
+    /// Jev judged that none of the offered actions advances the goal.
+    case noActionFits(step: Int)
 
     /// Whether the goal was reached.
     package var isSuccess: Bool {
@@ -30,6 +32,7 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
             "Stopped at step \(step): Jev's best action (\(action)) had confidence "
                 + "\(confidence.formatted(.number.precision(.fractionLength(2)))), below the threshold."
         case let .appCrashed(detail): "Stopped: \(detail)"
+        case let .noActionFits(step): "Stopped at step \(step): no offered action advances the goal on this screen."
         }
     }
 }

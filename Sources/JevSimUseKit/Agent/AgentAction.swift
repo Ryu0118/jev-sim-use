@@ -7,6 +7,8 @@ package enum AgentAction: Sendable, Hashable {
     case device(SimUseDeviceAction)
     /// Paste one of the texts the user supplied; Jev only chooses, it never writes text.
     case paste(index: Int, text: String)
+    /// No offered action fits; the run hands over instead of guessing.
+    case noneApplies
 
     /// The option key sent to Jev. Unique within one catalog.
     var optionName: String {
@@ -16,6 +18,7 @@ package enum AgentAction: Sendable, Hashable {
         case .device(.revealContentAbove): "scroll_to_reveal_above"
         case .device(.goBack): "go_back"
         case let .paste(index, _): "paste_text_\(index)"
+        case .noneApplies: "none_of_these"
         }
     }
 
@@ -27,6 +30,7 @@ package enum AgentAction: Sendable, Hashable {
         case .device(.revealContentAbove): "Scroll to reveal content further up the screen"
         case .device(.goBack): "Go back to the previous screen"
         case let .paste(_, text): "Paste the text \"\(text)\" into the focused input field"
+        case .noneApplies: "None of the other actions would advance the goal"
         }
     }
 }

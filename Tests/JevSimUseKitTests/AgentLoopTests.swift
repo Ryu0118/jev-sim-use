@@ -1,3 +1,4 @@
+import Jev
 @testable import JevSimUseKit
 import Testing
 
@@ -50,5 +51,13 @@ struct AgentLoopTests {
         let driver = FakeDriver(outlines: ["A", "B", "C"])
         let outcome = try await run(driver, [.tapNext(goal: 0.7), .tapNext(goal: 0.9)])
         #expect(outcome == .goalReached(steps: 1))
+    }
+
+    @Test("hands over when Jev says no offered action fits")
+    func noActionFits() async throws {
+        let plan = StepPlan(goalReached: Probability(clamping: 0.05), action: .noneApplies, confidence: 0.9, costUSD: 0)
+        let driver = FakeDriver(outlines: ["A"])
+        #expect(try await run(driver, [plan]) == .noActionFits(step: 1))
+        #expect(driver.performedActions.isEmpty)
     }
 }

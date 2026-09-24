@@ -22,6 +22,9 @@ extension AgentLoop {
             return .stepLimitReached(steps: progress.steps)
         }
         let step = progress.steps + 1
+        if plan.action == .noneApplies {
+            return .noActionFits(step: step)
+        }
         if plan.confidence < configuration.policy.escalateBelow {
             return .escalated(step: step, action: plan.action, confidence: plan.confidence)
         }
@@ -36,6 +39,7 @@ extension AgentLoop {
         case let .tap(alias, _, _): try await driver.tap(alias: alias)
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: platform)
         case let .paste(_, text): try await driver.paste(text)
+        case .noneApplies: []
         }
     }
 }
