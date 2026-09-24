@@ -40,6 +40,14 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
   noul `goal_reached` and a runtime-built choice `next_action`.
+- `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
+  `skills/jev-sim-use/SKILL.md` (SSoT) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
+  `jev-sim-use skill install|uninstall|print` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
+- Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
+  `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are
+  symlinks to `skills/jev-sim-use`. `release.yml` bumps all manifest versions; `install.sh` is the curl installer.
+  The docsync rule `skill-cli` ties SKILL.md to the CLI options and `AgentOutcome`: after changing them, update
+  SKILL.md, run `mise run generate-skill`, then `docsync update-checksum`.
 
 ## sim-use contract (verified against v0.14.0)
 
@@ -71,8 +79,12 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
   only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
   Jev's 255-option limit, and always `none_of_these`, which hands over (`AgentOutcome.noActionFits`).
-- Actions that left the current screen unchanged are dropped in code (`AgentProgress.ineffectiveActions`), not left
-  to Jev to remember.
+- Code, not Jev, handles search and loops: an action already tried on a screen is never offered again there
+  (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states); landing on
+  screens already seen counts toward the stall limit; when Jev picks `none_of_these`, `Exploration` scrolls down, then
+  goes back, once per screen, before handing over.
+- Jev reliably picks a visible target but does not know where an off-screen setting lives, and judges toggle goals
+  poorly; toggles are shown as `on` / `off`, and scrolling / going back need at most 0.3 support.
 - Choice options are built at runtime, so typed `ChoiceQuestion` reads do not apply: read `answers[name]` and validate
   the chosen name against the offered options.
 - Thresholds are split: `goalPolicy` (default `RoutingPolicy`, success only on `.auto`) and `ActionPolicy`
