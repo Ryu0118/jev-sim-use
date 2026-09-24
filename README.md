@@ -1,6 +1,6 @@
-# jev-sim-use
+# 📱 jev-sim-use
 
-**sim-use at Jev speed: reach any screen with one command instead of an agent turn per tap.**
+**Reach any screen with sim-use at Jev speed, in one command instead of an agent turn per tap.**
 
 jev-sim-use is a fast navigator for iOS Simulator and Android devices.
 [sim-use](https://github.com/lycorp-jp/sim-use) lets AI agents drive a device, but when a frontier LLM such as
@@ -11,9 +11,9 @@ and it taps its way there on its own. Each step sends the screen's visible label
 
 ## Features
 
-- ⚡ **Ultrafast navigation**: one small Jev call per step instead of a full LLM agent turn
-- 🔁 **Hands over, then picks up again**: when Jev is stuck it stops with a session your agent can inspect, teach, and resume
-- 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only enters text you pass with `-t name=value`
+- ⚡ **Ultrafast navigation** — one small Jev call per step instead of a full LLM agent turn
+- 🔁 **Hands over, then picks up again** — when Jev is stuck it stops with a session your agent can inspect, teach, and resume
+- 🎯 **Jev chooses, never invents** — every action comes from what is on screen, and it only enters text you pass with `-t name=value`
 
 ## Installation
 
