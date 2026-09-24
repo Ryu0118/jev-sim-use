@@ -18,19 +18,36 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 - `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.
 - `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
-  (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, validate, call one Kit Runner, present.
+  (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
+  one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
+  - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
+    the only place the CLI reads `ProcessInfo`. CLI tests use `RecordingOutput` and a `FakeSimUse` script on `PATH`.
+- `JevSimUseKit` Runners (return values, never print):
+  - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
+    usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s.
+  - `DoctorRunner` (`Doctor/`): sim-use, device (reads the screen once), and Jev settings checks → `DoctorReport`.
+  - `ConfigRunner` (`Configuration/`): get / set (validated) / unset / list on `UserConfigStore`.
+  - `FailureCategory` classifies Runner errors as setup vs runtime.
 - `JevSimUseKit/Process`: `CommandRunning` seam; `SubprocessCommandRunner` runs commands through swift-subprocess 1.0
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
-- `JevSimUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
-  distinct from exit 127), version gate (`SimUseBootstrap.minimumVersion`), device pinning, and
-  `--json` envelope decoding.
+- `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not
+  installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
-  wire format; other providers go behind a compatible proxy.
+  wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
   noul `goal_reached` and a runtime-built choice `next_action`.
 
 ## sim-use contract (verified against v0.14.0)
+
+- sim-use is used only through its CLI and `--json` output. Every subcommand, flag, and gesture name lives in
+  `SimUseContract` (SSoT); `SimUseContract.helpExpectations` lists what each `--help` must mention.
+- `SimUseBootstrap.minimumVersion` refuses older sim-use; `testedVersion` is the newest verified one. Newer versions run
+  with a warning (`SimUseConnection.versionWarning`, shown by `run` and `doctor`), and unparseable output adds a hint
+  pointing at `exec --version` and the contract test.
+- `doctor` decodes one real `ui --json --no-raw` response, so output changes surface before a run.
+- After upgrading sim-use: boot a simulator, run `mise run contract-test` (`JevSimUseContractTests`, skipped in the
+  normal test run), then bump `testedVersion`.
 
 - Always pass `--json` and the same `--device`: `tap @N` resolves against the outline sim-use cached for
   that device on the last `ui` call.
