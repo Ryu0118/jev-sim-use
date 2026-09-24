@@ -1,7 +1,7 @@
 import ArgumentParser
 import SimJevUseKit
 
-struct ConfigCommand: ParsableCommand {
+struct ConfigCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "config",
         abstract: "Read or change persistent settings (base-url, model).",

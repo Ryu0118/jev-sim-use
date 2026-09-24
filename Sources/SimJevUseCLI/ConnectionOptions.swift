@@ -1,5 +1,4 @@
 import ArgumentParser
-import Foundation
 import SimJevUseKit
 
 /// Options shared by `run` and `doctor`.
@@ -17,11 +16,14 @@ struct ConnectionOptions: ParsableArguments {
     var model: String?
 
     /// `--device`, falling back to the variable sim-use itself honours.
-    var resolvedDevice: String? {
-        device ?? ProcessInfo.processInfo.environment["SIM_USE_DEVICE"].flatMap { $0.isEmpty ? nil : $0 }
+    func resolvedDevice(environment: [String: String]) -> String? {
+        device ?? environment["SIM_USE_DEVICE"].flatMap { $0.isEmpty ? nil : $0 }
     }
 
-    func jevSettings() throws -> JevSettings {
-        try JevSettings.resolve(baseURLFlag: baseURL, modelFlag: model, config: UserConfigStore().load())
+    func jevSettings(environment: [String: String]) throws -> JevSettings {
+        try JevSettings.resolve(
+            baseURLFlag: baseURL, modelFlag: model, config: UserConfigStore(environment: environment).load(),
+            environment: environment,
+        )
     }
 }

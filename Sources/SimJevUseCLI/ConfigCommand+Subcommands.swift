@@ -2,18 +2,18 @@ import ArgumentParser
 import SimJevUseKit
 
 extension ConfigCommand {
-    struct Get: ParsableCommand {
+    struct Get: ContextualCommand {
         static let configuration = CommandConfiguration(abstract: "Print a stored value.")
 
         @Argument(help: "The key to read.") var key: UserConfig.Key
 
-        func run() throws {
-            guard let value = try UserConfigStore().load()[key] else { throw ExitCode.failure }
-            print(value)
+        func run(context: CLIContext) async throws {
+            guard let value = try UserConfigStore(environment: context.environment).load()[key] else { throw ExitCode.failure }
+            context.output.standardOutput(value)
         }
     }
 
-    struct Set: ParsableCommand {
+    struct Set: ContextualCommand {
         static let configuration = CommandConfiguration(abstract: "Store a value.")
 
         @Argument(help: "The key to write.") var key: UserConfig.Key
@@ -28,36 +28,36 @@ extension ConfigCommand {
             }
         }
 
-        func run() throws {
-            try ConfigCommand.update { $0[key] = value }
+        func run(context: CLIContext) async throws {
+            try ConfigCommand.update(environment: context.environment) { $0[key] = value }
         }
     }
 
-    struct Unset: ParsableCommand {
+    struct Unset: ContextualCommand {
         static let configuration = CommandConfiguration(abstract: "Remove a stored value.")
 
         @Argument(help: "The key to remove.") var key: UserConfig.Key
 
-        func run() throws {
-            try ConfigCommand.update { $0[key] = nil }
+        func run(context: CLIContext) async throws {
+            try ConfigCommand.update(environment: context.environment) { $0[key] = nil }
         }
     }
 
-    struct List: ParsableCommand {
+    struct List: ContextualCommand {
         static let configuration = CommandConfiguration(abstract: "Print all stored values.")
 
-        func run() throws {
-            let config = try UserConfigStore().load()
+        func run(context: CLIContext) async throws {
+            let config = try UserConfigStore(environment: context.environment).load()
             for key in UserConfig.Key.allCases {
                 if let value = config[key] {
-                    print("\(key.rawValue)=\(value)")
+                    context.output.standardOutput("\(key.rawValue)=\(value)")
                 }
             }
         }
     }
 
-    static func update(_ change: (inout UserConfig) -> Void) throws {
-        let store = UserConfigStore()
+    static func update(environment: [String: String], _ change: (inout UserConfig) -> Void) throws {
+        let store = UserConfigStore(environment: environment)
         var config = try store.load()
         change(&config)
         try store.save(config)

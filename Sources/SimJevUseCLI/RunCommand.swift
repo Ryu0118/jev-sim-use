@@ -2,7 +2,7 @@ import ArgumentParser
 import Jev
 import SimJevUseKit
 
-struct RunCommand: AsyncParsableCommand {
+struct RunCommand: ContextualCommand {
     static let configuration = CommandConfiguration(
         commandName: "run",
         abstract: "Work toward a goal, starting from the current screen (the default command).",
@@ -29,15 +29,15 @@ struct RunCommand: AsyncParsableCommand {
     }
 
     /// Progress goes to stderr; stdout carries only the final outcome.
-    func run() async throws {
+    func run(context: CLIContext) async throws {
         let outcome: AgentOutcome
         do {
-            outcome = try await execute()
+            outcome = try await execute(context: context)
         } catch {
-            Console.error("Error: \(error)")
+            context.output.standardError("Error: \(error)")
             throw ExitCode(ExitStatus.of(error))
         }
-        print(outcome)
+        context.output.standardOutput("\(outcome)")
         guard outcome.isSuccess else { throw ExitCode.failure }
     }
 }
