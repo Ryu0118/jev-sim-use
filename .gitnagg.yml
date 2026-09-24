@@ -4,7 +4,7 @@ exit_code: 2
 
 rules:
   - severity: error
-    message: Stop. Split this change into smaller commits before continuing.
+    message: Stop. This diff is already too large for one commit. Split it before continuing.
     when:
       or:
         - metric: added
@@ -13,10 +13,16 @@ rules:
           gte: 6
 
   - severity: warning
-    message: Good checkpoint. Commit before the diff gets harder to review.
+    message: Good checkpoint. Commit before the diff gets harder to reason about.
     when:
       or:
         - metric: added
           gte: 120
         - metric: files
           gte: 3
+
+  - severity: info
+    message: You have enough local change to justify a checkpoint commit.
+    when:
+      metric: added
+      gte: 80

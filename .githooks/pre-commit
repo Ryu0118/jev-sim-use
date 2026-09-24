@@ -2,4 +2,12 @@
 set -eu
 
 SOURCE_ROOT=$(git rev-parse --show-toplevel)
+
+GITLEAKS=$("$SOURCE_ROOT/scripts/mise.sh" which gitleaks 2>/dev/null || command -v gitleaks 2>/dev/null || true)
+if [ -n "$GITLEAKS" ]; then
+    "$GITLEAKS" protect --staged --source "$SOURCE_ROOT" -v
+else
+    echo "gitleaks not found; skipping secret scan. Run: mise run setup" >&2
+fi
+
 exec "$SOURCE_ROOT/scripts/lint-staged.sh"
