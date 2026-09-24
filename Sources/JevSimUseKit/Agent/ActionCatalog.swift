@@ -11,6 +11,9 @@ enum ActionCatalog {
     /// Roles that only hold text: no gesture does anything to them, so they are not gesture targets either. Unlike
     /// taps, `Group` and `Image` stay, because a map or a photo is what gets pinched or swiped.
     static let textRoles: Set = ["StaticText", "Heading", "GenericElement"]
+    /// The accessibility identifier of UIKit's navigation back button. Tapping it does what `go_back` does, and
+    /// offering both split Jev's probability (the back button is labelled with the previous screen, such as 一般).
+    static let iOSBackButtonIdentifier = "BackButton"
     /// Roles of list rows, where a long sideways swipe can delete the row.
     static let rowRoles: Set = ["Cell", "Row"]
 
@@ -24,6 +27,7 @@ enum ActionCatalog {
             .prefix(maximumOptions - 2)
         let taps = (snapshot.entries ?? [])
             .filter { !$0.isDisabled && !nonInteractiveRoles.contains($0.role) && !rubricLabel(for: $0).isEmpty }
+            .filter { snapshot.platform != SimUseContract.Platform.ios || $0.uniqueId != iOSBackButtonIdentifier }
             .map { entry in
                 let label = String(rubricLabel(for: entry).prefix(maximumLabelLength))
                 return AgentAction.tap(alias: entry.aliases.alias, role: entry.role, label: label)

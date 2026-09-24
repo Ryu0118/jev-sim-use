@@ -54,4 +54,16 @@ struct ActionCatalogTests {
         ])
         #expect(ActionCatalog.gestureTargets(for: snapshot).map(\.alias) == [1, 2])
     }
+
+    @Test("leaves the iOS back button to go_back, so the two do not split Jev's probability")
+    func backButton() {
+        let back = UIEntry(
+            aliases: ElementAliases(alias: 6), role: "Button", label: "一般", states: [], value: nil,
+            uniqueId: "BackButton", region: nil, frame: nil,
+        )
+        let names = ActionCatalog.actions(for: Fixtures.snapshot(entries: [back, Fixtures.entry(7, "キーボード")]), texts: [])
+            .map(\.optionName)
+        #expect(!names.contains("e6"))
+        #expect(names.contains("e7") && names.contains("go_back"))
+    }
 }
