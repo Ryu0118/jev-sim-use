@@ -80,6 +80,19 @@ struct JevStepPlannerTests {
         #expect(abs(support - 0.45) < 0.0001)
     }
 
+    @Test("tapping the field Jev would type into adds up with typing into it")
+    func tapThenType() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(13, "タイトル", role: "TextField")])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [InputText(name: "title", value: "牛乳を買う")])
+        let body = StubTransport.answer(
+            operation: "enter_text", confidence: 0.59,
+            extra: [("element_target", "e13", 0.77), ("field_target", "e13", 1), ("text_to_enter", "title", 1)],
+        ).replacingOccurrences(of: #""enter_text":0.59}"#, with: #""enter_text":0.59,"tap":0.28}"#)
+        let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        #expect(plan.action == .enterText(field: 13, label: "タイトル", text: InputText(name: "title", value: "牛乳を買う")))
+        #expect(abs(plan.support - 0.87) < 0.0001)
+    }
+
     @Test("every question carries the shared rules, since target questions cannot see the operation answer")
     func sharedRules() throws {
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: request(texts: []).menu))

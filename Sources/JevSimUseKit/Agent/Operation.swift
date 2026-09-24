@@ -42,9 +42,9 @@ package enum Operation: Sendable, Hashable {
     /// The criteria Jev reads for this option.
     var optionDescription: String {
         switch self {
-        case .tap: "Tap one element in `screen.elements` to open, select, press, or toggle it"
+        case .tap: "Tap one element in `screen.elements` to open, select, press, or toggle it; not for typing into a field, which enter_text does"
         case let .gesture(gesture): gesture.optionDescription
-        case .enterText: "Type one of the named texts into a text field"
+        case .enterText: "Type one of the named texts into a text field; it taps the field first, so the field needs no separate tap"
         case let .device(action): action.optionDescription
         case .done: "Every part of `goal` is visibly satisfied; stop"
         case .blocked: "No offered operation can make progress; hand over"

@@ -11,7 +11,16 @@ extension JevStepPlanner {
         guard menu.operations.contains(where: { $0.optionName == operationAnswer.value }) else {
             throw PlanningError.unknownChoice(operationAnswer.value)
         }
-        let (operation, operationSupport) = pooledOperation(operationAnswer, among: menu.operations)
+        var (operation, operationSupport) = pooledOperation(operationAnswer, among: menu.operations)
+        // Tapping the field Jev would type into is only the first half of typing (enter_text taps it too): when the
+        // tap target and the field target agree, the two operations are one intent and their probabilities add up.
+        if [.tap, .enterText].contains(operation), menu.operations.contains(.enterText),
+           let element = try? choice(elementQuestion, in: response).value,
+           element == (try? choice(fieldQuestion, in: response).value)
+        {
+            operation = .enterText
+            operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (operationAnswer.probabilities[$1.optionName] ?? 0) }
+        }
         let (action, targetSupport) = try compose(operation, response: response, menu: menu)
         return try StepPlan(
             action: action,
