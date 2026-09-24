@@ -1,17 +1,19 @@
 # jev-sim-use
 
-**Tell a simulator what you want done, in plain language.**
+**sim-use at Jev speed: reach any screen with one command instead of an agent turn per tap.**
 
-jev-sim-use is a CLI that drives an iOS Simulator or Android device toward a goal like "Turn on Dark Mode in Settings".
-[sim-use](https://github.com/lycorp-jp/sim-use) reads the screen and acts on it, and
-[Jev](https://docs.typesafe.ai/) (via [swift-jev](https://github.com/d-date/swift-jev)) picks the next action.
-It is for UI checks and demos you would otherwise tap through by hand.
+jev-sim-use is a fast navigator for iOS Simulator and Android devices.
+[sim-use](https://github.com/lycorp-jp/sim-use) lets AI agents drive a device, but when a frontier LLM such as
+Claude Code runs the loop, every tap costs a full reasoning turn. jev-sim-use hands that loop to
+[Jev](https://docs.typesafe.ai/), a small model that answers typed questions: each step is one request that returns
+"is the goal reached?" and "which on-screen action comes next?". Give it a goal like "Turn on Dark Mode in Settings"
+and it taps its way there on its own.
 
 ## Features
 
-- 🗣️ **Goals, not scripts**: describe the outcome, and it taps, scrolls, and goes back until it gets there
+- ⚡ **Ultrafast navigation**: one small Jev call per step instead of a full LLM agent turn
+- 🤖 **One command for your agent**: Claude Code delegates "get to that screen" and spends its turns on the real work
 - 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only types text you pass with `-t`
-- 🔌 **All of sim-use underneath**: `exec` runs any sim-use command unchanged
 
 ## Installation
 
@@ -41,6 +43,17 @@ export TYPESAFE_API_KEY=...
 jev-sim-use doctor
 jev-sim-use "Turn on Dark Mode in Settings"
 jev-sim-use "Search for ramen" -t ramen
+```
+
+---
+
+## Using it from an agent
+
+Add a line like this to your project's `CLAUDE.md`, so the agent delegates navigation instead of tapping step by step:
+
+```md
+To reach a screen in the simulator, run `jev-sim-use "<goal>"` (exit 0 means it got there).
+Use sim-use directly only to inspect or verify the screen once you are there.
 ```
 
 ---
