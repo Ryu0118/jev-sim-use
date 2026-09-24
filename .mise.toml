@@ -3,29 +3,32 @@
 min_version = "2026.7.5"
 
 [tools]
-"spm:nicklockwood/SwiftFormat" = { version = "0.62.1", artifactbundle = true }
-"spm:realm/SwiftLint" = { version = "0.65.0", artifactbundle = true }
+"spm:nicklockwood/SwiftFormat" = { version = "0.63.0", artifactbundle = true }
+"spm:realm/SwiftLint" = { version = "0.65.1", artifactbundle = true }
 "spm:Ryu0118/gitnagg" = { version = "0.3.0", artifactbundle = true }
-"spm:Ryu0118/my-swift-linter" = { version = "0.12.3", artifactbundle = true }
+"spm:Ryu0118/my-swift-linter" = { version = "0.14.0", artifactbundle = true }
 "spm:Ryu0118/docsync" = { version = "0.3.1", artifactbundle = true }
+gitleaks = "8.30.1"
 
 [tasks.setup]
-description = "Install tools, bump this project's tools to their latest version, initialize docsync, and configure Git hooks"
+description = "Install tools, bump this project's tools to their latest version, configure Git hooks, format sources, and initialize docsync"
 run = [
     "./scripts/mise.sh install",
     "./scripts/mise.sh upgrade --local --bump",
     "./scripts/mise.sh install",
     "./scripts/setup-hooks.sh",
+    # Format first so the pre-commit format pass cannot invalidate fresh docsync checksums.
+    "./scripts/mise.sh exec -- swiftformat --config .swiftformat .",
     "./scripts/mise.sh exec -- docsync update-checksum --config docsync.yml",
 ]
 
 [tasks.format]
 description = "Format Swift sources with SwiftFormat"
-run = "swiftformat ."
+run = "swiftformat --config .swiftformat ."
 
 [tasks.lint]
 description = "Lint Swift sources with SwiftLint"
-run = "swiftlint lint --config .swiftlint.yml --strict"
+run = "swiftlint lint --config .swiftlint.yml --strict --no-cache"
 
 [tasks.ast-lint]
 description = "Lint Swift sources with my-swift-linter"

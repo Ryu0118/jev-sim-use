@@ -9,7 +9,7 @@ on:
       - 'Package.swift'
       - 'Package.resolved'
       - '.swiftformat'
-      - '.my-swift-linter.yml'
+      - '.swift-ast-lint.yml'
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
@@ -21,7 +21,7 @@ on:
       - 'Package.swift'
       - 'Package.resolved'
       - '.swiftformat'
-      - '.my-swift-linter.yml'
+      - '.swift-ast-lint.yml'
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
@@ -46,13 +46,13 @@ jobs:
         uses: jdx/mise-action@v3
 
       - name: SwiftFormat
-        run: mise exec -- swiftformat --lint .
+        run: mise exec -- swiftformat --lint --config .swiftformat .
 
       - name: SwiftLint
-        run: mise exec -- swiftlint lint --config .swiftlint.yml --strict
+        run: mise exec -- swiftlint lint --config .swiftlint.yml --strict --no-cache
 
       - name: my-swift-linter
-        run: mise exec -- my-swift-linter lint
+        run: mise exec -- my-swift-linter lint --config .swift-ast-lint.yml --no-cache Sources Tests Package.swift
 
   build-and-test:
     name: Build and Test
