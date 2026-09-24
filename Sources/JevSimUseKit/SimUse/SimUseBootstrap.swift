@@ -4,6 +4,8 @@ import Foundation
 package struct SimUseBootstrap: Sendable {
     /// The oldest sim-use whose output this tool parses (`kind` in `devices`, `--no-raw`).
     package static let minimumVersion = SemanticVersion(0, 14, 0)
+    /// The newest sim-use this tool was verified against (`mise run contract-test`). Newer versions run with a warning.
+    package static let testedVersion = SemanticVersion(0, 14, 0)
 
     private let locator: ExecutableLocator
     private let runner: any CommandRunning
@@ -34,11 +36,11 @@ package struct SimUseBootstrap: Sendable {
     }
 
     /// Verifies the installation and pins `deviceID`, or the only usable device when `nil`.
-    package func connect(deviceID: String?) async throws -> SimUseClient {
-        let (executable, _) = try await verifyInstallation()
+    package func connect(deviceID: String?) async throws -> SimUseConnection {
+        let (executable, version) = try await verifyInstallation()
         let invoker = SimUseInvoker(executable: executable, runner: runner)
         let devices = try await invoker.invoke(["devices"], as: DeviceListPayload.self).data?.devices ?? []
         let device = try DeviceSelection.select(deviceID, from: devices)
-        return SimUseClient(device: device, invoker: invoker)
+        return SimUseConnection(client: SimUseClient(device: device, invoker: invoker), version: version)
     }
 }

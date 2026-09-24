@@ -36,7 +36,7 @@ struct SimUseBootstrapTests {
             "--version": .text("v0.14.0\n"),
             "devices": .json(Fixtures.devices(Fixtures.simulator, Fixtures.physicalIPhone)),
         ])
-        let client = try await SimUseBootstrap(locator: installed, runner: runner).connect(deviceID: nil)
+        let client = try await SimUseBootstrap(locator: installed, runner: runner).connect(deviceID: nil).client
         #expect(client.device.name == "iPhone 17 Pro")
         #expect(runner.recordedCalls.last == ["devices", "--json"])
     }
