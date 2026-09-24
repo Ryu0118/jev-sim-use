@@ -45,6 +45,18 @@ jev-sim-use "Turn on Dark Mode in Settings"
 jev-sim-use "Search for ramen" -t ramen
 ```
 
+### Choosing a device
+
+With one booted simulator or connected Android device, it is picked automatically. With several, pass one:
+
+```sh
+sim-use devices                                   # list deviceIds
+jev-sim-use "Turn on Dark Mode in Settings" -d <deviceId>
+export SIM_USE_DEVICE=<deviceId>                  # or pin it for the shell
+```
+
+Physical iPhones are not supported.
+
 ---
 
 ## Using it from an agent
