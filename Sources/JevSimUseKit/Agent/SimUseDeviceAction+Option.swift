@@ -24,7 +24,8 @@ extension SimUseDeviceAction {
         case .revealContentLeft: "Scroll sideways to show the items to the left of those in `screen.elements`"
         case .goBack: "Go back to the previous screen, when `screen` is unrelated to `goal` or a dead end"
         case .swipeFromTopEdge: "Swipe down from the top edge of the screen, which opens notifications"
-        case .swipeFromBottomEdge: "Swipe up from the bottom edge of the screen, which leaves the app for the Home Screen"
+        // Going home is the Home button's option; describing both the same way splits Jev's probability.
+        case .swipeFromBottomEdge: "Swipe up from the bottom edge of the screen, to dismiss a sheet or reveal a bottom bar"
         case .swipeFromRightEdge: "Swipe in from the right edge of the screen"
         case .press(.home): "Press the Home button, which leaves the app for the Home Screen"
         case .press(.lock): "Press the lock button, which locks the device"
