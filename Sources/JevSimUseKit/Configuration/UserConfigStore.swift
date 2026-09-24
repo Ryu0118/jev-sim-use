@@ -26,7 +26,8 @@ package struct UserConfigStore: Sendable {
         try fileManager.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        guard try fileManager.createFile(atPath: fileURL.path(percentEncoded: false), contents: encoder.encode(config))
-        else { throw UserConfigStoreError.writeFailed(fileURL) }
+        guard try fileManager.createFile(
+            atPath: fileURL.path(percentEncoded: false), contents: encoder.encode(config), attributes: [.posixPermissions: 0o600],
+        ) else { throw UserConfigStoreError.writeFailed(fileURL) }
     }
 }

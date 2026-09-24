@@ -37,3 +37,10 @@ package struct JevSettings: Sendable, Hashable {
         JevClient(apiKey: apiKey, model: model, endpoint: endpoint)
     }
 }
+
+extension JevSettings: CustomStringConvertible {
+    /// Everything but the key, so printing or logging the settings can never leak it.
+    package var description: String {
+        "JevSettings(endpoint: \(endpoint), model: \(model), apiKey: <redacted>)"
+    }
+}
