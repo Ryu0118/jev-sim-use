@@ -34,6 +34,24 @@ extension SimUseDeviceAction {
         }
     }
 
+    /// What the action does, as a fact, for progress lines and `history`.
+    var summary: String {
+        switch self {
+        case .revealContentBelow: "Scroll down"
+        case .revealContentAbove: "Scroll up"
+        case .revealContentRight: "Scroll sideways to the right"
+        case .revealContentLeft: "Scroll sideways to the left"
+        case .goBack: "Go back"
+        case .swipeFromRightEdge: "Swipe in from the right edge"
+        case .press(.home): "Press the Home button"
+        case .press(.lock): "Press the lock button"
+        case .press(.recents): "Press the recent apps button"
+        case .press(.applePay): "Double-press the side button for Apple Pay"
+        case .press(.sideButton): "Press the side button"
+        case .press(.siri): "Hold the button that starts Siri"
+        }
+    }
+
     /// How much going wrong costs, which sets the support `ActionPolicy` asks for.
     var risk: ActionRisk {
         switch self {

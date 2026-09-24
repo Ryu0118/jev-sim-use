@@ -14,6 +14,7 @@ struct AgentProgressTests {
         progress.recordAction(.device(.revealContentBelow), disappeared: [])
         _ = progress.record(screenB, stallLimit: 3)
         #expect(progress.history.map(\.screenChanged) == [false, true])
+        #expect(progress.history.map(\.action) == ["Go back", "Scroll down"])
         #expect(progress.history.map(\.step) == [1, 2])
     }
 

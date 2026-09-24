@@ -61,8 +61,14 @@ extension AgentAction {
 }
 
 extension AgentAction: CustomStringConvertible {
-    /// A human-readable summary, also used as the history entry sent to Jev.
+    /// What was done, as a fact: the progress line and the `history` entry sent to Jev. Rubrics say when to pick an
+    /// option, which is judgment, so they stay out of the state.
     package var description: String {
-        optionDescription
+        switch self {
+        case .tap, .gesture: optionDescription
+        case let .device(action): action.summary
+        case let .paste(_, text): "Paste \"\(text)\""
+        case .noneApplies: "Nothing"
+        }
     }
 }
