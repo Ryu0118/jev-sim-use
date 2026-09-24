@@ -27,6 +27,9 @@ package struct JevStepPlanner: StepPlanning {
     the edit first (Done, Save, or the app's equivalent). BLOCKED means no offered operation can make progress.
     """
 
+    /// How many times a request is sent when the connection fails.
+    static let transportAttempts = 3
+
     private let client: JevClient
 
     /// Creates a planner that sends every step to `client`.
@@ -37,13 +40,21 @@ package struct JevStepPlanner: StepPlanning {
     /// Asks Jev about `request` in a single evaluation.
     package func plan(_ request: PlanRequest) async throws -> StepPlan {
         let questions = try Self.questions(for: request.menu)
-        let response: JevResponse
-        do {
-            response = try await client.evaluate(state: PlanningState(request), questions: questions)
-        } catch let JevError.invalidRequest(body) {
-            throw PlanningError.rejected(body: body)
+        let state = PlanningState(request)
+        var attempt = 1
+        while true {
+            do {
+                let response = try await client.evaluate(state: state, questions: questions)
+                return try Self.interpret(response, menu: request.menu)
+            } catch let JevError.invalidRequest(body) {
+                throw PlanningError.rejected(body: body)
+            } catch JevError.transport where attempt < Self.transportAttempts {
+                // swift-jev retries only HTTP statuses; a dropped connection (NSURLError -1005 mid-run) ended the
+                // run. An evaluation changes nothing, so sending it again is safe.
+                attempt += 1
+                try await Task.sleep(for: .milliseconds(300))
+            }
         }
-        return try Self.interpret(response, menu: request.menu)
     }
 
     static func questions(for menu: ActionMenu) throws -> JevQuestionSet {

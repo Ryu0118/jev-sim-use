@@ -40,6 +40,18 @@ struct JevStepPlannerTests {
         await #expect(throws: PlanningError.unknownChoice("e99")) { try await transport.planner().plan(request()) }
     }
 
+    @Test("sends the request again when the connection drops, and gives up after three attempts")
+    func retriesTransport() async throws {
+        let answer = StubTransport.answer(operation: "done")
+        func planner(_ transport: FlakyTransport) -> JevStepPlanner {
+            JevStepPlanner(client: JevClient(
+                apiKey: "k", endpoint: URL(string: "http://localhost/jev")!, transport: transport, retryPolicy: .none,
+            ))
+        }
+        #expect(try await planner(FlakyTransport(failures: 2, body: answer)).plan(request()).action == .done)
+        await #expect(throws: JevError.self) { try await planner(FlakyTransport(failures: 3, body: answer)).plan(request()) }
+    }
+
     @Test("explains a 422 as a possibly oversized screen")
     func rejected() async {
         let transport = StubTransport(status: 422, body: "too long")
