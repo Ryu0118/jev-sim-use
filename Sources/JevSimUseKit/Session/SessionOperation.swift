@@ -6,6 +6,8 @@ package enum SessionOperation: Sendable, Equatable {
     case show(id: String?)
     /// Adds a fact about the app that Jev will see on the next `resume`; `nil` means the most recent session.
     case tell(id: String?, note: String)
+    /// Removes note `number` (1-based, as `show` numbers them), for a note that turned out wrong.
+    case forget(id: String?, number: Int)
 }
 
 /// The result of a `SessionOperation`.

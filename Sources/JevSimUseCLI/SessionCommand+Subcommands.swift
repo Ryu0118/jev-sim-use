@@ -43,6 +43,21 @@ extension SessionCommand {
         }
     }
 
+    struct Forget: ContextualCommand {
+        static let configuration = CommandConfiguration(abstract: "Remove a note that turned out wrong, by its number in `show`.")
+
+        @Argument(help: "Session id. Default: the most recent session.") var id: String?
+        @Option(name: .shortAndLong, help: "The note's number, as `session show` lists it.") var note: Int
+
+        func validate() throws {
+            guard note > 0 else { throw ValidationError("--note must be 1 or more.") }
+        }
+
+        func run(context: CLIContext) async throws {
+            try SessionCommand.perform(.forget(id: id, number: note), context: context)
+        }
+    }
+
     struct Resume: ContextualCommand {
         static let configuration = CommandConfiguration(
             abstract: "Continue a session's goal from the current screen, with its notes and history.",

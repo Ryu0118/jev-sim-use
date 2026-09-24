@@ -24,6 +24,15 @@ package struct SessionRunner: Sendable {
             session.updatedAt = now()
             try store.save(session)
             return .session(session)
+        case let .forget(id, number):
+            var session = try store.load(id)
+            guard session.notes.indices.contains(number - 1) else {
+                throw SessionStoreError.noSuchNote(number: number, count: session.notes.count)
+            }
+            session.notes.remove(at: number - 1)
+            session.updatedAt = now()
+            try store.save(session)
+            return .session(session)
         }
     }
 }

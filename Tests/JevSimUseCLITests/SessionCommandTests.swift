@@ -12,7 +12,7 @@ struct SessionCommandTests {
         let context = CLIContext(output: recording.output, environment: environment)
         try await SessionCommand.Tell.parse(["-n", "The switch is under Developer."]).run(context: context)
         try await SessionCommand.Show.parse([]).run(context: context)
-        #expect(recording.standardOutput.contains("  - The switch is under Developer."))
+        #expect(recording.standardOutput.contains("  1. The switch is under Developer."))
         #expect(recording.standardOutput.last(where: { $0.hasPrefix("Session:") }) == "Session: s1 (not run)")
     }
 

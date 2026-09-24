@@ -18,4 +18,15 @@ struct SessionRunnerTests {
         #expect(latest.id == "a")
         #expect(latest.notes == ["Dark mode is under Developer."])
     }
+
+    @Test("forget removes a note by its 1-based number and rejects numbers the session does not have")
+    func forget() throws {
+        var session = SessionRecord(id: "a", goal: "g", texts: [], updatedAt: Date())
+        session.notes = ["wrong", "right"]
+        try store.save(session)
+        let runner = SessionRunner(store: store)
+        _ = try runner.run(.forget(id: "a", number: 1))
+        #expect(try store.load("a").notes == ["right"])
+        #expect(throws: SessionStoreError.noSuchNote(number: 2, count: 1)) { try runner.run(.forget(id: "a", number: 2)) }
+    }
 }

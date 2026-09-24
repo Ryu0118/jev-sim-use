@@ -12,7 +12,7 @@ struct SessionCommand: AsyncParsableCommand {
         Stored in $XDG_STATE_HOME/jev-sim-use/sessions (default ~/.local/state). Reaching the goal deletes the \
         session; an unfinished one expires a week after it last changed.
         """,
-        subcommands: [List.self, Show.self, Tell.self, Resume.self],
+        subcommands: [List.self, Show.self, Tell.self, Forget.self, Resume.self],
     )
 
     /// Runs `operation` against the saved sessions and presents the outcome.

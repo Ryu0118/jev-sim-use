@@ -76,9 +76,11 @@ jev-sim-use session show                  # goal, notes, how each run ended, eve
 jev-sim-use exec ui                       # the screen it stopped on
 jev-sim-use session tell -n "Dark Mode is the Dark Appearance switch under Developer"
 jev-sim-use session tell -n "The goal is reached when the Dark Appearance switch is on"
+jev-sim-use session forget -n 1           # remove note 1 (as `show` numbers them) if it turned out wrong
 jev-sim-use session resume                # same goal, with the notes and history; exits like a run
 ```
 
+- A wrong note misleads every later step: `forget` it rather than adding a correction.
 - Notes are facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
   finished screen looks like. Jev reads them when choosing each action and when judging whether the goal is reached.
 - Jev picks visible targets well but does not know where an off-screen setting lives, or what an ambiguous goal

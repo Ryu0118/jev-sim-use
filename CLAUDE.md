@@ -21,7 +21,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 
 - `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.
 - `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `session`
-  (`list` / `show` / `tell` / `resume`), `exec`
+  (`list` / `show` / `tell` / `forget` / `resume`), `exec`
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
