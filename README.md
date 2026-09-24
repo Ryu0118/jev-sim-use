@@ -35,17 +35,6 @@ mise use -g github:Ryu0118/jev-sim-use
 nest install Ryu0118/jev-sim-use
 ```
 
-#### Build from source
-
-Requires Swift 6.2+.
-
-```sh
-git clone https://github.com/Ryu0118/jev-sim-use.git
-cd jev-sim-use
-swift build -c release
-cp .build/release/jev-sim-use /usr/local/bin/
-```
-
 ---
 
 ## Quick start
