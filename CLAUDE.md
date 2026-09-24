@@ -20,14 +20,17 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 ## Architecture
 
 - `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.
-- `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
+- `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `session`
+  (`list` / `show` / `tell` / `resume`), `exec`
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
     the only place the CLI reads `ProcessInfo`. CLI tests use `RecordingOutput` and a `FakeSimUse` script on `PATH`.
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
-    usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s.
+    usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
+    session (`SessionStart.new` or `.resume`), saved before and after the loop.
+  - `SessionRunner` (`Session/`): list / show / tell on `SessionStore` (`$XDG_STATE_HOME/jev-sim-use/sessions`).
   - `DoctorRunner` (`Doctor/`): sim-use, device (reads the screen once), and Jev settings checks → `DoctorReport`.
   - `ConfigRunner` (`Configuration/`): get / set (validated) / unset / list on `UserConfigStore`.
   - `FailureCategory` classifies Runner errors as setup vs runtime.
@@ -35,6 +38,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
+- `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
+  `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
+  numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.
+  `UserDirectories` is the one resolver for `HOME` / `XDG_*`.
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
@@ -74,7 +81,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
 - One request per step with two questions: noul `goal_reached` and choice `next_action`. Do not add a second
   round trip or questions whose answers no code uses; speed is the point.
-- State (`PlanningState`) is named JSON: `goal`, `platform`, `screen.elements` (id `eN`, role, label, value, states,
+- State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts, referenced by both questions), `platform`, `screen.elements` (id `eN`, role, label, value, states,
   region), and `history` (`step`, `action`, `screen_changed`). Questions refer to it by backticked paths.
 - Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
   only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
@@ -92,7 +99,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   split across options that do the same thing.
 - The default model is pinned to `jev-1.13.0`; re-run real-device goals before moving it. Accuracy is lower for CJK
   text, so re-check thresholds on Japanese UIs.
-- State plus the longest question must fit in 32k tokens. A 422 is surfaced as `PlanningError.rejected`.
+- State plus the longest question must fit in 32k tokens. Sessions grow, so only the last 20 `history` entries and
+  10 `notes` are sent. A 422 is surfaced as `PlanningError.rejected`.
 - Never call the real API from `swift test`; use `StubTransport`.
 
 ## Coding rules
