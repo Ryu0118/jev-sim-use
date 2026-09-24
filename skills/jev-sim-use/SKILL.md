@@ -72,8 +72,8 @@ jev-sim-use session resume                # same goal, with the notes and histor
 
 - Notes are facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
   finished screen looks like. Jev reads them when choosing each action and when judging whether the goal is reached.
-- Jev picks visible targets well but does not know where an off-screen setting lives, and judges toggle goals poorly.
-  Those are the notes worth adding.
+- Jev picks visible targets well but does not know where an off-screen setting lives, or what an ambiguous goal
+  means on this app. Those are the notes worth adding.
 - You may act with `exec` between runs (for example to open the right app); `resume` starts from the current screen.
 - Commands take a session id; without one they use the most recent session. `session list` shows them all.
 
