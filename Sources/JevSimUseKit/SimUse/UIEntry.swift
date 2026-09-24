@@ -16,6 +16,9 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     package let region: ElementRegion?
     /// The element's rectangle; absent in older fixtures.
     package let frame: ElementFrame?
+    /// Nesting depth in the accessibility tree; deeper elements inside a frame are its children, shallower ones float
+    /// over it.
+    package var depth: Int?
 
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]

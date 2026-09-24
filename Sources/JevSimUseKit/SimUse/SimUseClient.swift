@@ -22,11 +22,18 @@ package struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
-    /// on the switch itself, at the row's trailing edge, with a short hold.
+    /// on the switch itself, at the row's trailing edge, with a short hold; an element whose centre an overlay covers
+    /// is tapped at a point the overlay leaves clear.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
-        guard snapshot.platform == SimUseContract.Platform.ios,
-              let entry = snapshot.entry(alias: alias), entry.isToggle, let frame = entry.frame
-        else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
+        guard let entry = snapshot.entry(alias: alias) else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
+        guard snapshot.platform == SimUseContract.Platform.ios, entry.isToggle, let frame = entry.frame else {
+            guard let point = snapshot.uncoveredPoint(of: entry) else {
+                return try await run([SimUseContract.Command.tap, "@\(alias)"])
+            }
+            return try await run([
+                SimUseContract.Command.tap, SimUseContract.Tap.x, "\(point.x)", SimUseContract.Tap.y, "\(point.y)",
+            ])
+        }
         // A UISwitch is 51 pt wide and sits at the trailing edge of its row.
         let x = max(frame.center.x, frame.x + frame.width - 26)
         return try await run([
