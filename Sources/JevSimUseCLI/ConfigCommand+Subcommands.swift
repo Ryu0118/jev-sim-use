@@ -3,13 +3,12 @@ import JevSimUseKit
 
 extension ConfigCommand {
     struct Get: ContextualCommand {
-        static let configuration = CommandConfiguration(abstract: "Print a stored value.")
+        static let configuration = CommandConfiguration(abstract: "Print a stored value; exits 1 when it is not set.")
 
         @Argument(help: "The key to read.") var key: UserConfig.Key
 
         func run(context: CLIContext) async throws {
-            guard let value = try UserConfigStore(environment: context.environment).load()[key] else { throw ExitCode.failure }
-            context.output.standardOutput(value)
+            try ConfigCommand.perform(.get(key), context: context)
         }
     }
 
@@ -29,7 +28,7 @@ extension ConfigCommand {
         }
 
         func run(context: CLIContext) async throws {
-            try ConfigCommand.update(environment: context.environment) { $0[key] = value }
+            try ConfigCommand.perform(.set(key, value), context: context)
         }
     }
 
@@ -39,7 +38,7 @@ extension ConfigCommand {
         @Argument(help: "The key to remove.") var key: UserConfig.Key
 
         func run(context: CLIContext) async throws {
-            try ConfigCommand.update(environment: context.environment) { $0[key] = nil }
+            try ConfigCommand.perform(.unset(key), context: context)
         }
     }
 
@@ -47,19 +46,7 @@ extension ConfigCommand {
         static let configuration = CommandConfiguration(abstract: "Print all stored values.")
 
         func run(context: CLIContext) async throws {
-            let config = try UserConfigStore(environment: context.environment).load()
-            for key in UserConfig.Key.allCases {
-                if let value = config[key] {
-                    context.output.standardOutput("\(key.rawValue)=\(value)")
-                }
-            }
+            try ConfigCommand.perform(.list, context: context)
         }
-    }
-
-    static func update(environment: [String: String], _ change: (inout UserConfig) -> Void) throws {
-        let store = UserConfigStore(environment: environment)
-        var config = try store.load()
-        change(&config)
-        try store.save(config)
     }
 }
