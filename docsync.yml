@@ -35,3 +35,14 @@ rules:
   doc: .agents/rules/workflow.md
   message: A commit gate or hook changed; update .agents/rules/workflow.md to match.
   checksum: be6c0d95dfba25fad025fdfa4df30901190fc6f2ed2d1fbcb0fdeac8c2ebbcc4
+- name: skill-cli
+  sources:
+  - Sources/JevSimUseCLI/RunCommand.swift
+  - Sources/JevSimUseCLI/ConnectionOptions.swift
+  - Sources/JevSimUseCLI/ExecCommand.swift
+  - Sources/JevSimUseCLI/ExitStatus.swift
+  - Sources/JevSimUseKit/Agent/AgentOutcome.swift
+  doc: skills/jev-sim-use/SKILL.md
+  message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
+    then run `mise run generate-skill`.
+  checksum: 22fccf9bf2eb655e415d5c58e33307e5ae0d42b6f72143200e0199bf68e659a1
