@@ -5,42 +5,48 @@ import Testing
 struct JevSettingsTests {
     private let key = [JevSettings.apiKeyVariable: "sk-test"]
 
+    private func resolve(
+        flag: String? = nil,
+        environment: [String: String] = [:],
+        config: UserConfig = UserConfig(),
+    ) throws -> JevSettings {
+        try JevSettings.resolve(
+            baseURLFlag: flag, modelFlag: nil, config: config, environment: key.merging(environment) { $1 },
+        )
+    }
+
     @Test("requires the API key from the environment")
     func missingKey() {
         #expect(throws: JevSettingsError.missingAPIKey) {
-            try JevSettings.resolve(endpointFlag: nil, modelFlag: nil, environment: [JevSettings.apiKeyVariable: "  "])
+            try JevSettings.resolve(baseURLFlag: nil, modelFlag: nil, config: UserConfig(), environment: [:])
         }
     }
 
-    @Test("defaults to the TypeSafe endpoint and jev-latest")
+    @Test("appends the evaluation path to the default base URL")
     func defaults() throws {
-        let settings = try JevSettings.resolve(endpointFlag: nil, modelFlag: nil, environment: key)
+        let settings = try resolve()
         #expect(settings.endpoint.absoluteString == "https://api.typesafe.ai/v1/systemone")
         #expect(settings.model == "jev-latest")
     }
 
-    @Test("prefers the flag over the environment")
+    @Test("prefers flag, then environment, then config")
     func precedence() throws {
-        let environment = key.merging([
-            JevSettings.endpointVariable: "https://proxy.example/v1/systemone",
-            JevSettings.modelVariable: "jev-env",
-        ]) { $1 }
-        let fromEnvironment = try JevSettings.resolve(endpointFlag: nil, modelFlag: nil, environment: environment)
-        let fromFlag = try JevSettings.resolve(endpointFlag: "https://flag.example/jev", modelFlag: "jev-flag", environment: environment)
-        #expect(fromEnvironment.endpoint.host() == "proxy.example")
-        #expect(fromEnvironment.model == "jev-env")
-        #expect(fromFlag.endpoint.host() == "flag.example")
-        #expect(fromFlag.model == "jev-flag")
+        let environment = [JevSettings.baseURLVariable: "https://env.example"]
+        let config = UserConfig(baseURL: "https://config.example", model: "jev-config")
+        #expect(try resolve(config: config).baseURL.host() == "config.example")
+        #expect(try resolve(config: config).model == "jev-config")
+        #expect(try resolve(environment: environment, config: config).baseURL.host() == "env.example")
+        #expect(try resolve(flag: "https://flag.example", environment: environment, config: config).baseURL.host() == "flag.example")
     }
 
     @Test("allows plain HTTP only on loopback")
     func transportSecurity() throws {
-        _ = try JevSettings.resolve(endpointFlag: "http://localhost:8080/v1/systemone", modelFlag: nil, environment: key)
-        #expect(throws: JevSettingsError.insecureEndpoint("http://api.example/v1")) {
-            try JevSettings.resolve(endpointFlag: "http://api.example/v1", modelFlag: nil, environment: key)
+        #expect(try resolve(flag: "http://127.0.0.1:8787").endpoint.absoluteString == "http://127.0.0.1:8787/v1/systemone")
+        #expect(throws: JevSettingsError.insecureBaseURL("http://api.example")) {
+            try JevSettings.validateBaseURL("http://api.example")
         }
-        #expect(throws: JevSettingsError.invalidEndpoint("not a url")) {
-            try JevSettings.resolve(endpointFlag: "not a url", modelFlag: nil, environment: key)
+        #expect(throws: JevSettingsError.invalidBaseURL("not a url")) {
+            try JevSettings.validateBaseURL("not a url")
         }
     }
 }
