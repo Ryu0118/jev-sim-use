@@ -82,8 +82,12 @@ struct PlanningStateNotesTests {
 
     @Test("both questions tell Jev to use the notes")
     func questionsMentionNotes() throws {
-        let body = try String(decoding: JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies])), as: UTF8.self)
-        #expect(body.components(separatedBy: "`notes`").count == 3)
+        let data = try JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies]))
+        let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
+        for name in [JevStepPlanner.goalQuestion, JevStepPlanner.actionQuestion] {
+            let instructions = try #require(questions[name]?["instructions"] as? String)
+            #expect(instructions.contains("`notes`"), "\(name) does not mention notes")
+        }
     }
 }
 
