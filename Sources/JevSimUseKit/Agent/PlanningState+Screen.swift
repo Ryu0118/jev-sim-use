@@ -2,10 +2,17 @@ extension PlanningState {
     /// The current screen as Jev sees it.
     struct Screen: Encodable, Sendable {
         let app: String?
+        /// The navigation title, as jev-use sends the window title: it says which screen this is.
+        let title: String?
+        /// The back button's label (the previous screen), present only when there is somewhere to go back to.
+        let back: String?
         let elements: [Element]
 
         init(_ snapshot: UISnapshot) {
             app = snapshot.appLabel
+            let entries = snapshot.entries ?? []
+            title = entries.first { $0.role == "Heading" && $0.region?.kind == "Top" && !$0.label.isEmpty }?.label
+            back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
             elements = (snapshot.entries ?? []).map { Element($0, coveredBy: snapshot.cover(of: $0)) }
         }
     }

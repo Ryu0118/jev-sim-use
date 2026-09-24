@@ -101,3 +101,17 @@ struct JevStepPlannerTextTests {
         #expect(!body.contains("hunter2"))
     }
 }
+
+@Suite("The state names the current screen and where back leads, so Jev can tell a sub-screen from the top")
+struct PlanningStateNavigationTests {
+    @Test("sends the navigation title and the back button's label")
+    func titleAndBack() throws {
+        let title = Fixtures.entry(7, "一般", role: "Heading", band: "Top")
+        let back = UIEntry(
+            aliases: ElementAliases(alias: 6), role: "Button", label: "設定", states: [], value: nil,
+            uniqueId: "BackButton", region: nil, frame: nil,
+        )
+        let json = try String(decoding: JSONEncoder().encode(PlanningState.Screen(Fixtures.snapshot(entries: [back, title]))), as: UTF8.self)
+        #expect(json.contains(#""title":"一般""#) && json.contains(#""back":"設定""#))
+    }
+}
