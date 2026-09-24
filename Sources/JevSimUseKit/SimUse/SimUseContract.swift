@@ -35,6 +35,9 @@ package enum SimUseContract {
         static let x = "-x"
         static let y = "-y"
         static let duration = "--duration"
+        /// Selectors that find the element in a fresh accessibility read, for when the cached alias is stale.
+        static let id = "--id"
+        static let label = "--label"
         /// sim-use's help: UISwitch (`CheckBox`) ignores zero-duration taps; hold for 0.05 s.
         static let switchHoldSeconds = "0.05"
     }

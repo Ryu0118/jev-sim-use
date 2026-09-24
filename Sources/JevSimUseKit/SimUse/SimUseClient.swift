@@ -24,6 +24,9 @@ package struct SimUseClient: DeviceDriving {
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
     /// on the switch itself, at the row's trailing edge, with a short hold.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
+        if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
+            return try await revealThenTap(entry, under: cover, platform: snapshot.platform)
+        }
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle, let frame = entry.frame
         else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
@@ -53,6 +56,23 @@ package struct SimUseClient: DeviceDriving {
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
     package func paste(_ text: String) async throws -> [String] {
         try await run([SimUseContract.Command.paste], operands: [text])
+    }
+
+    /// Scrolls a covered element out from under its overlay, then taps it by a fresh selector: the scroll made the
+    /// cached alias stale. Falls back to the alias when the element has neither an identifier nor a label.
+    private func revealThenTap(_ entry: UIEntry, under cover: UIEntry, platform: String) async throws -> [String] {
+        // An overlay over the lower part (a bottom search bar) needs the row moved up, which reveals content below.
+        let overlayIsLower = (cover.frame?.center.y ?? 0) >= (entry.frame?.center.y ?? 0)
+        var disappeared = try await perform(overlayIsLower ? .revealContentBelow : .revealContentAbove, platform: platform)
+        let selector: [String]? = if let id = entry.uniqueId {
+            [SimUseContract.Tap.id, id]
+        } else if !entry.label.isEmpty {
+            [SimUseContract.Tap.label, entry.label]
+        } else {
+            nil
+        }
+        disappeared += try await run([SimUseContract.Command.tap] + (selector ?? ["@\(entry.aliases.alias)"]))
+        return disappeared
     }
 
     private var deviceArguments: [String] {

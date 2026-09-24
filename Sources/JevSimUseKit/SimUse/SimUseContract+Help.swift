@@ -3,7 +3,7 @@ package extension SimUseContract {
     static let helpExpectations: [(command: String, mentions: [String])] = [
         (Command.ui, [noRawFlag, jsonFlag, deviceFlag]),
         (Command.devices, [jsonFlag]),
-        (Command.tap, [deviceFlag, jsonFlag, Tap.x, Tap.y, Tap.duration, "UISwitch"]),
+        (Command.tap, [deviceFlag, jsonFlag, Tap.x, Tap.y, Tap.duration, Tap.id, Tap.label, "UISwitch"]),
         (Command.gesture, [
             Gesture.scrollUp, Gesture.scrollDown, Gesture.scrollLeft, Gesture.scrollRight,
             Gesture.swipeFromLeftEdge, Gesture.swipeFromRightEdge,
