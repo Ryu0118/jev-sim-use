@@ -64,11 +64,23 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 
 - Use the TypeSafe skill (`typesafe@typesafe-ai`, enabled in `.claude/settings.json`) when designing or
   changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
-- Choice options are built at runtime, so typed `ChoiceQuestion` / `RoutingPolicy.decide` for choices do not
-  apply. Read `answers[name]`, validate the chosen name against the offered options, and threshold with the
-  policy's public fields.
-- State plus the longest question must fit in 32k tokens; `ActionCatalog` caps tap targets. A 422 is
-  surfaced as `PlanningError.rejected`.
+- One request per step with two questions: noul `goal_reached` and choice `next_action`. Do not add a second
+  round trip or questions whose answers no code uses; speed is the point.
+- State (`PlanningState`) is named JSON: `goal`, `platform`, `screen.elements` (id `eN`, role, label, value, states,
+  region), and `history` (`step`, `action`, `screen_changed`). Questions refer to it by backticked paths.
+- Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
+  only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
+  Jev's 255-option limit, and always `none_of_these`, which hands over (`AgentOutcome.noActionFits`).
+- Actions that left the current screen unchanged are dropped in code (`AgentProgress.ineffectiveActions`), not left
+  to Jev to remember.
+- Choice options are built at runtime, so typed `ChoiceQuestion` reads do not apply: read `answers[name]` and validate
+  the chosen name against the offered options.
+- Thresholds are split: `goalPolicy` (default `RoutingPolicy`, success only on `.auto`) and `ActionPolicy`
+  (`--min-confidence` for reversible actions; pasting needs at least 0.85). `StepPlan.support` adds up probability
+  split across options that do the same thing.
+- The default model is pinned to `jev-1.13.0`; re-run real-device goals before moving it. Accuracy is lower for CJK
+  text, so re-check thresholds on Japanese UIs.
+- State plus the longest question must fit in 32k tokens. A 422 is surfaced as `PlanningError.rejected`.
 - Never call the real API from `swift test`; use `StubTransport`.
 
 ## Coding rules
