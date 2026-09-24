@@ -33,7 +33,7 @@ extension ElementGesture {
     func risk(on role: String) -> ActionRisk {
         switch self {
         // A long horizontal swipe on a list row can delete it; on a slider, image, or carousel it only moves.
-        case .swipeLeft, .swipeRight: ["Cell", "Row"].contains { role.contains($0) } ? .irreversible : .reversible
+        case .swipeLeft, .swipeRight: ActionCatalog.rowRoles.contains { role.contains($0) } ? .irreversible : .reversible
         case .longPress, .swipeUp, .swipeDown, .pinchOut, .pinchIn, .rotateClockwise, .rotateCounterclockwise: .reversible
         }
     }

@@ -2,20 +2,15 @@
 /// is what gets pinched or swiped.
 package struct GestureTarget: Sendable, Hashable {
     /// The element's alias.
-    package var alias: Int
+    package let alias: Int
     /// Its accessibility role.
-    package var role: String
+    package let role: String
     /// Its label, shortened; may be empty.
-    package var label: String
+    package let label: String
 
     package init(alias: Int, role: String, label: String) {
         self.alias = alias
         self.role = role
         self.label = label
-    }
-
-    /// The gesture as an action on this element.
-    func action(_ gesture: ElementGesture) -> AgentAction {
-        .gesture(gesture, alias: alias, role: role, label: label)
     }
 }

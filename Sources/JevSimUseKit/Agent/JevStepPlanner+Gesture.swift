@@ -40,6 +40,7 @@ extension JevStepPlanner {
         guard let target = targets.first(where: { PlanningState.elementID($0.alias) == targetChoice.value }) else {
             throw PlanningError.unknownChoice(targetChoice.value)
         }
-        return (target.action(gesture), min(gateSupport, gestureChoice.confidence, targetChoice.confidence))
+        let action = AgentAction.gesture(gesture, alias: target.alias, role: target.role, label: target.label)
+        return (action, min(gateSupport, gestureChoice.confidence, targetChoice.confidence))
     }
 }

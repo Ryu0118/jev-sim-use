@@ -8,6 +8,11 @@ enum ActionCatalog {
     /// Roles that describe content rather than something to press. An option Jev cannot sensibly pick only
     /// dilutes the distribution (a heading tap looked like progress but changed nothing).
     static let nonInteractiveRoles: Set = ["StaticText", "Heading", "GenericElement", "Group", "Image"]
+    /// Roles that only hold text: no gesture does anything to them, so they are not gesture targets either. Unlike
+    /// taps, `Group` and `Image` stay, because a map or a photo is what gets pinched or swiped.
+    static let textRoles: Set = ["StaticText", "Heading", "GenericElement"]
+    /// Roles of list rows, where a long sideways swipe can delete the row.
+    static let rowRoles: Set = ["Cell", "Row"]
 
     /// Options for `snapshot`, minus `excluded` option names that already failed to change this screen.
     ///
@@ -29,10 +34,10 @@ enum ActionCatalog {
         return Array(taps) + Array(fixed) + [.noneApplies]
     }
 
-    /// Elements Jev may aim a gesture at: every enabled element with a frame, up to the tap limit.
+    /// Elements Jev may aim a gesture at: enabled elements with a frame that are not plain text, up to the tap limit.
     static func gestureTargets(for snapshot: UISnapshot) -> [GestureTarget] {
         (snapshot.entries ?? [])
-            .filter { !$0.isDisabled && $0.frame != nil }
+            .filter { !$0.isDisabled && $0.frame != nil && !textRoles.contains($0.role) }
             .prefix(maximumTapTargets)
             .map { GestureTarget(alias: $0.aliases.alias, role: $0.role, label: String($0.label.prefix(maximumLabelLength))) }
     }

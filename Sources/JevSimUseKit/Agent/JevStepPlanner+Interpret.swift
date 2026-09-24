@@ -12,7 +12,7 @@ extension JevStepPlanner {
         guard case let .choice(choice) = response.answers[actionQuestion] else {
             throw PlanningError.missingChoice
         }
-        let (action, support) = if choice.value == gestureOption, !gestureTargets.isEmpty {
+        let (action, support) = if choice.value == gestureOption {
             try composeGesture(response, gateSupport: choice.confidence, targets: gestureTargets)
         } else {
             try offered(choice, among: actions)

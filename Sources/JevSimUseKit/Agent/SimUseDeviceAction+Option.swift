@@ -8,8 +8,7 @@ extension SimUseDeviceAction {
         case .revealContentLeft: "scroll_to_reveal_left"
         case .goBack: "go_back"
         case .swipeFromRightEdge: "swipe_in_from_right_edge"
-        case .press(.sideButton): "press_side_button"
-        case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))_button"
+        case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))"
         }
     }
 

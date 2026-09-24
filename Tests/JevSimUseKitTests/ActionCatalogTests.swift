@@ -14,8 +14,7 @@ struct ActionCatalogTests {
         let names = ActionCatalog.actions(for: snapshot, texts: ["hello"]).map(\.optionName)
         #expect(names == [
             "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right",
-            "scroll_to_reveal_left", "go_back", "swipe_in_from_right_edge", "press_home_button", "press_lock_button", "press_apple_pay_button",
-            "press_side_button", "press_siri_button", "none_of_these",
+            "scroll_to_reveal_left", "go_back", "swipe_in_from_right_edge", "press_home", "press_lock", "press_apple_pay", "press_side_button", "press_siri", "none_of_these",
         ])
     }
 
@@ -42,5 +41,17 @@ struct ActionCatalogTests {
         )
         let actions = ActionCatalog.actions(for: Fixtures.snapshot(entries: [field]), texts: [])
         #expect(actions.first == .tap(alias: 7, role: "TextField", label: "empty input field"))
+    }
+
+    @Test("aims gestures at controls, images, and groups, not at plain text")
+    func gestureTargets() {
+        let frame = ElementFrame(x: 0, y: 0, width: 10, height: 10)
+        let snapshot = Fixtures.snapshot(entries: [
+            Fixtures.entry(1, "Photos", frame: frame),
+            Fixtures.entry(2, "Map", role: "Image", frame: frame),
+            Fixtures.entry(3, "Title", role: "StaticText", frame: frame),
+            Fixtures.entry(4, "No frame"),
+        ])
+        #expect(ActionCatalog.gestureTargets(for: snapshot).map(\.alias) == [1, 2])
     }
 }
