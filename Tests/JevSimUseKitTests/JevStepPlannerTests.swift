@@ -92,3 +92,41 @@ struct PlanningStateNotesTests {
         #expect(body.components(separatedBy: "`notes`").count == 3)
     }
 }
+
+@Suite("Gestures other than taps are chosen through two speculative questions in the same request")
+struct JevStepPlannerGestureTests {
+    private let targets = [GestureTarget(alias: 3, role: "Image", label: "Map")]
+
+    private func request() -> PlanRequest {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(3, "Map", role: "Image")])
+        return PlanRequest(goal: "Zoom in on the map", snapshot: snapshot, actions: [.noneApplies], history: [], gestureTargets: targets)
+    }
+
+    private func planner(_ transport: StubTransport) -> JevStepPlanner {
+        JevStepPlanner(client: JevClient(
+            apiKey: "k", endpoint: URL(string: "http://localhost/jev")!, transport: transport, retryPolicy: .none,
+        ))
+    }
+
+    @Test("composes the gate, the gesture, and the element into one action, with the weakest confidence as support")
+    func composes() async throws {
+        let transport = StubTransport(body: """
+        {"model":"jev","answers":{"goal_reached":{"type":"noul","noul":0.1},\
+        "next_action":{"type":"choice","choice":"gesture_on_element","probabilities":{"gesture_on_element":0.9},"confidence":0.9},\
+        "element_gesture":{"type":"choice","choice":"pinch_out","probabilities":{"pinch_out":0.8},"confidence":0.8},\
+        "gesture_target":{"type":"choice","choice":"e3","probabilities":{"e3":0.95},"confidence":0.95}},\
+        "usage":{"input_tokens":1000,"output_tokens":10}}
+        """)
+        let plan = try await planner(transport).plan(request())
+        #expect(plan.action == .gesture(.pinchOut, alias: 3, role: "Image", label: "Map"))
+        #expect(plan.support == 0.8)
+        let body = try #require(transport.lastRequestBody)
+        #expect(body.contains("element_gesture") && body.contains("gesture_target") && body.contains("gesture_on_element"))
+    }
+
+    @Test("asks no gesture questions when the screen has no targets")
+    func noTargets() throws {
+        let body = try String(decoding: JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies])), as: UTF8.self)
+        #expect(!body.contains("gesture"))
+    }
+}

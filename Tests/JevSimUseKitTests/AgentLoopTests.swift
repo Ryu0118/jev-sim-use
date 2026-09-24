@@ -85,3 +85,20 @@ struct AgentLoopResumeTests {
         #expect(result.history.map(\.step) == [1, 2, 3])
     }
 }
+
+@Suite("A gesture that did nothing on a screen is not repeated there")
+struct AgentLoopGestureTests {
+    @Test("explores instead of long-pressing the same element on the same screen again")
+    func repeatedGesture() async throws {
+        let longPress = StepPlan(
+            goalReached: .init(clamping: 0.05), action: .gesture(.longPress, alias: 1, role: "Button", label: "Next"),
+            confidence: 0.9, costUSD: 0,
+        )
+        let driver = FakeDriver(outlines: ["A"])
+        _ = try await AgentLoop(
+            driver: driver, planner: FakePlanner([longPress]), configuration: AgentConfiguration(goal: "g", maxSteps: 3),
+        ).run()
+        #expect(driver.performedActions.first == "long_press @1")
+        #expect(driver.performedActions.dropFirst().allSatisfy { !$0.hasPrefix("long_press") })
+    }
+}

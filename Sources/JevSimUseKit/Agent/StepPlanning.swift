@@ -18,6 +18,8 @@ package struct PlanRequest: Sendable, Hashable {
     package var history: [HistoryEntry]
     /// Facts about the app from a supervisor, oldest first.
     package var notes: [String] = []
+    /// Elements a gesture other than a tap may target; empty means no gesture questions are asked.
+    package var gestureTargets: [GestureTarget] = []
 }
 
 /// A planner's judgement for one step.

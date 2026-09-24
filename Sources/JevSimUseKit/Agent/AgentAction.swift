@@ -3,6 +3,8 @@
 package enum AgentAction: Sendable, Hashable {
     /// Tap the element with alias `@alias`.
     case tap(alias: Int, role: String, label: String)
+    /// A gesture other than a plain tap on the element with alias `@alias`.
+    case gesture(ElementGesture, alias: Int, role: String, label: String)
     /// A gesture or button press that does not target an element.
     case device(SimUseDeviceAction)
     /// Paste one of the texts the user supplied; Jev only chooses, it never writes text.
@@ -14,6 +16,9 @@ package enum AgentAction: Sendable, Hashable {
     var optionName: String {
         switch self {
         case let .tap(alias, _, _): PlanningState.elementID(alias)
+        // Never offered as a `next_action` option: Jev picks the gesture and the element in separate questions.
+        // The composed name keys loop detection, so one failed long-press does not rule out other gestures.
+        case let .gesture(gesture, alias, _, _): "\(gesture.rawValue)_\(PlanningState.elementID(alias))"
         case let .device(action): action.optionName
         case let .paste(index, _): "paste_text_\(index)"
         case .noneApplies: "none_of_these"
@@ -34,6 +39,7 @@ package enum AgentAction: Sendable, Hashable {
     var optionDescription: String {
         switch self {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""
+        case let .gesture(gesture, _, role, label): "\(gesture.verb) the \(role) labelled \"\(label)\""
         case let .device(action): action.optionDescription
         case let .paste(_, text): "Paste the text \"\(text)\" into the focused input field"
         case .noneApplies: "Nothing helps, not even scrolling or going back to look elsewhere"
@@ -46,6 +52,7 @@ extension AgentAction {
     var risk: ActionRisk {
         switch self {
         case .tap: .reversible
+        case let .gesture(gesture, _, _, _): gesture.risk
         case let .device(action): action.risk
         case .paste: .irreversible
         case .noneApplies: .harmless

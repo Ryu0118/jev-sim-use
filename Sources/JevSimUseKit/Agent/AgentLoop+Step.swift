@@ -8,6 +8,7 @@ extension AgentLoop {
             ),
             history: progress.history,
             notes: configuration.notes,
+            gestureTargets: ActionCatalog.gestureTargets(for: snapshot),
         )
         let plan = try await planner.plan(request)
         report(.planned(step: progress.nextStep, plan: plan))
@@ -25,7 +26,8 @@ extension AgentLoop {
             return .stop(.stepLimitReached(steps: progress.steps))
         }
         let step = progress.nextStep
-        if plan.action == .noneApplies {
+        // A gesture is composed from answers, not picked from filtered options, so a repeat is caught here.
+        if plan.action == .noneApplies || progress.ineffectiveActions.contains(plan.action.optionName) {
             guard let action = Exploration.next(excluding: progress.ineffectiveActions) else {
                 return .stop(.noActionFits(step: step))
             }
@@ -44,6 +46,7 @@ extension AgentLoop {
     func execute(_ action: AgentAction, on snapshot: UISnapshot) async throws -> [String] {
         switch action {
         case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
+        case let .gesture(gesture, alias, _, _): try await driver.perform(gesture, alias: alias, on: snapshot)
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
         case let .paste(_, text): try await driver.paste(text)
         case .noneApplies: []

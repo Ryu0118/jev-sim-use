@@ -16,7 +16,7 @@ enum ActionCatalog {
         let fixed = (texts.enumerated().map { AgentAction.paste(index: $0.offset, text: $0.element) }
             + SimUseDeviceAction.available(on: snapshot.platform).map(AgentAction.device))
             .filter { !excluded.contains($0.optionName) }
-            .prefix(maximumOptions - 1)
+            .prefix(maximumOptions - 2)
         let taps = (snapshot.entries ?? [])
             .filter { !$0.isDisabled && !nonInteractiveRoles.contains($0.role) && !rubricLabel(for: $0).isEmpty }
             .map { entry in
@@ -24,8 +24,17 @@ enum ActionCatalog {
                 return AgentAction.tap(alias: entry.aliases.alias, role: entry.role, label: label)
             }
             .filter { !excluded.contains($0.optionName) }
-            .prefix(min(maximumTapTargets, maximumOptions - 1 - fixed.count))
+            // One option each for `none_of_these` and the gesture gate `JevStepPlanner` adds.
+            .prefix(min(maximumTapTargets, maximumOptions - 2 - fixed.count))
         return Array(taps) + Array(fixed) + [.noneApplies]
+    }
+
+    /// Elements Jev may aim a gesture at: every enabled element with a frame, up to the tap limit.
+    static func gestureTargets(for snapshot: UISnapshot) -> [GestureTarget] {
+        (snapshot.entries ?? [])
+            .filter { !$0.isDisabled && $0.frame != nil }
+            .prefix(maximumTapTargets)
+            .map { GestureTarget(alias: $0.aliases.alias, role: $0.role, label: String($0.label.prefix(maximumLabelLength))) }
     }
 
     /// Unlabelled elements are skipped, except input fields: tapping one focuses it for `--text`.
