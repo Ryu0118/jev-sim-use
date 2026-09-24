@@ -30,11 +30,13 @@ package struct AgentLoop: Sendable {
                 return outcome
             }
             let plan = try await plan(for: observation.snapshot, progress: progress)
-            if let outcome = verdict(on: plan, progress: progress) {
+            switch decide(on: plan, progress: progress) {
+            case let .stop(outcome):
                 return outcome
+            case let .act(action):
+                let disappeared = try await execute(action, platform: observation.snapshot.platform)
+                progress.recordAction(action, disappeared: disappeared)
             }
-            let disappeared = try await execute(plan.action, platform: observation.snapshot.platform)
-            progress.recordAction(plan.action, disappeared: disappeared)
         }
     }
 }

@@ -17,15 +17,26 @@ struct AgentProgressTests {
         #expect(progress.history.map(\.step) == [1, 2])
     }
 
-    @Test("excludes an action that did nothing until the screen changes")
-    func ineffectiveActions() {
+    @Test("never offers the same action twice on the same screen, even when screens alternate")
+    func alternatingScreens() {
         var progress = AgentProgress()
-        _ = progress.record(screenA, stallLimit: 3)
-        progress.recordAction(.device(.goBack), disappeared: [])
-        _ = progress.record(screenA, stallLimit: 3)
-        #expect(progress.ineffectiveActions == ["go_back"])
+        _ = progress.record(screenA, stallLimit: 5)
         progress.recordAction(.device(.revealContentBelow), disappeared: [])
-        _ = progress.record(screenB, stallLimit: 3)
-        #expect(progress.ineffectiveActions.isEmpty)
+        _ = progress.record(screenB, stallLimit: 5)
+        progress.recordAction(.device(.revealContentBelow), disappeared: [])
+        _ = progress.record(screenA, stallLimit: 5)
+        #expect(progress.ineffectiveActions == ["scroll_to_reveal_below"])
+    }
+
+    @Test("stops when actions keep landing on screens already seen")
+    func stallsOnRevisits() {
+        var progress = AgentProgress()
+        var outcome: AgentOutcome?
+        _ = progress.record(screenA, stallLimit: 3)
+        for screen in [screenB, screenA, screenB, screenA] where outcome == nil {
+            progress.recordAction(.device(.revealContentBelow), disappeared: [])
+            outcome = progress.record(screen, stallLimit: 3)
+        }
+        #expect(outcome == .stalled(steps: 4))
     }
 }

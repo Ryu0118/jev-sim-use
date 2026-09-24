@@ -53,12 +53,12 @@ struct AgentLoopTests {
         #expect(outcome == .goalReached(steps: 1))
     }
 
-    @Test("hands over when Jev says no offered action fits")
+    @Test("explores down, then back, before handing over when nothing fits")
     func noActionFits() async throws {
         let plan = StepPlan(goalReached: Probability(clamping: 0.05), action: .noneApplies, confidence: 0.9, costUSD: 0)
         let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [plan]) == .noActionFits(step: 1))
-        #expect(driver.performedActions.isEmpty)
+        #expect(try await run(driver, [plan]) == .noActionFits(step: 3))
+        #expect(driver.performedActions == ["revealContentBelow", "goBack"])
     }
 
     @Test("will not paste on support that would be enough for a tap")
