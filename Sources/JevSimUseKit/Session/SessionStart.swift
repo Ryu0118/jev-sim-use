@@ -4,13 +4,4 @@ package enum SessionStart: Sendable, Equatable {
     case new(goal: String, texts: [String])
     /// An existing session; `nil` means the most recently updated one.
     case resume(id: String?)
-
-    /// Whether this continues an existing session.
-    package var isResume: Bool {
-        if case .resume = self {
-            true
-        } else {
-            false
-        }
-    }
 }

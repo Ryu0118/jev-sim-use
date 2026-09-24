@@ -16,17 +16,14 @@ package struct SessionRecord: Codable, Sendable, Hashable {
     package var history: [HistoryEntry] = []
     /// How each run ended, oldest first.
     package var runs: [SessionRun] = []
-    /// When the session was created.
-    package let createdAt: Date
-    /// When the session last changed; `latest` means the largest value.
+    /// When the session last changed: the most recent session has the largest value, and expiry counts from it.
     package var updatedAt: Date
 
-    package init(id: String, goal: String, texts: [String], deviceID: String? = nil, createdAt: Date) {
+    package init(id: String, goal: String, texts: [String], deviceID: String? = nil, updatedAt: Date) {
         self.id = id
         self.goal = goal
         self.texts = texts
         self.deviceID = deviceID
-        self.createdAt = createdAt
-        updatedAt = createdAt
+        self.updatedAt = updatedAt
     }
 }

@@ -12,7 +12,9 @@ extension SessionRecord {
         var lines = ["Session: \(id) (\(status))", "Goal: \(goal)", "Device: \(deviceID ?? "not connected yet")"]
         lines += texts.isEmpty ? [] : ["Texts: \(texts.joined(separator: ", "))"]
         lines += ["Notes:"] + (notes.isEmpty ? ["  (none)"] : notes.map { "  - \($0)" })
-        lines += ["Runs:"] + runs.enumerated().map { "  \($0.offset + 1). \($0.element.outcome)" }
+        lines += ["Runs:"] + runs.enumerated().map { index, run in
+            "  \(index + 1). \(run.endedAt.formatted(.iso8601)), \(run.steps) action(s): \(run.outcome)"
+        }
         lines += ["Actions:"] + history.map { entry in
             let effect = switch entry.screenChanged {
             case true: ""

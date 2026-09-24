@@ -9,7 +9,7 @@ struct SessionStoreTests {
 
     @Test("round-trips a session with notes, history, and runs")
     func roundTrip() throws {
-        var session = SessionRecord(id: "a1", goal: "g", texts: ["t"], deviceID: "D", createdAt: Date(timeIntervalSince1970: 0))
+        var session = SessionRecord(id: "a1", goal: "g", texts: ["t"], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
         session.notes = ["Dark mode is under Developer."]
         session.history = [HistoryEntry(step: 1, action: "Tap e3", screenChanged: true)]
         session.runs = [SessionRun(endedAt: Date(timeIntervalSince1970: 5), steps: 1, outcome: "Stopped.")]
@@ -20,8 +20,8 @@ struct SessionStoreTests {
 
     @Test("a missing id loads the most recently updated session")
     func latest() throws {
-        var older = SessionRecord(id: "old", goal: "g", texts: [], deviceID: "D", createdAt: Date(timeIntervalSince1970: 0))
-        let newer = SessionRecord(id: "new", goal: "g", texts: [], deviceID: "D", createdAt: Date(timeIntervalSince1970: 10))
+        var older = SessionRecord(id: "old", goal: "g", texts: [], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
+        let newer = SessionRecord(id: "new", goal: "g", texts: [], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 10))
         try store.save(newer)
         older.updatedAt = Date(timeIntervalSince1970: 20)
         try store.save(older)
@@ -38,8 +38,8 @@ struct SessionStoreTests {
     @Test("removes sessions untouched for longer than a week, keeps newer ones")
     func expiry() throws {
         let now = Date(timeIntervalSince1970: 30 * 24 * 60 * 60)
-        try store.save(SessionRecord(id: "stale", goal: "g", texts: [], createdAt: now - SessionStore.timeToLive - 1))
-        try store.save(SessionRecord(id: "fresh", goal: "g", texts: [], createdAt: now - SessionStore.timeToLive + 60))
+        try store.save(SessionRecord(id: "stale", goal: "g", texts: [], updatedAt: now - SessionStore.timeToLive - 1))
+        try store.save(SessionRecord(id: "fresh", goal: "g", texts: [], updatedAt: now - SessionStore.timeToLive + 60))
         try store.removeExpired(now: now)
         #expect(try store.list().map(\.id) == ["fresh"])
     }

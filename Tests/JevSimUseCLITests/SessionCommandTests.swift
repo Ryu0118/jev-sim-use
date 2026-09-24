@@ -7,7 +7,7 @@ struct SessionCommandTests {
     @Test("tell adds a note that show prints for the most recent session")
     func tellThenShow() async throws {
         let environment = try FakeSimUse().environment()
-        try SessionStore(environment: environment).save(SessionRecord(id: "s1", goal: "Turn on dark mode", texts: [], createdAt: Date()))
+        try SessionStore(environment: environment).save(SessionRecord(id: "s1", goal: "Turn on dark mode", texts: [], updatedAt: Date()))
         let recording = RecordingOutput()
         let context = CLIContext(output: recording.output, environment: environment)
         try await SessionCommand.Tell.parse(["-n", "The switch is under Developer."]).run(context: context)

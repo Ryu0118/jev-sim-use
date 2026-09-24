@@ -56,7 +56,7 @@ struct RunGoalRunnerTests {
     @Test("resuming continues the latest session, which is deleted once the goal is reached")
     func resumes() async throws {
         let store = SessionStore(environment: environment)
-        var session = SessionRecord(id: "old", goal: "Turn on dark mode", texts: [], createdAt: Date())
+        var session = SessionRecord(id: "old", goal: "Turn on dark mode", texts: [], updatedAt: Date())
         session.notes = ["The toggle is under Developer."]
         session.history = [HistoryEntry(step: 1, action: "Scroll down", screenChanged: true)]
         try store.save(session)

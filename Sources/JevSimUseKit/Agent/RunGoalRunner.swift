@@ -41,10 +41,11 @@ package struct RunGoalRunner: Sendable {
             baseURLFlag: request.baseURL, modelFlag: request.model, config: configStore.load(), environment: environment,
         )
         try sessionStore.removeExpired(now: now())
-        var session = switch request.session {
-        case let .new(goal, texts): SessionRecord(id: makeSessionID(), goal: goal, texts: texts, createdAt: now())
-        case let .resume(id): try sessionStore.load(id)
+        let (loaded, resumed) = switch request.session {
+        case let .new(goal, texts): (SessionRecord(id: makeSessionID(), goal: goal, texts: texts, updatedAt: now()), false)
+        case let .resume(id): try (sessionStore.load(id), true)
         }
+        var session = loaded
         let connection = try await bootstrap.connect(
             deviceID: SimUseBootstrap.deviceID(flag: request.deviceID ?? session.deviceID, environment: environment),
         )
@@ -53,7 +54,7 @@ package struct RunGoalRunner: Sendable {
 
         session.deviceID = connection.client.device.deviceId
         try sessionStore.save(session)
-        report(.session(id: session.id, resumed: request.session.isResume))
+        report(.session(id: session.id, resumed: resumed))
 
         let result = try await AgentLoop(
             driver: connection.client,
@@ -67,13 +68,14 @@ package struct RunGoalRunner: Sendable {
 
         if result.outcome.isSuccess {
             try sessionStore.delete(session.id)
-            return RunGoalOutcome(sessionID: session.id, outcome: result.outcome)
+        } else {
+            let ended = now()
+            let steps = result.history.count - session.history.count
+            session.runs.append(SessionRun(endedAt: ended, steps: steps, outcome: result.outcome.description))
+            session.history = result.history
+            session.updatedAt = ended
+            try sessionStore.save(session)
         }
-        let steps = result.history.count - session.history.count
-        session.history = result.history
-        session.runs.append(SessionRun(endedAt: now(), steps: steps, outcome: result.outcome.description))
-        session.updatedAt = now()
-        try sessionStore.save(session)
         return RunGoalOutcome(sessionID: session.id, outcome: result.outcome)
     }
 }
