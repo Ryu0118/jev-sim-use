@@ -16,11 +16,16 @@ struct DoctorCommand: ContextualCommand {
             return "\(version) at \(path.path(percentEncoded: false))"
         }
         let deviceReady = simUseReady ? await check("device", context) {
-            let device = try await bootstrap.connect(deviceID: connection.resolvedDevice(environment: context.environment)).device
+            let device = try await bootstrap.connect(
+                deviceID: SimUseBootstrap.deviceID(flag: connection.device, environment: context.environment),
+            ).client.device
             return "\(device.name) (\(device.deviceId))"
         } : false
         let jevReady = await check("jev", context) {
-            let settings = try connection.jevSettings(environment: context.environment)
+            let settings = try JevSettings.resolve(
+                baseURLFlag: connection.baseURL, modelFlag: connection.model,
+                config: UserConfigStore(environment: context.environment).load(), environment: context.environment,
+            )
             return "\(settings.model) at \(settings.endpoint), API key set"
         }
         guard simUseReady, deviceReady, jevReady else { throw ExitCode.failure }

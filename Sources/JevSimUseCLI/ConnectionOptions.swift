@@ -14,16 +14,4 @@ struct ConnectionOptions: ParsableArguments {
 
     @Option(help: "Jev model. Overrides $TYPESAFE_MODEL and `config set model`. Default: jev-latest.")
     var model: String?
-
-    /// `--device`, falling back to the variable sim-use itself honours.
-    func resolvedDevice(environment: [String: String]) -> String? {
-        device ?? environment["SIM_USE_DEVICE"].flatMap { $0.isEmpty ? nil : $0 }
-    }
-
-    func jevSettings(environment: [String: String]) throws -> JevSettings {
-        try JevSettings.resolve(
-            baseURLFlag: baseURL, modelFlag: model, config: UserConfigStore(environment: environment).load(),
-            environment: environment,
-        )
-    }
 }
