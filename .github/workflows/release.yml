@@ -106,10 +106,18 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Bump version file
+      - name: Bump version files
         run: |
           sed -i "s/package static let current = \".*\"/package static let current = \"$VERSION\"/" \
             Sources/JevSimUseKit/Version.swift
+          sed -i "s/^version: .*/version: $VERSION/" apm.yml
+          # Each of these files has exactly one "version" key.
+          for f in \
+            .claude-plugin/marketplace.json \
+            .claude/plugins/jev-sim-use/.claude-plugin/plugin.json \
+            plugins/jev-sim-use/.codex-plugin/plugin.json; do
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$f"
+          done
         env:
 
           VERSION: ${{ inputs.version }}
@@ -120,9 +128,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Sources/JevSimUseKit/Version.swift
+          git add Sources/JevSimUseKit/Version.swift apm.yml \
+            .claude-plugin/marketplace.json \
+            .claude/plugins/jev-sim-use/.claude-plugin/plugin.json \
+            plugins/jev-sim-use/.codex-plugin/plugin.json
           if git diff --cached --quiet; then
-            echo "Version file already at $VERSION, skipping commit"
+            echo "Version files already at $VERSION, skipping commit"
           else
             git commit -m "chore: bump version to $VERSION"
             git push origin main
