@@ -46,6 +46,9 @@ The final outcome goes to stdout, and the exit status is 0 only when the goal is
 | `--endpoint` | `$TYPESAFE_ENDPOINT`, then `https://api.typesafe.ai/v1/systemone` | The full evaluation URL. HTTPS, or HTTP on localhost only |
 | `--model` | `$TYPESAFE_MODEL`, then `jev-latest` | |
 
+Each step sends the screen outline (visible labels and values), your goal, the action history,
+and every `--text` value to the Jev endpoint. Do not run it on screens with data you may not share.
+
 A run also stops when three actions in a row leave the screen unchanged, when the app
 disappears, or when an Android crash dialog appears.
 
