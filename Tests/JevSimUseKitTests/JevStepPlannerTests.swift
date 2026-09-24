@@ -11,16 +11,10 @@ struct JevStepPlannerTests {
         history: [],
     )
 
-    private func planner(_ transport: StubTransport) -> JevStepPlanner {
-        let endpoint = URL(string: "http://localhost/jev")!
-        let client = JevClient(apiKey: "k", endpoint: endpoint, transport: transport, retryPolicy: .none)
-        return JevStepPlanner(client: client)
-    }
-
     @Test("maps the chosen option back to the offered action")
     func plan() async throws {
         let transport = StubTransport(body: StubTransport.answer(choice: "e4"))
-        let plan = try await planner(transport).plan(request)
+        let plan = try await transport.planner().plan(request)
         #expect(plan.action == .tap(alias: 4, role: "Button", label: "Wi-Fi"))
         #expect(plan.confidence == 0.9)
         #expect(plan.goalReached.value == 0.1)
@@ -35,13 +29,13 @@ struct JevStepPlannerTests {
     @Test("rejects a choice that was not offered")
     func unknownChoice() async {
         let transport = StubTransport(body: StubTransport.answer(choice: "e99"))
-        await #expect(throws: PlanningError.unknownChoice("e99")) { try await planner(transport).plan(request) }
+        await #expect(throws: PlanningError.unknownChoice("e99")) { try await transport.planner().plan(request) }
     }
 
     @Test("explains a 422 as a possibly oversized screen")
     func rejected() async {
         let transport = StubTransport(status: 422, body: "too long")
-        await #expect(throws: PlanningError.rejected(body: "too long")) { try await planner(transport).plan(request) }
+        await #expect(throws: PlanningError.rejected(body: "too long")) { try await transport.planner().plan(request) }
     }
 
     @Test("adds up probability split between options that do the same thing")
@@ -102,22 +96,13 @@ struct JevStepPlannerGestureTests {
         return PlanRequest(goal: "Zoom in on the map", snapshot: snapshot, actions: [.noneApplies], history: [], gestureTargets: targets)
     }
 
-    private func planner(_ transport: StubTransport) -> JevStepPlanner {
-        JevStepPlanner(client: JevClient(
-            apiKey: "k", endpoint: URL(string: "http://localhost/jev")!, transport: transport, retryPolicy: .none,
-        ))
-    }
-
     @Test("composes the gate, the gesture, and the element into one action, with the weakest confidence as support")
     func composes() async throws {
-        let transport = StubTransport(body: """
-        {"model":"jev","answers":{"goal_reached":{"type":"noul","noul":0.1},\
-        "next_action":{"type":"choice","choice":"gesture_on_element","probabilities":{"gesture_on_element":0.9},"confidence":0.9},\
-        "element_gesture":{"type":"choice","choice":"pinch_out","probabilities":{"pinch_out":0.8},"confidence":0.8},\
-        "gesture_target":{"type":"choice","choice":"e3","probabilities":{"e3":0.95},"confidence":0.95}},\
-        "usage":{"input_tokens":1000,"output_tokens":10}}
-        """)
-        let plan = try await planner(transport).plan(request())
+        let transport = StubTransport(body: StubTransport.answer(
+            choice: "gesture_on_element",
+            extra: [("element_gesture", "pinch_out", 0.8), ("gesture_target", "e3", 0.95)],
+        ))
+        let plan = try await transport.planner().plan(request())
         #expect(plan.action == .gesture(.pinchOut, alias: 3, role: "Image", label: "Map"))
         #expect(plan.support == 0.8)
         let body = try #require(transport.lastRequestBody)

@@ -1,5 +1,6 @@
 import Foundation
 import Jev
+@testable import JevSimUseKit
 import Synchronization
 
 /// Returns one canned HTTP response and keeps the request for inspection.
@@ -20,11 +21,23 @@ final class StubTransport: JevTransport {
         return response
     }
 
-    static func answer(choice: String, confidence: Double = 0.9, goal: Double = 0.1) -> String {
-        """
-        {"model":"jev-latest","answers":{"goal_reached":{"type":"noul","noul":\(goal)},\
-        "next_action":{"type":"choice","choice":"\(choice)","probabilities":{"\(choice)":\(confidence)},\
-        "confidence":\(confidence)}},"usage":{"input_tokens":1000,"output_tokens":10}}
-        """
+    /// A response choosing `choice` for `next_action`, plus any other choice questions in `extra` (name → answer).
+    static func answer(
+        choice: String,
+        confidence: Double = 0.9,
+        goal: Double = 0.1,
+        extra: [(question: String, choice: String, confidence: Double)] = [],
+    ) -> String {
+        let choices = ([("next_action", choice, confidence)] + extra).map { question, choice, confidence in
+            #""\#(question)":{"type":"choice","choice":"\#(choice)","probabilities":{"\#(choice)":\#(confidence)},"confidence":\#(confidence)}"#
+        }
+        return #"{"model":"jev-latest","answers":{"goal_reached":{"type":"noul","noul":\#(goal)},"#
+            + choices.joined(separator: ",") + #"},"usage":{"input_tokens":1000,"output_tokens":10}}"#
+    }
+
+    /// A planner that sends every request to this transport.
+    func planner() -> JevStepPlanner {
+        let client = JevClient(apiKey: "k", endpoint: URL(string: "http://localhost/jev")!, transport: self, retryPolicy: .none)
+        return JevStepPlanner(client: client)
     }
 }
