@@ -88,7 +88,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   target apart keeps a scroll or DONE from competing with every element for probability. Every question carries the
   same `JevStepPlanner.rules`, since target questions cannot see the operation answer. Do not add a second round trip.
 - Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.6) exits 0, below it stops as
-  `goalProbablyReached`; `finishes` >= 0.85 followed by a changed screen ends the run without another request (as in
+  `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
   jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in

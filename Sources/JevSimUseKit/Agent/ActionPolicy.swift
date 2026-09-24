@@ -13,7 +13,8 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Jev's DONE needs this much before the run claims success; below it the run stops as probably done.
     package static let doneMinimum = RoutingPolicy.default.escalateBelow
     /// A `finishes` answer at or above this, followed by a screen that changed, ends the run without another request.
-    package static let finishMinimum = RoutingPolicy.default.autoAtOrAbove
+    /// Set from real runs: actions that did finish scored 0.78-0.95, actions that did not at most 0.48.
+    package static let finishMinimum = 0.75
 
     /// Hand over below this support for reversible actions (taps, scrolls, going back).
     package var minimumSupport: Double
