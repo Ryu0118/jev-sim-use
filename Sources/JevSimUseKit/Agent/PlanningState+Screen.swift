@@ -11,7 +11,9 @@ extension PlanningState {
         init(_ snapshot: UISnapshot) {
             app = snapshot.appLabel
             let entries = snapshot.entries ?? []
-            title = entries.first { $0.role == "Heading" && $0.region?.kind == "Top" && !$0.label.isEmpty }?.label
+            // A collapsed title sits in the top bar; a large title is the first heading of the content.
+            let headings = entries.filter { $0.role == "Heading" && !$0.label.isEmpty }
+            title = (headings.first { $0.region?.kind == "Top" } ?? headings.first)?.label
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
             elements = (snapshot.entries ?? []).map { Element($0, coveredBy: snapshot.cover(of: $0)) }
         }
