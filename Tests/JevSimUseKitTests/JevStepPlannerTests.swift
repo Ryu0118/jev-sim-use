@@ -68,3 +68,27 @@ struct PlanningStateTests {
         #expect(PlanningState.Element.readableValue(entry) == expected)
     }
 }
+
+@Suite("Supervisor notes reach Jev, and long sessions are trimmed to fit the state limit")
+struct PlanningStateNotesTests {
+    @Test("sends notes and only the most recent history and notes")
+    func trimsSession() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Wi-Fi")])
+        let request = PlanRequest(
+            goal: "g", snapshot: snapshot, actions: [],
+            history: (1 ... 30).map { HistoryEntry(step: $0, action: "a") },
+            notes: (1 ... 12).map { "note \($0)" },
+        )
+        let state = PlanningState(request)
+        #expect(state.history.map(\.step) == Array(11 ... 30))
+        #expect(state.notes.first == "note 3")
+        let json = try String(decoding: JSONEncoder().encode(state), as: UTF8.self)
+        #expect(json.contains(#""notes":["note 3""#))
+    }
+
+    @Test("both questions tell Jev to use the notes")
+    func questionsMentionNotes() throws {
+        let body = try String(decoding: JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies])), as: UTF8.self)
+        #expect(body.components(separatedBy: "`notes`").count == 3)
+    }
+}

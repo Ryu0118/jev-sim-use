@@ -27,7 +27,10 @@ package struct JevStepPlanner: StepPlanning {
 
     static func questions(for actions: [AgentAction]) throws -> JevQuestionSet {
         let goal = try Question(
-            instructions: "Does `screen` show that `goal` has been fully achieved?",
+            instructions: """
+            Does `screen` show that `goal` has been fully achieved? `notes` lists facts a supervisor verified about \
+            this app; when one says what the finished state looks like, judge by it.
+            """,
             kind: .noul(
                 whenTrue: "`screen` shows the end state `goal` describes; no further action is needed.",
                 whenFalse: "`goal` needs at least one more action, or `screen` shows an unrelated state.",
@@ -36,7 +39,8 @@ package struct JevStepPlanner: StepPlanning {
         let next = try Question(
             instructions: """
             Which single option best advances `goal` from `screen`? An option named like `e12` taps the element \
-            with that id in `screen.elements`; the other options are described. `history` lists the steps taken so far.
+            with that id in `screen.elements`; the other options are described. `history` lists the steps taken so far. \
+            `notes` lists facts a supervisor verified about this app, such as where a setting lives; follow them.
             """,
             kind: .choice(actions.map { ChoiceOption($0.optionName, $0.optionCriteria) }),
         )

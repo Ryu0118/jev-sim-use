@@ -16,6 +16,8 @@ package struct PlanRequest: Sendable, Hashable {
     package var actions: [AgentAction]
     /// The steps already taken, oldest first.
     package var history: [HistoryEntry]
+    /// Facts about the app from a supervisor, oldest first.
+    package var notes: [String] = []
 }
 
 /// A planner's judgement for one step.

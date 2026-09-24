@@ -7,6 +7,7 @@ extension AgentLoop {
                 for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions,
             ),
             history: progress.history,
+            notes: configuration.notes,
         )
         let plan = try await planner.plan(request)
         report(.planned(step: progress.nextStep, plan: plan))

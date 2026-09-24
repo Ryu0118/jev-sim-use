@@ -6,6 +6,8 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var goal: String
     /// Texts the agent may paste; Jev chooses among them but cannot write new text.
     package var texts: [String]
+    /// Facts about the app from a supervisor (`session tell`), shown to Jev as `notes`.
+    package var notes: [String]
     /// Upper bound on actions taken.
     package var maxSteps: Int
     /// Stop after this many consecutive actions left the screen unchanged.
@@ -19,6 +21,7 @@ package struct AgentConfiguration: Sendable, Hashable {
     package init(
         goal: String,
         texts: [String] = [],
+        notes: [String] = [],
         maxSteps: Int = 15,
         stallLimit: Int = 3,
         goalPolicy: RoutingPolicy = .default,
@@ -26,6 +29,7 @@ package struct AgentConfiguration: Sendable, Hashable {
     ) {
         self.goal = goal
         self.texts = texts
+        self.notes = notes
         self.maxSteps = maxSteps
         self.stallLimit = stallLimit
         self.goalPolicy = goalPolicy
