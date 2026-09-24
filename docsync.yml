@@ -1,0 +1,19 @@
+rules:
+- name: readme-package
+  sources:
+  - Package.swift
+  doc: README.md
+  message: Package.swift changed; review the user-facing package commands in README.md.
+  checksum: 54a563cec07d75100b7c9ac623301d71f1f838a64a1f27b01b12451956841956
+- name: claude-package
+  sources:
+  - Package.swift
+  doc: CLAUDE.md
+  message: Package.swift changed; review the package architecture in CLAUDE.md.
+  checksum: 54a563cec07d75100b7c9ac623301d71f1f838a64a1f27b01b12451956841956
+- name: claude-mise-tasks
+  sources:
+  - .mise.toml
+  doc: CLAUDE.md
+  message: .mise.toml changed; review the command list in CLAUDE.md.
+  checksum: d6f435db4679c7feb98cee5dfb40daae6a1117754a7971d15617881f7948db91

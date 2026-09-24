@@ -1,0 +1,52 @@
+included_paths:
+  - "Sources/**/*.swift"
+  - "Tests/**/*.swift"
+
+excluded_paths:
+  - ".build/**"
+  - ".swiftpm/**"
+  - "**/.build/**"
+  - "**/.swiftpm/**"
+  - "**/Generated/**"
+
+rules:
+  deep-nesting:
+    args:
+      warning_depth: 4
+      error_depth: 4
+      severity: error
+  single-large-type-per-file:
+    args:
+      warning_lines: 50
+      error_lines: 50
+      severity: error
+    exclude:
+      - "**/*Generated.swift"
+  property-declaration-ordering:
+    args:
+      severity: error
+  function-access-modifier-grouping:
+    args:
+      severity: error
+  no-top-level-function:
+    args:
+      severity: error
+  return-if-expression:
+    args:
+      severity: error
+  return-switch-expression:
+    args:
+      severity: error
+
+  missing-docs:
+    args:
+      min_access_level: package
+      severity: error
+      ignore_patterns:
+        - kinds: [init]
+        - kinds: [enum]
+          names: [CodingKeys]
+    include:
+      - "Sources/SimJevUseKit/**"
+    exclude:
+      - "**/*Generated.swift"

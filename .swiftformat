@@ -1,0 +1,13 @@
+# SwiftFormat configuration for SimJevUse.
+--swiftversion 6.0
+--indent 4
+--indentcase false
+--stripunusedargs closure-only
+--test-case-name-format preserve
+
+--disable redundantSwiftTestingSuite
+
+--exclude .build
+--exclude .swiftpm
+--exclude "**/.build/**"
+--exclude "**/.swiftpm/**"

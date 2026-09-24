@@ -1,0 +1,71 @@
+# mise is the source of truth for the development toolchain and tasks.
+# artifactbundle keeps SwiftPM-backed tools from falling back to a source build.
+min_version = "2026.7.5"
+
+[tools]
+"spm:nicklockwood/SwiftFormat" = { version = "0.62.1", artifactbundle = true }
+"spm:realm/SwiftLint" = { version = "0.65.0", artifactbundle = true }
+"spm:Ryu0118/gitnagg" = { version = "0.3.0", artifactbundle = true }
+"spm:Ryu0118/my-swift-linter" = { version = "0.12.3", artifactbundle = true }
+"spm:Ryu0118/docsync" = { version = "0.3.1", artifactbundle = true }
+
+[tasks.setup]
+description = "Install tools, bump this project's tools to their latest version, initialize docsync, and configure Git hooks"
+run = [
+    "./scripts/mise.sh install",
+    "./scripts/mise.sh upgrade --local --bump",
+    "./scripts/mise.sh install",
+    "./scripts/setup-hooks.sh",
+    "./scripts/mise.sh exec -- docsync update-checksum --config docsync.yml",
+]
+
+[tasks.format]
+description = "Format Swift sources with SwiftFormat"
+run = "swiftformat ."
+
+[tasks.lint]
+description = "Lint Swift sources with SwiftLint"
+run = "swiftlint lint --config .swiftlint.yml --strict"
+
+[tasks.ast-lint]
+description = "Lint Swift sources with my-swift-linter"
+run = "./scripts/ast-lint.sh"
+
+[tasks.ast-fix]
+description = "Auto-fix Swift sources with my-swift-linter"
+run = "./scripts/ast-lint.sh --fix"
+
+[tasks.build]
+description = "Build the executable package"
+run = "swift build"
+
+[tasks.test]
+description = "Run the test suite"
+run = "swift test"
+
+[tasks.check]
+description = "Format, lint, build, and test"
+run = [
+    "mise run format",
+    "mise run lint",
+    "mise run ast-lint",
+    "mise run build",
+    "mise run test",
+    "mise run docsync-check",
+]
+
+[tasks.docsync-check]
+description = "Check source and documentation checksums"
+run = "docsync check --config docsync.yml"
+
+[tasks.update-docsync-checksum]
+description = "Update source and documentation checksums"
+run = "docsync update-checksum --config docsync.yml"
+
+[tasks.run]
+description = "Run the executable"
+run = "swift run SimJevUse"
+
+[tasks.setup-hooks]
+description = "Configure Git to use the shared hooks"
+run = "./scripts/setup-hooks.sh"

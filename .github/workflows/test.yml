@@ -1,0 +1,81 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - '.swiftformat'
+      - '.my-swift-linter.yml'
+      - '.swiftlint.yml'
+      - '.mise.toml'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Sources/**'
+      - 'Tests/**'
+      - 'Package.swift'
+      - 'Package.resolved'
+      - '.swiftformat'
+      - '.my-swift-linter.yml'
+      - '.swiftlint.yml'
+      - '.mise.toml'
+      - '.github/workflows/test.yml'
+
+concurrency:
+
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install mise
+        uses: jdx/mise-action@v3
+
+      - name: SwiftFormat
+        run: mise exec -- swiftformat --lint .
+
+      - name: SwiftLint
+        run: mise exec -- swiftlint lint --config .swiftlint.yml --strict
+
+      - name: my-swift-linter
+        run: mise exec -- my-swift-linter lint
+
+  build-and-test:
+    name: Build and Test
+    needs: lint
+    strategy:
+      matrix:
+        
+        os: [macos-26]
+        
+
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test

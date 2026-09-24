@@ -1,0 +1,7 @@
+.build/
+.swiftpm/
+.mise.local.toml
+.DS_Store
+DerivedData/
+xcuserdata/
+*.xcodeproj/
