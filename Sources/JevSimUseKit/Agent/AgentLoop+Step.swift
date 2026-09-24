@@ -9,7 +9,7 @@ extension AgentLoop {
             history: progress.history,
         )
         let plan = try await planner.plan(request)
-        report(.planned(step: progress.steps + 1, plan: plan))
+        report(.planned(step: progress.nextStep, plan: plan))
         return plan
     }
 
@@ -23,7 +23,7 @@ extension AgentLoop {
         if progress.steps >= configuration.maxSteps {
             return .stop(.stepLimitReached(steps: progress.steps))
         }
-        let step = progress.steps + 1
+        let step = progress.nextStep
         if plan.action == .noneApplies {
             guard let action = Exploration.next(excluding: progress.ineffectiveActions) else {
                 return .stop(.noActionFits(step: step))

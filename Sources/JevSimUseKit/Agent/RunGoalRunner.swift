@@ -42,6 +42,6 @@ package struct RunGoalRunner: Sendable {
                 actionPolicy: ActionPolicy(minimumSupport: request.minConfidence),
             ),
             report: { report(.agent($0)) },
-        ).run()
+        ).run().outcome
     }
 }

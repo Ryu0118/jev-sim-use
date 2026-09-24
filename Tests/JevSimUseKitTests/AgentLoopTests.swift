@@ -8,7 +8,7 @@ struct AgentLoopTests {
             driver: driver,
             planner: FakePlanner(plans),
             configuration: AgentConfiguration(goal: "Finish onboarding", maxSteps: maxSteps),
-        ).run()
+        ).run().outcome
     }
 
     @Test("acts until Jev judges the goal reached")
@@ -68,5 +68,20 @@ struct AgentLoopTests {
         )
         let driver = FakeDriver(outlines: ["A"])
         #expect(try await run(driver, [plan]) == .escalated(step: 1, action: .paste(index: 0, text: "hi"), confidence: 0.7))
+    }
+}
+
+@Suite("A resumed loop gets a fresh step budget and returns the combined history")
+struct AgentLoopResumeTests {
+    @Test("a run continued after the step limit can act again")
+    func freshBudget() async throws {
+        let earlier = (1 ... 2).map { HistoryEntry(step: $0, action: "Tap e1", screenChanged: true) }
+        let result = try await AgentLoop(
+            driver: FakeDriver(outlines: ["A", "B", "C"]),
+            planner: FakePlanner([.tapNext(), .tapNext(goal: 0.95)]),
+            configuration: AgentConfiguration(goal: "Finish onboarding", maxSteps: 2),
+        ).run(continuing: earlier)
+        #expect(result.outcome == .goalReached(steps: 1))
+        #expect(result.history.map(\.step) == [1, 2, 3])
     }
 }

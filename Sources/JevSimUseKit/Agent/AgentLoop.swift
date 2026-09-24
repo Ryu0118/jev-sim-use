@@ -21,18 +21,21 @@ package struct AgentLoop: Sendable {
     }
 
     /// Runs until an outcome is reached. Throws only for sim-use or Jev failures.
-    package func run() async throws -> AgentOutcome {
-        var progress = AgentProgress()
+    ///
+    /// `history` continues an earlier run: Jev sees it and step numbers carry on, but `maxSteps` and loop detection
+    /// start fresh, so a run that stopped at the step limit or stalled can make progress when resumed.
+    package func run(continuing history: [HistoryEntry] = []) async throws -> AgentRunResult {
+        var progress = AgentProgress(history: history)
         while true {
             try Task.checkCancellation()
             let observation = try await driver.observe()
             if let outcome = progress.record(observation, stallLimit: configuration.stallLimit) {
-                return outcome
+                return AgentRunResult(outcome: outcome, history: progress.history)
             }
             let plan = try await plan(for: observation.snapshot, progress: progress)
             switch decide(on: plan, progress: progress) {
             case let .stop(outcome):
-                return outcome
+                return AgentRunResult(outcome: outcome, history: progress.history)
             case let .act(action):
                 let disappeared = try await execute(action, platform: observation.snapshot.platform)
                 progress.recordAction(action, disappeared: disappeared)

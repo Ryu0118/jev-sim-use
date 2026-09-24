@@ -40,3 +40,24 @@ struct AgentProgressTests {
         #expect(outcome == .stalled(steps: 4))
     }
 }
+
+@Suite("Resuming continues numbering but not the stop conditions of the earlier run")
+struct AgentProgressResumeTests {
+    private let screenA = ScreenObservation(snapshot: Fixtures.snapshot(outline: "A"), disappearedApps: [])
+
+    @Test("numbers new steps after the continued history and counts only this run's steps")
+    func continuesNumbering() {
+        var progress = AgentProgress(history: [HistoryEntry(step: 1, action: "a"), HistoryEntry(step: 2, action: "b")])
+        _ = progress.record(screenA, stallLimit: 3)
+        progress.recordAction(.device(.goBack), disappeared: [])
+        #expect(progress.history.map(\.step) == [1, 2, 3])
+        #expect(progress.steps == 1)
+    }
+
+    @Test("does not treat the screen a resumed run starts on as tried or revisited")
+    func freshLoopDetection() {
+        var progress = AgentProgress(history: [HistoryEntry(step: 1, action: "a", screenChanged: false)])
+        #expect(progress.record(screenA, stallLimit: 1) == nil)
+        #expect(progress.ineffectiveActions.isEmpty)
+    }
+}

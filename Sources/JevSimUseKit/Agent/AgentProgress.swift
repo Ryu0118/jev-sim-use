@@ -1,7 +1,9 @@
 /// Mutable bookkeeping for one run: history, loop detection, crash detection, and actions already tried.
 struct AgentProgress: Sendable {
-    private(set) var history: [HistoryEntry] = []
+    private(set) var history: [HistoryEntry]
+    /// Actions taken in this run; `maxSteps` limits this, not the continued history.
     private(set) var steps = 0
+    private let stepOffset: Int
     private var currentOutline: String?
     private var lastActionName: String?
     /// Option names already tried on each screen. Repeating an action on an identical screen cannot help, and
@@ -9,6 +11,16 @@ struct AgentProgress: Sendable {
     private var triedActions: [String: Set<String>] = [:]
     private var revisitCount = 0
     private var pendingDisappearances: [String] = []
+
+    init(history: [HistoryEntry] = []) {
+        self.history = history
+        stepOffset = history.last?.step ?? 0
+    }
+
+    /// The number the next action gets, counting the continued history.
+    var nextStep: Int {
+        stepOffset + steps + 1
+    }
 
     /// Options code drops on the current screen instead of asking Jev to remember them.
     var ineffectiveActions: Set<String> {
@@ -36,8 +48,8 @@ struct AgentProgress: Sendable {
     }
 
     mutating func recordAction(_ action: AgentAction, disappeared: [String]) {
+        history.append(HistoryEntry(step: nextStep, action: action.description, screenChanged: nil))
         steps += 1
-        history.append(HistoryEntry(step: steps, action: action.description, screenChanged: nil))
         lastActionName = action.optionName
         pendingDisappearances = disappeared
     }
