@@ -39,7 +39,11 @@ extension SkillBundle {
     ```
 
     - Write the goal as the end state you want, specific enough to recognize ("Wi-Fi settings screen is open").
-    - Jev never writes text. If the goal needs typing, pass every string with `-t`, or it cannot finish.
+    - Jev never writes text. If the goal needs typing, pass every string with `-t`, or it cannot finish. Pasting needs a
+      hardware keyboard connected to the simulator; without one it silently does nothing.
+    - Jev chooses among taps, long-press, swipes, pinch and rotate on an element, scrolls in four directions, going back,
+      edge swipes, and hardware buttons. Pressing buttons, leaving the app, and swiping sideways on a row need high
+      confidence, because going back cannot undo them. Double tap is not available; use `exec` for anything else.
     - stdout is the outcome line; when the goal was not reached, `Session: <id>` follows. stderr is step-by-step progress.
     - Every run is a session under `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`). Reaching the goal
       deletes it; an unfinished session expires one week after it last changed.
