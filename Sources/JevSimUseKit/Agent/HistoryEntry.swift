@@ -1,5 +1,5 @@
 /// One earlier step, as Jev sees it in `history`.
-package struct HistoryEntry: Encodable, Sendable, Hashable {
+package struct HistoryEntry: Codable, Sendable, Hashable {
     /// 1-based step number.
     package let step: Int
     /// What was done, in words.
