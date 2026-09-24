@@ -53,4 +53,19 @@ struct SessionStoreTests {
         try store.removeExpired(now: Date())
         #expect(!FileManager.default.fileExists(atPath: broken.path(percentEncoded: false)))
     }
+
+    @Test("refuses ids that could leave the sessions directory", arguments: ["../../etc/x", "a/b", "..", ""])
+    func traversal(id: String) {
+        #expect(throws: SessionStoreError.notFound(id: id)) { try store.load(id) }
+        #expect(throws: SessionStoreError.notFound(id: id)) { try store.delete(id) }
+    }
+
+    @Test("writes sessions readable only by the user")
+    func permissions() throws {
+        try store.save(SessionRecord(id: "p1", goal: "g", texts: ["secret"], updatedAt: Date()))
+        let file = try FileManager.default.attributesOfItem(atPath: store.directory.appending(path: "p1.json").path(percentEncoded: false))
+        let directory = try FileManager.default.attributesOfItem(atPath: store.directory.path(percentEncoded: false))
+        #expect((file[.posixPermissions] as? Int) == 0o600)
+        #expect((directory[.posixPermissions] as? Int) == 0o700)
+    }
 }

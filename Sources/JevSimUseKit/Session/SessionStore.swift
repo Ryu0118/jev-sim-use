@@ -27,12 +27,15 @@ package struct SessionStore: Sendable {
         decoder.dateDecodingStrategy = .iso8601
     }
 
-    /// Writes `session`, replacing any earlier version.
+    /// Writes `session`, replacing any earlier version. Only the user can read sessions: they hold the goal, notes,
+    /// and every `--text` value.
     package func save(_ session: SessionRecord) throws {
-        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-        let file = fileURL(for: session.id)
-        guard try fileManager.createFile(atPath: file.path(percentEncoded: false), contents: encoder.encode(session))
-        else { throw SessionStoreError.writeFailed(file) }
+        let file = try fileURL(for: session.id)
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true, attributes: nil)
+        try fileManager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path(percentEncoded: false))
+        guard try fileManager.createFile(
+            atPath: file.path(percentEncoded: false), contents: encoder.encode(session), attributes: [.posixPermissions: 0o600],
+        ) else { throw SessionStoreError.writeFailed(file) }
     }
 
     /// The session with `id`, or the most recently updated one when `id` is `nil`.
@@ -41,7 +44,7 @@ package struct SessionStore: Sendable {
             guard let latest = try list().first else { throw SessionStoreError.empty }
             return latest
         }
-        guard let data = fileManager.contents(atPath: fileURL(for: id).path(percentEncoded: false)) else {
+        guard let data = try fileManager.contents(atPath: fileURL(for: id).path(percentEncoded: false)) else {
             throw SessionStoreError.notFound(id: id)
         }
         return try decoder.decode(SessionRecord.self, from: data)
@@ -54,7 +57,7 @@ package struct SessionStore: Sendable {
 
     /// Deletes the session with `id`, if it exists.
     package func delete(_ id: String) throws {
-        let path = fileURL(for: id).path(percentEncoded: false)
+        let path = try fileURL(for: id).path(percentEncoded: false)
         guard fileManager.fileExists(atPath: path) else { return }
         try fileManager.removeItem(atPath: path)
     }
@@ -66,6 +69,12 @@ package struct SessionStore: Sendable {
         }
     }
 
+    /// Ids come from the command line and from decoded files, so anything that could leave the directory (`/`, `..`)
+    /// is refused rather than resolved.
+    static func isValidID(_ id: String) -> Bool {
+        !id.isEmpty && id.count <= 64 && id.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") }
+    }
+
     /// Every session file with its decoded contents. A file that does not decode (truncated, or written by an
     /// incompatible version) has `nil`, so one bad file cannot block every other session and every run.
     private func files() throws -> [(id: String, session: SessionRecord?)] {
@@ -73,14 +82,16 @@ package struct SessionStore: Sendable {
         guard fileManager.fileExists(atPath: path) else { return [] }
         return try fileManager.contentsOfDirectory(atPath: path)
             .filter { $0.hasSuffix(".json") }
-            .map { name in
-                let id = String(name.dropLast(".json".count))
-                let data = fileManager.contents(atPath: fileURL(for: id).path(percentEncoded: false))
+            .map { String($0.dropLast(".json".count)) }
+            .filter(Self.isValidID)
+            .map { id in
+                let data = fileManager.contents(atPath: directory.appending(path: "\(id).json").path(percentEncoded: false))
                 return (id, data.flatMap { try? decoder.decode(SessionRecord.self, from: $0) })
             }
     }
 
-    private func fileURL(for id: String) -> URL {
-        directory.appending(path: "\(id).json")
+    private func fileURL(for id: String) throws -> URL {
+        guard Self.isValidID(id) else { throw SessionStoreError.notFound(id: id) }
+        return directory.appending(path: "\(id).json")
     }
 }
