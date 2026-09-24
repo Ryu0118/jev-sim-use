@@ -3,7 +3,10 @@ extension AgentLoop {
         let request = PlanRequest(
             goal: configuration.goal,
             snapshot: snapshot,
-            menu: ActionCatalog.menu(for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions),
+            menu: ActionCatalog.menu(
+                for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions,
+                explored: progress.exploredElements,
+            ),
             history: progress.history,
             notes: configuration.notes,
         )

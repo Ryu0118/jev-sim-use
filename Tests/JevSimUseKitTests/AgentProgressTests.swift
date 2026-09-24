@@ -78,3 +78,32 @@ struct ScreenIdentityTests {
         #expect(before.identity != other.identity)
     }
 }
+
+@Suite("A section entered and left again is not offered again from the same screen")
+struct ExploredBranchTests {
+    private func screen(_ title: String, _ items: [String]) -> ScreenObservation {
+        let entries = [Fixtures.entry(0, title, role: "Heading")] + items.enumerated().map { Fixtures.entry($0.offset + 1, $0.element) }
+        return ScreenObservation(snapshot: Fixtures.snapshot(outline: title, entries: entries), disappearedApps: [])
+    }
+
+    @Test("records the tapped element as explored once the title changes, and keys it by the parent title")
+    func explored() {
+        var progress = AgentProgress()
+        _ = progress.record(screen("設定", ["一般", "カメラ"]), stallLimit: 5)
+        progress.recordAction(.tap(alias: 1, role: "Button", label: "一般"), disappeared: [])
+        _ = progress.record(screen("一般", ["情報"]), stallLimit: 5)
+        #expect(progress.exploredElements.isEmpty)
+        progress.recordAction(.device(.goBack), disappeared: [])
+        _ = progress.record(screen("設定", ["カメラ", "一般"]), stallLimit: 5)
+        #expect(progress.exploredElements == ["一般"])
+    }
+
+    @Test("a tap that keeps the title, like a switch, is not an explored branch")
+    func sameTitle() {
+        var progress = AgentProgress()
+        _ = progress.record(screen("キーボード", ["自動修正"]), stallLimit: 5)
+        progress.recordAction(.tap(alias: 1, role: "CheckBox", label: "自動修正"), disappeared: [])
+        _ = progress.record(screen("キーボード", ["自動修正", "x"]), stallLimit: 5)
+        #expect(progress.exploredElements.isEmpty)
+    }
+}

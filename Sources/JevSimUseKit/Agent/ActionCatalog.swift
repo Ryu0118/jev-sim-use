@@ -18,11 +18,19 @@ enum ActionCatalog {
     ///
     /// Every enabled element but a title is a target: some apps expose tappable rows only as `StaticText`
     /// (Reminders), and a tap that does nothing is reported back through `history` rather than guessed away here.
-    static func menu(for snapshot: UISnapshot, texts: [InputText], excluding excluded: Set<String> = []) -> ActionMenu {
+    ///
+    /// `explored` names elements whose branch this run already entered and came back from; offering them again made
+    /// Jev loop (一般 → back → 一般).
+    static func menu(
+        for snapshot: UISnapshot,
+        texts: [InputText],
+        excluding excluded: Set<String> = [],
+        explored: Set<String> = [],
+    ) -> ActionMenu {
         let entries = (snapshot.entries ?? []).filter { !$0.isDisabled }
         let elements = entries
             .filter { snapshot.platform != SimUseContract.Platform.ios || $0.uniqueId != iOSBackButtonIdentifier }
-            .filter { !titleRoles.contains($0.role) }
+            .filter { !titleRoles.contains($0.role) && !explored.contains(label(for: $0)) }
             // An unlabelled container (the screen-sized group) gives Jev nothing to choose by.
             .filter { !label(for: $0).isEmpty }
             .prefix(maximumOptions)

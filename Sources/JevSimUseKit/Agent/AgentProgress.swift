@@ -10,6 +10,12 @@ struct AgentProgress: Sendable {
     /// screens can alternate (a scroll that bounces), so this is keyed by screen rather than by the previous one.
     private var triedActions: [String: Set<String>] = [:]
     private var revisitCount = 0
+    private var currentTitle: String?
+    private var lastTapLabel: String?
+    /// Elements tapped on a screen (by title) that led to another screen: branches already explored. Coming back to
+    /// that title means the branch did not finish the goal, and the scroll position there may differ, so the
+    /// identity-keyed `triedActions` cannot catch a second visit.
+    private var exploredBranches: [String: Set<String>] = [:]
     private var pendingDisappearances: [String] = []
 
     init(history: [HistoryEntry] = []) {
@@ -27,6 +33,11 @@ struct AgentProgress: Sendable {
         currentOutline.flatMap { triedActions[$0] } ?? []
     }
 
+    /// Labels of elements whose branch was already explored from a screen with the current title.
+    var exploredElements: Set<String> {
+        currentTitle.flatMap { exploredBranches[$0] } ?? []
+    }
+
     /// Returns an outcome when the observation means the run must stop.
     mutating func record(_ observation: ScreenObservation, stallLimit: Int) -> AgentOutcome? {
         let disappeared = pendingDisappearances + observation.disappearedApps
@@ -41,6 +52,12 @@ struct AgentProgress: Sendable {
             triedActions[previous, default: []].insert(action)
             history[history.count - 1].screenChanged = previous != outline
         }
+        let title = observation.snapshot.title
+        if let previousTitle = currentTitle, let label = lastTapLabel, previousTitle != title {
+            exploredBranches[previousTitle, default: []].insert(label)
+        }
+        currentTitle = title
+        lastTapLabel = nil
         let revisited = triedActions[outline] != nil || currentOutline == outline
         revisitCount = revisited ? revisitCount + 1 : 0
         currentOutline = outline
@@ -51,6 +68,9 @@ struct AgentProgress: Sendable {
         history.append(HistoryEntry(step: nextStep, action: action.description, screenChanged: nil))
         steps += 1
         lastActionName = action.optionName
+        if case let .tap(_, _, label) = action {
+            lastTapLabel = label
+        }
         pendingDisappearances = disappeared
     }
 }
