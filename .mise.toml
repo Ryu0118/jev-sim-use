@@ -69,6 +69,10 @@ run = "docsync check --config docsync.yml"
 description = "Update source and documentation checksums"
 run = "docsync update-checksum --config docsync.yml"
 
+[tasks.generate-skill]
+description = "Embed skills/jev-sim-use/SKILL.md into the binary (run after editing the skill)"
+run = "./scripts/generate-skill.sh"
+
 [tasks.run]
 description = "Run the executable"
 run = "swift run jev-sim-use"
