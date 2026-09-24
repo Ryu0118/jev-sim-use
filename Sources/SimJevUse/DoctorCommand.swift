@@ -7,10 +7,7 @@ struct DoctorCommand: AsyncParsableCommand {
         abstract: "Check that sim-use, a device, and Jev settings are ready.",
     )
 
-    @Option(help: "sim-use device id to check.")
-    var device: String?
-
-    @OptionGroup var jev: JevOptions
+    @OptionGroup var connection: ConnectionOptions
 
     func run() async throws {
         let bootstrap = SimUseBootstrap()
@@ -19,11 +16,11 @@ struct DoctorCommand: AsyncParsableCommand {
             return "\(version) at \(path.path(percentEncoded: false))"
         }
         let deviceReady = simUseReady ? await check("device") {
-            let device = try await bootstrap.connect(deviceID: device).device
+            let device = try await bootstrap.connect(deviceID: connection.resolvedDevice).device
             return "\(device.name) (\(device.deviceId))"
         } : false
         let jevReady = await check("jev") {
-            let settings = try JevSettings.resolve(endpointFlag: jev.endpoint, modelFlag: jev.model)
+            let settings = try connection.jevSettings()
             return "\(settings.model) at \(settings.endpoint), API key set"
         }
         guard simUseReady, deviceReady, jevReady else { throw ExitCode.failure }
