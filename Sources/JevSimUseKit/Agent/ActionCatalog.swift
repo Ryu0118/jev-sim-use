@@ -20,7 +20,7 @@ enum ActionCatalog {
     /// Options for `snapshot`, minus `excluded` option names that already failed to change this screen.
     ///
     /// Screen-level actions and pastes are always offered; taps fill the rest of Jev's option limit.
-    static func actions(for snapshot: UISnapshot, texts: [String], excluding excluded: Set<String> = []) -> [AgentAction] {
+    static func actions(for snapshot: UISnapshot, texts: [InputText], excluding excluded: Set<String> = []) -> [AgentAction] {
         let fixed = (texts.enumerated().map { AgentAction.paste(index: $0.offset, text: $0.element) }
             + SimUseDeviceAction.available(on: snapshot.platform).map(AgentAction.device))
             .filter { !excluded.contains($0.optionName) }

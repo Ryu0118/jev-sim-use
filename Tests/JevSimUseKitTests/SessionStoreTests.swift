@@ -9,7 +9,7 @@ struct SessionStoreTests {
 
     @Test("round-trips a session with notes, history, and runs")
     func roundTrip() throws {
-        var session = SessionRecord(id: "a1", goal: "g", texts: ["t"], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
+        var session = SessionRecord(id: "a1", goal: "g", texts: [InputText(name: "email", value: "t")], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
         session.notes = ["Dark mode is under Developer."]
         session.history = [HistoryEntry(step: 1, action: "Tap e3", screenChanged: true)]
         session.runs = [SessionRun(endedAt: Date(timeIntervalSince1970: 5), steps: 1, outcome: "Stopped.")]
@@ -62,7 +62,7 @@ struct SessionStoreTests {
 
     @Test("writes sessions readable only by the user")
     func permissions() throws {
-        try store.save(SessionRecord(id: "p1", goal: "g", texts: ["secret"], updatedAt: Date()))
+        try store.save(SessionRecord(id: "p1", goal: "g", texts: [InputText(name: "password", value: "secret")], updatedAt: Date()))
         let file = try FileManager.default.attributesOfItem(atPath: store.directory.appending(path: "p1.json").path(percentEncoded: false))
         let directory = try FileManager.default.attributesOfItem(atPath: store.directory.path(percentEncoded: false))
         #expect((file[.posixPermissions] as? Int) == 0o600)

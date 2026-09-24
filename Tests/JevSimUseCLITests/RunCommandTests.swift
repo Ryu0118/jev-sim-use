@@ -1,4 +1,5 @@
 @testable import JevSimUseCLI
+import JevSimUseKit
 import Testing
 
 struct RunCommandTests {
@@ -27,6 +28,21 @@ struct RunCommandTests {
 
     @Test("rejects out-of-range options before running", arguments: [["x", "--max-steps", "0"], ["x", "--min-confidence", "2"]])
     func invalidOptions(arguments: [String]) {
+        #expect(throws: (any Error).self) { try RunCommand.parse(arguments) }
+    }
+
+    @Test("parses -t as name=value, keeping any = in the value")
+    func namedTexts() throws {
+        let command = try RunCommand.parse(["Log in", "-t", "email=alice@example.com", "-t", "password=a=b"])
+        #expect(command.texts == [
+            InputText(name: "email", value: "alice@example.com"), InputText(name: "password", value: "a=b"),
+        ])
+    }
+
+    @Test("rejects a -t without a name, and two with the same name", arguments: [
+        ["x", "-t", "ramen"], ["x", "-t", "=ramen"], ["x", "-t", "q=a", "-t", "q=b"],
+    ])
+    func invalidTexts(arguments: [String]) {
         #expect(throws: (any Error).self) { try RunCommand.parse(arguments) }
     }
 }

@@ -15,11 +15,23 @@ struct RunCommand: ContextualCommand {
     @Argument(help: "What to accomplish, in natural language.")
     var goal: String
 
-    @Option(name: [.customShort("t"), .customLong("text")], help: "A string Jev may type into a field. Jev never writes text itself, so pass every string the goal needs. Repeatable.")
-    var texts: [String] = []
+    @Option(
+        name: [.customShort("t"), .customLong("text")],
+        help: ArgumentHelp(
+            "A string to enter into a field, as name=value (email=alice@example.com). Repeatable.",
+            discussion: "Jev never writes text: it sees only the name, picks the field that matches it, and the value is entered for it. The value is not sent to Jev.",
+            valueName: "name=value",
+        ),
+    )
+    var texts: [InputText] = []
 
     @OptionGroup var connection: ConnectionOptions
     @OptionGroup var agent: AgentOptions
+
+    func validate() throws {
+        let names = texts.map(\.name)
+        guard Set(names).count == names.count else { throw ValidationError("Each -t name must be different.") }
+    }
 
     func run(context: CLIContext) async throws {
         try await RunGoalRequest(session: .new(goal: goal, texts: texts), connection: connection, agent: agent)

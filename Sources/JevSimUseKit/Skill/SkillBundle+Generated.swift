@@ -33,13 +33,16 @@ extension SkillBundle {
 
     ```sh
     jev-sim-use "Turn on Dark Mode in Settings"
-    jev-sim-use "Search for ramen" -t ramen            # -t: a string Jev may type into a field; repeat for several
+    jev-sim-use "In Maps, search for ramen" -t query=ramen                          # the app must be open
+    jev-sim-use "Log in to the app" -t email=alice@example.com -t password=hunter2  # -t name=value, once per string
     jev-sim-use exec devices                           # list deviceIds when several are booted
     jev-sim-use "Open Wi-Fi settings" -d <deviceId>
     ```
 
     - Write the goal as the end state you want, specific enough to recognize ("Wi-Fi settings screen is open").
-    - Jev never writes text. If the goal needs typing, pass every string with `-t`, or it cannot finish. Pasting needs a
+    - Jev never writes text. If the goal needs typing, pass every string as `-t name=value`, or it cannot finish. Jev
+      sees only the name and matches it to a field's label, so name each string by what it is (`email`, `password`,
+      `query`). Pasting needs a
       hardware keyboard connected to the simulator; without one it silently does nothing.
     - Jev chooses among taps, long-press, swipes, pinch and rotate on an element, scrolls in four directions, going back,
       a right-edge swipe, and hardware buttons. Pressing buttons, leaving the app, and swiping sideways on a row need high
@@ -97,16 +100,16 @@ extension SkillBundle {
 
     | Option | Default | Use |
     |---|---|---|
-    | `-t, --text` | none | Text it may paste into fields |
+    | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name |
     | `-d, --device` | the only usable device | A `deviceId` from `exec devices` |
     | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
     | `--min-confidence` | 0.6 | Lower it to hand over less often, raise it to be more careful |
 
     ## Privacy
 
-    Each step sends the screen's visible labels and values, the goal, the action history, the session notes, and every
-    `-t` value to the Jev endpoint. Unfinished sessions are kept locally for up to a week
-    with the goal, texts, notes, and actions. Do not run it on screens with data that may not leave the machine.
+    Each step sends the screen's visible labels and values, the goal, the action history, the session notes, and the
+    names of the `-t` texts to the Jev endpoint; `-t` values never leave the machine. Unfinished sessions are kept
+    locally for up to a week, readable only by the user, with the goal, texts, notes, and actions. Do not run it on screens with data that may not leave the machine.
 
     """#####
 }

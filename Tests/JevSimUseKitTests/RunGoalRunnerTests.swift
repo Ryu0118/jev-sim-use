@@ -47,7 +47,7 @@ struct RunGoalRunnerTests {
     @Test("saves the session with its device, history, and run outcome")
     func savesSession() async throws {
         let unsurePaste = StepPlan(
-            goalReached: .init(clamping: 0.05), action: .paste(index: 0, text: "x"), confidence: 0.3, costUSD: 0,
+            goalReached: .init(clamping: 0.05), action: .paste(index: 0, text: InputText(name: "text", value: "x")), confidence: 0.3, costUSD: 0,
         )
         _ = try await runner(plans: [unsurePaste]).run(request()) { _ in }
         let session = try SessionStore(environment: environment).load("s1")

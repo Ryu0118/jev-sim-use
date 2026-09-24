@@ -11,7 +11,7 @@ struct ActionCatalogTests {
             Fixtures.entry(4, "General", role: "Heading"),
             Fixtures.entry(5, "Battery 100%", role: "GenericElement"),
         ])
-        let names = ActionCatalog.actions(for: snapshot, texts: ["hello"]).map(\.optionName)
+        let names = ActionCatalog.actions(for: snapshot, texts: [InputText(name: "greeting", value: "hello")]).map(\.optionName)
         #expect(names == [
             "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right",
             "scroll_to_reveal_left", "go_back", "swipe_in_from_right_edge", "press_home", "press_lock", "press_apple_pay", "press_side_button", "press_siri", "none_of_these",

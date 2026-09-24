@@ -119,3 +119,18 @@ struct JevStepPlannerGestureTests {
         #expect(!body.contains("gesture"))
     }
 }
+
+@Suite("Named texts reach Jev by name only, never by value")
+struct JevStepPlannerTextTests {
+    @Test("sends the text's name and keeps its value out of the request")
+    func valueStaysLocal() async throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Password", role: "SecureTextField")])
+        let actions = ActionCatalog.actions(for: snapshot, texts: [InputText(name: "password", value: "hunter2")])
+        let transport = StubTransport(body: StubTransport.answer(choice: "paste_text_0"))
+        let plan = try await transport.planner().plan(PlanRequest(goal: "Log in", snapshot: snapshot, actions: actions, history: []))
+        let body = try #require(transport.lastRequestBody)
+        #expect(body.contains("Enter the password into the focused input field"))
+        #expect(!body.contains("hunter2"))
+        #expect(plan.action.description == "Enter the password")
+    }
+}

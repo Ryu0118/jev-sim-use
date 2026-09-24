@@ -7,8 +7,8 @@ package enum AgentAction: Sendable, Hashable {
     case gesture(ElementGesture, alias: Int, role: String, label: String)
     /// A gesture or button press that does not target an element.
     case device(SimUseDeviceAction)
-    /// Paste one of the texts the user supplied; Jev only chooses, it never writes text.
-    case paste(index: Int, text: String)
+    /// Enter one of the texts the user supplied; Jev picks it by name and never writes text.
+    case paste(index: Int, text: InputText)
     /// No offered action fits; the run hands over instead of guessing.
     case noneApplies
 
@@ -41,7 +41,7 @@ package enum AgentAction: Sendable, Hashable {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""
         case let .gesture(gesture, _, role, label): "\(gesture.verb) the \(role) labelled \"\(label)\""
         case let .device(action): action.optionDescription
-        case let .paste(_, text): "Paste the text \"\(text)\" into the focused input field"
+        case let .paste(_, text): "Enter the \(text.name) into the focused input field"
         case .noneApplies: "Nothing helps, not even scrolling or going back to look elsewhere"
         }
     }
@@ -67,7 +67,7 @@ extension AgentAction: CustomStringConvertible {
         switch self {
         case .tap, .gesture: optionDescription
         case let .device(action): action.summary
-        case let .paste(_, text): "Paste \"\(text)\""
+        case let .paste(_, text): "Enter the \(text.name)"
         case .noneApplies: "Nothing"
         }
     }

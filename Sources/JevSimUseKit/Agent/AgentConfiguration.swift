@@ -4,8 +4,8 @@ import Jev
 package struct AgentConfiguration: Sendable, Hashable {
     /// The goal in natural language.
     package var goal: String
-    /// Texts the agent may paste; Jev chooses among them but cannot write new text.
-    package var texts: [String]
+    /// Named texts the agent may enter; Jev chooses among their names but cannot write new text.
+    package var texts: [InputText]
     /// Facts about the app from a supervisor (`session tell`), shown to Jev as `notes`.
     package var notes: [String]
     /// Upper bound on actions taken.
@@ -20,7 +20,7 @@ package struct AgentConfiguration: Sendable, Hashable {
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
         goal: String,
-        texts: [String] = [],
+        texts: [InputText] = [],
         notes: [String] = [],
         maxSteps: Int = 15,
         stallLimit: Int = 3,

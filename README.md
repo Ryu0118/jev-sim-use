@@ -13,7 +13,7 @@ and it taps its way there on its own.
 
 - ⚡ **Ultrafast navigation**: one small Jev call per step instead of a full LLM agent turn
 - 🤖 **One command for your agent**: Claude Code delegates "get to that screen" and spends its turns on the real work
-- 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only types text you pass with `-t`
+- 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only enters text you pass with `-t name=value`
 
 ## Installation
 
@@ -63,12 +63,14 @@ nest install Ryu0118/jev-sim-use
 export TYPESAFE_API_KEY=...
 jev-sim-use doctor
 jev-sim-use "Turn on Dark Mode in Settings"
-jev-sim-use "Search for ramen" -t ramen   # -t: text Jev may type into a field
+jev-sim-use "In Maps, search for ramen and show the results" -t query=ramen
+jev-sim-use "Log in to the app" -t email=alice@example.com -t password=hunter2
 ```
 
-Jev chooses actions but never writes text. When a goal needs typing (a search term, an email address), pass each
-string with `-t` (`--text`); Jev then decides which field gets which one. Repeat it for several strings. These texts
-are sent to the Jev endpoint and kept in unfinished sessions.
+The app must already be open. Jev chooses actions but never writes text. When a goal needs typing, pass each string
+as `-t name=value` (`--text`), once per string. Jev sees only the name (`email`, `password`) and matches it to a
+field's label; jev-sim-use then enters the value. Values are never sent to Jev; unfinished sessions keep them
+locally (readable only by you) so `session resume` can enter them.
 
 ### Choosing a device
 
@@ -126,8 +128,8 @@ npx skills add Ryu0118/jev-sim-use --all
 
 ## What leaves your machine
 
-Each step sends the screen outline (visible labels and values), your goal, the action history, and every `-t` value
-to the Jev endpoint. Do not run it on screens with data you may not share.
+Each step sends the screen outline (visible labels and values), your goal, the action history, the session notes, and
+the names of your `-t` texts to the Jev endpoint. The `-t` values stay on your machine. Do not run it on screens with data you may not share.
 
 ## Other providers
 
@@ -152,7 +154,7 @@ jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agen
 | Option | Default | |
 |---|---|---|
 | `-d, --device` | the only usable device | A `deviceId` from `sim-use devices` |
-| `-t, --text` | none | Text it may paste. Repeatable |
+| `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
 | `--max-steps` | 15 | |
 | `--min-confidence` | 0.6 | Stops and hands over when Jev is less sure |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |

@@ -97,6 +97,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   with `goalProbablyReached` instead of exploring away from a probable goal screen.
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts, referenced by both questions), `platform`, `screen.elements` (id `eN`, role, label, value, states,
   region), and `history` (`step`, `action`, `screen_changed`). Questions refer to it by backticked paths.
+- `-t` texts are `InputText` (`name=value`). The option shows only the name ("Enter the password into the focused
+  input field"); the value is entered by code and never sent to Jev, following "select instead of generate".
 - Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
   only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
   Jev's 255-option limit, and always `none_of_these`, which hands over (`AgentOutcome.noActionFits`).

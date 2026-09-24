@@ -10,7 +10,7 @@ extension SessionRecord {
     /// The lines `session show` prints: enough for a supervisor to decide what to `tell`.
     var detailLines: [String] {
         var lines = ["Session: \(id) (\(status))", "Goal: \(goal)", "Device: \(deviceID ?? "not connected yet")"]
-        lines += texts.isEmpty ? [] : ["Texts: \(texts.joined(separator: ", "))"]
+        lines += texts.isEmpty ? [] : ["Texts: \(texts.map(\.name).joined(separator: ", "))"]
         lines += ["Notes:"] + (notes.isEmpty ? ["  (none)"] : notes.enumerated().map { "  \($0.offset + 1). \($0.element)" })
         lines += ["Runs:"] + runs.enumerated().map { index, run in
             "  \(index + 1). \(run.endedAt.formatted(.iso8601)), \(run.steps) action(s): \(run.outcome)"

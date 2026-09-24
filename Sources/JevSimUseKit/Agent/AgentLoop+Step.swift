@@ -57,7 +57,7 @@ extension AgentLoop {
         case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
         case let .gesture(gesture, alias, _, _): try await driver.perform(gesture, alias: alias, on: snapshot)
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
-        case let .paste(_, text): try await driver.paste(text)
+        case let .paste(_, text): try await driver.paste(text.value)
         case .noneApplies: []
         }
     }
