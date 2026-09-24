@@ -25,6 +25,9 @@ extension AgentLoop {
         if progress.steps >= configuration.maxSteps {
             return .stop(.stepLimitReached(steps: progress.steps))
         }
+        if plan.action == .noneApplies, done.answer == true {
+            return .stop(.goalProbablyReached(steps: progress.steps, probability: plan.goalReached.value))
+        }
         let step = progress.nextStep
         // A gesture is composed from answers, not picked from filtered options, so a repeat is caught here.
         if plan.action == .noneApplies || progress.ineffectiveActions.contains(plan.action.optionName) {

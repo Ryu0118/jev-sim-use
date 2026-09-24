@@ -86,12 +86,15 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   Asking gesture and element separately keeps options at elements + gestures instead of their product. Do not add a
   second round trip; speed is the point. The gesture questions cost about 50% more per step on busy screens.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
-  four directions, go back, edge swipes, and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`);
+  four directions, go back, a right-edge swipe, and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`);
   and pastes. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
   tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.3, reversible at `--min-confidence`,
-  irreversible (paste, hardware buttons, bottom-edge swipe, horizontal swipes on an element) at least 0.85.
+  irreversible (paste, hardware buttons, horizontal swipes on a list row) at least 0.85. Sideways scrolls pass
+  `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
+  iOS 26, and Control Center blinds `sim-use ui`). When Jev leans toward done and picks `none_of_these`, the loop stops
+  with `goalProbablyReached` instead of exploring away from a probable goal screen.
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts, referenced by both questions), `platform`, `screen.elements` (id `eN`, role, label, value, states,
   region), and `history` (`step`, `action`, `screen_changed`). Questions refer to it by backticked paths.
 - Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers

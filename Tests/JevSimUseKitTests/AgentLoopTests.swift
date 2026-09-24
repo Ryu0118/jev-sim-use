@@ -102,3 +102,17 @@ struct AgentLoopGestureTests {
         #expect(driver.performedActions.dropFirst().allSatisfy { !$0.hasPrefix("long_press") })
     }
 }
+
+@Suite("When Jev leans toward done and has nothing to do, the loop stops instead of exploring away")
+struct AgentLoopProbablyDoneTests {
+    @Test("stops with goalProbablyReached and takes no exploring action")
+    func probablyDone() async throws {
+        let plan = StepPlan(goalReached: Probability(clamping: 0.84), action: .noneApplies, confidence: 0.6, costUSD: 0)
+        let driver = FakeDriver(outlines: ["A"])
+        let outcome = try await AgentLoop(
+            driver: driver, planner: FakePlanner([plan]), configuration: AgentConfiguration(goal: "g"),
+        ).run().outcome
+        #expect(outcome == .goalProbablyReached(steps: 0, probability: Probability(clamping: 0.84).value))
+        #expect(driver.performedActions.isEmpty)
+    }
+}

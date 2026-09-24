@@ -12,6 +12,9 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case appCrashed(detail: String)
     /// Jev judged that none of the offered actions advances the goal.
     case noActionFits(step: Int)
+    /// Jev leaned toward the goal being reached, short of the bar for success, and had nothing left to do. Exploring
+    /// would only move away from a screen that is probably the goal.
+    case goalProbablyReached(steps: Int, probability: Double)
 
     /// Whether the goal was reached.
     package var isSuccess: Bool {
@@ -32,6 +35,9 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
             "Stopped at step \(step): Jev's best action (\(action)) had confidence "
                 + "\(confidence.formatted(.number.precision(.fractionLength(2)))), below the threshold."
         case let .appCrashed(detail): "Stopped: \(detail)"
+        case let .goalProbablyReached(steps, probability):
+            "Stopped after \(steps) action(s): the goal is probably reached (p="
+                + "\(probability.formatted(.number.precision(.fractionLength(2))))), but not surely; check the screen."
         case let .noActionFits(step): "Stopped at step \(step): no offered action advances the goal on this screen."
         }
     }
