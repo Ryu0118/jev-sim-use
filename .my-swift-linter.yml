@@ -71,5 +71,6 @@ rules:
           name_pattern: "^(buildBlock|buildExpression|buildOptional|buildEither|buildArray|appendLiteral|appendInterpolation)$"
     include:
       - "Sources/JevSimUseKit/**"
+      - "Sources/JevSimUseCLI/**"
     exclude:
       - "**/*Generated.swift"

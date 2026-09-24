@@ -25,7 +25,7 @@ rules:
   doc: .agents/rules/lint-and-format.md
   message: A lint or format config changed; update .agents/rules/lint-and-format.md
     to match.
-  checksum: ed342f3da72c2bfbe6e858034c78b8ac88a6a919ef5756ed65ae36a72da53dcc
+  checksum: 9a4fabbb4ef039cc139899a0e531cb40ecc6d1c655d418a3eca174843dbb65f9
 - name: rules-workflow
   sources:
   - .gitnagg.yml

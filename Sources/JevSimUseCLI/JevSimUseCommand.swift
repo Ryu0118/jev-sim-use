@@ -3,6 +3,7 @@ import JevSimUseKit
 
 /// The root `jev-sim-use` command.
 package struct JevSimUseCommand: AsyncParsableCommand {
+    /// Subcommands, version, and help text; `run` is the default so a bare goal works.
     package static let configuration = CommandConfiguration(
         commandName: "jev-sim-use",
         abstract: "Drive an iOS Simulator or Android device toward a goal, with Jev choosing each action via sim-use.",
