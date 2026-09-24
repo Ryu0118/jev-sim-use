@@ -85,23 +85,3 @@ struct AgentLoopResumeTests {
         #expect(result.history.map(\.step) == [1, 2, 3])
     }
 }
-
-@Suite("Tapping an iOS toggle goes through the held switch tap")
-struct AgentLoopSwitchTests {
-    @Test("a CheckBox with a frame is tapped on its switch")
-    func togglesSwitch() async throws {
-        var toggle = Fixtures.entry(1, "Dark Appearance", role: "CheckBox")
-        toggle.frame = ElementFrame(x: 36, y: 184, width: 330, height: 28)
-        let driver = FakeDriver(outlines: ["A", "B"], entries: [toggle])
-        let plan = StepPlan(
-            goalReached: .init(clamping: 0.05), action: .tap(alias: 1, role: "CheckBox", label: "Dark Appearance"),
-            confidence: 0.95, costUSD: 0,
-        )
-        _ = try await AgentLoop(
-            driver: driver,
-            planner: FakePlanner([plan, .tapNext(goal: 0.95)]),
-            configuration: AgentConfiguration(goal: "Turn on dark mode"),
-        ).run()
-        #expect(driver.performedActions == ["tap switch 340.0,198.0"])
-    }
-}

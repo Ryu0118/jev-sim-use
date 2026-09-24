@@ -30,12 +30,8 @@ final class FakeDriver: DeviceDriving {
         }
     }
 
-    func tap(alias: Int) async throws -> [String] {
+    func tap(alias: Int, on _: UISnapshot) async throws -> [String] {
         record("tap @\(alias)")
-    }
-
-    func tapSwitch(in frame: ElementFrame) async throws -> [String] {
-        record("tap switch \(frame.switchCenter.x),\(frame.switchCenter.y)")
     }
 
     func perform(_ action: SimUseDeviceAction, platform _: String) async throws -> [String] {

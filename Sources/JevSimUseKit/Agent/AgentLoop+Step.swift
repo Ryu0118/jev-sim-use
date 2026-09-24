@@ -43,23 +43,10 @@ extension AgentLoop {
 
     func execute(_ action: AgentAction, on snapshot: UISnapshot) async throws -> [String] {
         switch action {
-        case let .tap(alias, _, _):
-            if let frame = Self.switchFrame(alias: alias, in: snapshot) {
-                try await driver.tapSwitch(in: frame)
-            } else {
-                try await driver.tap(alias: alias)
-            }
+        case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
         case let .paste(_, text): try await driver.paste(text)
         case .noneApplies: []
         }
-    }
-
-    /// The frame to tap for an iOS toggle, which ignores sim-use's default instant tap at the row centre.
-    static func switchFrame(alias: Int, in snapshot: UISnapshot) -> ElementFrame? {
-        guard snapshot.platform == "ios",
-              let entry = snapshot.entries?.first(where: { $0.aliases.alias == alias }), entry.isToggle
-        else { return nil }
-        return entry.frame
     }
 }

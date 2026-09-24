@@ -34,7 +34,7 @@ struct SimUseClientTests {
             arguments: ["tap", "@3"] + device, message: "No snapshot", hint: "Run ui",
         )
         await #expect(throws: expected) {
-            try await client(runner).tap(alias: 3)
+            try await client(runner).tap(alias: 3, on: Fixtures.snapshot())
         }
     }
 
@@ -58,7 +58,14 @@ struct SimUseClientTests {
     @Test("taps an iOS switch on its trailing edge with a short hold, which a row-centre instant tap does not flip")
     func switchTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
-        _ = try await client(runner).tapSwitch(in: ElementFrame(x: 36, y: 184, width: 330, height: 28))
-        #expect(runner.recordedCalls == [["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"]])
+        var toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox")
+        toggle.frame = ElementFrame(x: 36, y: 184, width: 330, height: 28)
+        let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Wi-Fi")])
+        _ = try await client(runner).tap(alias: 9, on: snapshot)
+        _ = try await client(runner).tap(alias: 4, on: snapshot)
+        #expect(runner.recordedCalls == [
+            ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"],
+            ["tap", "@4"] + device + ["--json"],
+        ])
     }
 }

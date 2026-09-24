@@ -21,16 +21,17 @@ package struct SimUseClient: DeviceDriving {
         return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }
 
-    /// Runs `sim-use tap @alias`.
-    package func tap(alias: Int) async throws -> [String] {
-        try await run([SimUseContract.Command.tap, "@\(alias)"])
-    }
-
-    /// Runs `sim-use tap -x -y --duration` on the switch at the row's trailing edge.
-    package func tapSwitch(in frame: ElementFrame) async throws -> [String] {
-        let point = frame.switchCenter
+    /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
+    /// on the switch itself, at the row's trailing edge, with a short hold.
+    package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
+        guard snapshot.platform == "ios",
+              let entry = snapshot.entries?.first(where: { $0.aliases.alias == alias }), entry.isToggle,
+              let frame = entry.frame
+        else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
+        // A UISwitch is 51 pt wide and sits at the trailing edge of its row.
+        let x = max(frame.x + frame.width / 2, frame.x + frame.width - 26)
         return try await run([
-            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(point.x)", SimUseContract.Tap.y, "\(point.y)",
+            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.y + frame.height / 2)",
             SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
         ])
     }
