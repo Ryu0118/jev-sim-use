@@ -15,10 +15,14 @@ extension SimUseDeviceAction {
     /// The rubric Jev reads, which says what the action is for.
     var optionDescription: String {
         switch self {
-        case .revealContentBelow: "Scroll down to show the items after the last one in `screen.elements`"
-        case .revealContentAbove: "Scroll up to show the items before the first one in `screen.elements`"
-        case .revealContentRight: "Scroll sideways to show the items to the right of those in `screen.elements`"
-        case .revealContentLeft: "Scroll sideways to show the items to the left of those in `screen.elements`"
+        case .revealContentBelow:
+            "Scroll down: the item `goal` or `notes` names is not in `screen.elements` and may be further down this list"
+        case .revealContentAbove:
+            "Scroll up: the item `goal` or `notes` names is not in `screen.elements` and may be further up this list"
+        case .revealContentRight:
+            "Scroll sideways to the right: show the next page, photo, or items to the right of `screen.elements`"
+        case .revealContentLeft:
+            "Scroll sideways to the left: show the previous page, photo, or items to the left of `screen.elements`"
         case .goBack: "Go back to the previous screen, when `screen` is unrelated to `goal` or a dead end"
         case .swipeFromRightEdge: "Swipe in from the right edge of the screen"
         case .press(.home): "Press the Home button, which leaves the app for the Home Screen"
