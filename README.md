@@ -7,7 +7,7 @@ jev-sim-use is a fast navigator for iOS Simulator and Android devices.
 Claude Code runs the loop, every tap costs a full reasoning turn. jev-sim-use hands that loop to
 [Jev](https://docs.typesafe.ai/), a small model that answers typed questions: each step is one request that returns
 "is the goal reached?" and "which on-screen action comes next?". Give it a goal like "Turn on Dark Mode in Settings"
-and it taps its way there on its own.
+and it taps its way there on its own. Each step sends the screen's visible labels and values to the Jev API.
 
 ## Features
 
@@ -154,11 +154,6 @@ npx skills add Ryu0118/jev-sim-use --all
 ```
 
 ---
-
-## What leaves your machine
-
-Each step sends the screen outline (visible labels and values), your goal, the action history, the session notes, and
-the names of your `-t` texts to the Jev endpoint. The `-t` values stay on your machine. Do not run it on screens with data you may not share.
 
 ## Other providers
 
