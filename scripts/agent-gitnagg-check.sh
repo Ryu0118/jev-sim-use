@@ -2,7 +2,7 @@
 set -eu
 
 HOOK_INPUT=$(cat)
-SOURCE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || exit 0)
+SOURCE_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 [ -f "$SOURCE_ROOT/.gitnagg.yml" ] || exit 0
 
 GITNAGG=$("$SOURCE_ROOT/scripts/mise.sh" which gitnagg 2>/dev/null || true)

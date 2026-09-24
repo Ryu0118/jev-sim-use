@@ -8,7 +8,7 @@ case "$COMMAND" in
     *) exit 0 ;;
 esac
 
-SOURCE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || exit 0)
+SOURCE_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 
 set +e
 CHECK_OUTPUT=$("$SOURCE_ROOT/scripts/lint-staged.sh" 2>&1)

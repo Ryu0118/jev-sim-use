@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./.codex/hooks/pre-commit-lint.sh"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/pre-commit-lint.sh\""
           }
         ]
       }
@@ -17,19 +17,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./.codex/hooks/format.sh"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/format.sh\""
           },
           {
             "type": "command",
-            "command": "./.codex/hooks/post-edit-lint.sh"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-lint.sh\""
           },
           {
             "type": "command",
-            "command": "./.codex/hooks/post-edit-ast-lint.sh"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/post-edit-ast-lint.sh\""
           },
           {
             "type": "command",
-            "command": "./.codex/hooks/gitnagg-check.sh"
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/hooks/gitnagg-check.sh\""
           }
         ]
       }

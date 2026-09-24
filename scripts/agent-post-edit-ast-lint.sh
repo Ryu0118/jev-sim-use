@@ -8,7 +8,7 @@ case "$FILE_PATH" in
     *) exit 0 ;;
 esac
 
-SOURCE_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+SOURCE_ROOT=$(cd "$(dirname "$0")/.." && pwd)
 case "$FILE_PATH" in
     /*) TARGET_FILE="$FILE_PATH" ;;
     *) TARGET_FILE="$SOURCE_ROOT/$FILE_PATH" ;;

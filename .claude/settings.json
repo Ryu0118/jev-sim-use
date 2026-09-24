@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./.claude/hooks/pre-commit-lint.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-lint.sh"
           }
         ]
       }
@@ -17,19 +17,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "./.claude/hooks/format.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format.sh"
           },
           {
             "type": "command",
-            "command": "./.claude/hooks/post-edit-lint.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-lint.sh"
           },
           {
             "type": "command",
-            "command": "./.claude/hooks/post-edit-ast-lint.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-ast-lint.sh"
           },
           {
             "type": "command",
-            "command": "./.claude/hooks/gitnagg-check.sh"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/gitnagg-check.sh"
           }
         ]
       }
