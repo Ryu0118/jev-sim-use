@@ -100,9 +100,8 @@ jev-sim-use exec screenshot
 ## When Jev gets stuck
 
 Jev picks well among what is on screen, but it cannot know where an off-screen setting lives or what an app-specific
-label means. When it is unsure, it first looks around on its own (scrolls down, then goes back). If that does not
-help, it stops before guessing and leaves a session, so a person or your agent can supply the missing fact and let
-it continue from where it stopped:
+label means. When it is unsure, it stops before guessing and leaves a session, so a person or your agent can supply
+the missing fact and let it continue from where it stopped:
 
 ```sh
 $ jev-sim-use "Turn on Dark Mode"
@@ -181,7 +180,7 @@ jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agen
 | `-d, --device` | the only usable device | A `deviceId` from `sim-use devices` |
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
 | `--max-steps` | 15 | Per run; `session resume` gets a fresh budget |
-| `--min-confidence` | 0.6 | Below this, Jev explores and then hands over instead of tapping |
+| `--min-confidence` | 0.6 | Below this, it hands over instead of guessing |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
 | `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
 

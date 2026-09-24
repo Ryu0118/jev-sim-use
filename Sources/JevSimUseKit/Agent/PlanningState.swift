@@ -11,14 +11,27 @@ struct PlanningState: Encodable, Sendable {
     let notes: [String]
     let platform: String
     let screen: Screen
-    let history: [HistoryEntry]
+    let history: [Step]
 
     init(_ request: PlanRequest) {
         goal = request.goal
         notes = Array(request.notes.suffix(Self.notesLimit))
         platform = request.snapshot.platform
         screen = Screen(request.snapshot)
-        history = Array(request.history.suffix(Self.historyLimit))
+        history = request.history.suffix(Self.historyLimit).map(Step.init)
+    }
+
+    /// One earlier step, with its effect in words so Jev can tell a dead end from progress.
+    struct Step: Encodable, Sendable {
+        let step: Int
+        let action: String
+        let result: String?
+
+        init(_ entry: HistoryEntry) {
+            step = entry.step
+            action = entry.action
+            result = entry.screenChanged.map { $0 ? "screen changed" : "no visible effect" }
+        }
     }
 
     /// The id an element carries in the state, which is also its tap option name.

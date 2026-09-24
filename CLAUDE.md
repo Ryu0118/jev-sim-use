@@ -102,11 +102,11 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
   only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
   Jev's 255-option limit, and always `none_of_these`, which hands over (`AgentOutcome.noActionFits`).
-- Code, not Jev, handles search and loops: an action already tried on a screen is never offered again there
-  (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states); landing on
-  screens already seen counts toward the stall limit; when Jev picks `none_of_these`, or is below the bar for a reversible
-  action, `Exploration` scrolls down, then goes back, once per screen, before handing over (an unsure pick usually
-  means the target is off screen; exploring costs a step, handing over costs a supervisor turn).
+- Loops are code's job: an action already tried on a screen is never offered again there
+  (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
+  anyway hands over, and landing on screens already seen counts toward the stall limit. `history` tells Jev each
+  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `none_of_these` and
+  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen.
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev
   judges them correctly once the switch really flips. iOS switches ignore sim-use's instant row-centre tap, so

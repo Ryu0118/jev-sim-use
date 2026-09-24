@@ -7,7 +7,7 @@ package struct ActionPolicy: Sendable, Hashable {
     package static let confidentSupport = RoutingPolicy.default.autoAtOrAbove
     /// Pasting text, leaving the app, or locking the device is not undone by going back, so it needs this much.
     package static let irreversibleMinimum = RoutingPolicy.default.autoAtOrAbove
-    /// Scrolling and going back change nothing in the app and cost one step when wrong, so exploring needs less.
+    /// Scrolling and going back change nothing in the app and cost one step when wrong, so they need less.
     package static let harmlessMaximum = 0.3
 
     /// Hand over below this support for reversible actions (taps, scrolls, going back).

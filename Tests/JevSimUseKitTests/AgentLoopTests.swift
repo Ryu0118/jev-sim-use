@@ -19,18 +19,20 @@ struct AgentLoopTests {
         #expect(driver.performedActions == ["tap @1", "tap @1"])
     }
 
-    @Test("explores down, then back, before handing over an unsure tap, and never taps")
+    @Test("hands over an unsure tap without acting or exploring")
     func escalates() async throws {
         let driver = FakeDriver(outlines: ["A"])
         let outcome = try await run(driver, [.tapNext(confidence: 0.3)])
-        #expect(outcome == .escalated(step: 3, action: .tap(alias: 1, role: "Button", label: "Next"), confidence: 0.3))
-        #expect(driver.performedActions == ["revealContentBelow", "goBack"])
+        #expect(outcome == .escalated(step: 1, action: .tap(alias: 1, role: "Button", label: "Next"), confidence: 0.3))
+        #expect(driver.performedActions.isEmpty)
     }
 
-    @Test("stops when actions stop changing the screen")
-    func stalls() async throws {
-        let outcome = try await run(FakeDriver(outlines: ["A"]), [.tapNext()], maxSteps: 10)
-        #expect(outcome == .stalled(steps: 3))
+    @Test("hands over instead of repeating an action that did not change the screen")
+    func noRepeat() async throws {
+        let driver = FakeDriver(outlines: ["A"])
+        let outcome = try await run(driver, [.tapNext()], maxSteps: 10)
+        #expect(outcome == .noActionFits(step: 2))
+        #expect(driver.performedActions == ["tap @1"])
     }
 
     @Test("stops at the step limit")
@@ -53,12 +55,12 @@ struct AgentLoopTests {
         #expect(outcome == .goalReached(steps: 1))
     }
 
-    @Test("explores down, then back, before handing over when nothing fits")
+    @Test("hands over at once when nothing fits")
     func noActionFits() async throws {
         let plan = StepPlan(goalReached: Probability(clamping: 0.05), action: .noneApplies, confidence: 0.9, costUSD: 0)
         let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [plan]) == .noActionFits(step: 3))
-        #expect(driver.performedActions == ["revealContentBelow", "goBack"])
+        #expect(try await run(driver, [plan]) == .noActionFits(step: 1))
+        #expect(driver.performedActions.isEmpty)
     }
 
     @Test("will not paste on support that would be enough for a tap")

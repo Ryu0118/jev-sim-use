@@ -16,9 +16,9 @@ extension SimUseDeviceAction {
     var optionDescription: String {
         switch self {
         case .revealContentBelow:
-            "Scroll down: the item `goal` or `notes` names is not in `screen.elements` and may be further down this list"
+            "Scroll down: nothing in `screen.elements` is or leads to what `goal` needs, and this list may continue below"
         case .revealContentAbove:
-            "Scroll up: the item `goal` or `notes` names is not in `screen.elements` and may be further up this list"
+            "Scroll up: nothing in `screen.elements` is or leads to what `goal` needs, and this list may continue above"
         case .revealContentRight:
             "Scroll sideways to the right: show the next page, photo, or items to the right of `screen.elements`"
         case .revealContentLeft:

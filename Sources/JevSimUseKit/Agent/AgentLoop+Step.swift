@@ -29,21 +29,13 @@ extension AgentLoop {
             return .stop(.goalProbablyReached(steps: progress.steps, probability: plan.goalReached.value))
         }
         let step = progress.nextStep
-        // A gesture is composed from answers, not picked from filtered options, so a repeat is caught here.
+        // Code does not explore on Jev's behalf: scrolling or going back when Jev is unsure moved away from the right
+        // screen as often as it found anything. Nothing fitting, or a repeat of a gesture that did nothing here (it
+        // is composed from answers, not picked from filtered options), hands over like low support does.
         if plan.action == .noneApplies || progress.ineffectiveActions.contains(plan.action.optionName) {
-            guard let action = Exploration.next(excluding: progress.ineffectiveActions) else {
-                return .stop(.noActionFits(step: step))
-            }
-            report(.exploring(step: step, action: action))
-            return .act(action)
+            return .stop(.noActionFits(step: step))
         }
         if plan.support < configuration.actionPolicy.requiredSupport(for: plan.action) {
-            // An unsure reversible pick often means the target is off screen. Exploring costs one step; handing over
-            // costs the supervisor a turn. Irreversible picks still hand over at once.
-            if plan.action.risk != .irreversible, let action = Exploration.next(excluding: progress.ineffectiveActions) {
-                report(.exploring(step: step, action: action))
-                return .act(action)
-            }
             return .stop(.escalated(step: step, action: plan.action, confidence: plan.support))
         }
         if plan.support < ActionPolicy.confidentSupport {

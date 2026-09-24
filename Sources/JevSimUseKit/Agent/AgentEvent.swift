@@ -4,8 +4,6 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     case planned(step: Int, plan: StepPlan)
     /// `action` is about to run although confidence is in the confirm band.
     case lowConfidence(step: Int, confidence: Double)
-    /// Jev found nothing, or was too unsure to act, so code explores with `action`.
-    case exploring(step: Int, action: AgentAction)
 
     /// A single progress line for the console.
     package var description: String {
@@ -16,8 +14,6 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
                 + (plan.model.isEmpty ? ")" : ", \(plan.model))")
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
-        case let .exploring(step, action):
-            "[\(step)] exploring instead: \(action)"
         }
     }
 

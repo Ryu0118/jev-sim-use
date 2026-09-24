@@ -6,7 +6,7 @@ struct AgentOptions: ParsableArguments {
     @Option(help: "Maximum number of actions in this run.")
     var maxSteps = 15
 
-    @Option(help: "Below this support (0...1), explore (scroll down, go back) before handing over a tap or scroll. Pasting and buttons need at least 0.85.")
+    @Option(help: "Hand over when Jev's support for a tap or scroll is below this (0...1). Pasting and buttons need at least 0.85.")
     var minConfidence = RoutingPolicy.default.escalateBelow
 
     func validate() throws {
