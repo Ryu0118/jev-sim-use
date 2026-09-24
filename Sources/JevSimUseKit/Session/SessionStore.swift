@@ -10,7 +10,7 @@ package struct SessionStore: Sendable {
     package static let timeToLive: TimeInterval = 7 * 24 * 60 * 60
 
     /// The directory holding `<id>.json` files.
-    package let directory: URL
+    let directory: URL
     private let fileManager: any FileManagerProtocol
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder

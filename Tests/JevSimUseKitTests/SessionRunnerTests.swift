@@ -4,7 +4,7 @@ import Testing
 
 struct SessionRunnerTests {
     private let store = SessionStore(environment: [
-        "XDG_STATE_HOME": FileManager.default.temporaryDirectory.appending(path: UUID().uuidString).path(),
+        "XDG_STATE_HOME": TemporaryPath().directory.path(),
     ])
 
     @Test("tell appends a note to the latest session and makes it the most recent")

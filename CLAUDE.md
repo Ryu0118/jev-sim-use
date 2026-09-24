@@ -95,7 +95,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev
   judges them correctly once the switch really flips. iOS switches ignore sim-use's instant row-centre tap, so
-  `AgentLoop` taps a toggle's trailing edge with `--duration 0.05` (`DeviceDriving.tapSwitch`). Scrolling / going back
+  `SimUseClient.tap(alias:on:)` taps a toggle's trailing edge with `--duration 0.05`. Loop detection compares screens
+  by `UISnapshot.identity` (elements and state, no frames), so a scroll that bounces counts as no change. Scrolling / going back
   need at most 0.3 support.
 - Choice options are built at runtime, so typed `ChoiceQuestion` reads do not apply: read `answers[name]` and validate
   the chosen name against the offered options.

@@ -4,7 +4,7 @@ import Testing
 
 struct SessionStoreTests {
     private let store = SessionStore(environment: [
-        "XDG_STATE_HOME": FileManager.default.temporaryDirectory.appending(path: UUID().uuidString).path(),
+        "XDG_STATE_HOME": TemporaryPath().directory.path(),
     ])
 
     @Test("round-trips a session with notes, history, and runs")
