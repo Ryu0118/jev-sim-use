@@ -1,14 +1,14 @@
 @testable import JevSimUseKit
 import Synchronization
 
-/// Serves observations in order (repeating the last) and records actions.
+/// Shows `outlines[n]` after `n` actions (repeating the last), however often the screen is read, and records actions.
 final class FakeDriver: DeviceDriving {
     private let observations: [ScreenObservation]
     private let disappearedAfterAction: [String]
-    private let state = Mutex<(index: Int, actions: [String])>((0, []))
+    private let state = Mutex<[String]>([])
 
     var performedActions: [String] {
-        state.withLock { $0.actions }
+        state.withLock { $0 }
     }
 
     init(
@@ -26,10 +26,7 @@ final class FakeDriver: DeviceDriving {
     }
 
     func observe() async throws -> ScreenObservation {
-        state.withLock { state in
-            defer { state.index += 1 }
-            return observations[min(state.index, observations.count - 1)]
-        }
+        state.withLock { observations[min($0.count, observations.count - 1)] }
     }
 
     func tap(alias: Int, on _: UISnapshot) async throws -> [String] {
@@ -49,7 +46,7 @@ final class FakeDriver: DeviceDriving {
     }
 
     private func record(_ action: String) -> [String] {
-        state.withLock { $0.actions.append(action) }
+        state.withLock { $0.append(action) }
         return disappearedAfterAction
     }
 }

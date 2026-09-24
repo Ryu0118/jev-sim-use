@@ -28,7 +28,7 @@ package struct AgentLoop: Sendable {
         var progress = AgentProgress(history: history)
         while true {
             try Task.checkCancellation()
-            let observation = try await driver.observe()
+            let observation = try await observeSettled()
             if let outcome = progress.record(observation, stallLimit: configuration.stallLimit) {
                 return AgentRunResult(outcome: outcome, history: progress.history)
             }

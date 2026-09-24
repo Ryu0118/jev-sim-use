@@ -118,3 +118,17 @@ struct AgentLoopProbablyDoneTests {
         #expect(driver.performedActions.isEmpty)
     }
 }
+
+@Suite("Plans are made on a settled screen, not one still mid-transition")
+struct AgentLoopSettleTests {
+    @Test("reads again until two readings agree")
+    func settles() async throws {
+        let planner = RecordingPlanner()
+        _ = try await AgentLoop(
+            driver: ScriptedDriver(outlines: ["Old", "New", "New"]),
+            planner: planner,
+            configuration: AgentConfiguration(goal: "g"),
+        ).run()
+        #expect(planner.outlines.first == "New")
+    }
+}

@@ -53,4 +53,24 @@ extension AgentLoop {
         case .noneApplies: []
         }
     }
+
+    /// Extra readings allowed while the screen is still changing.
+    static let settleReads = 2
+
+    /// Reads the screen until two readings agree. A reading taken mid-transition showed the old screen; Jev then
+    /// tapped the same item again, and sim-use's cached alias hit whatever sat there on the new screen.
+    func observeSettled() async throws -> ScreenObservation {
+        var reading = try await driver.observe()
+        var disappeared = reading.disappearedApps
+        for _ in 0 ..< Self.settleReads {
+            let next = try await driver.observe()
+            disappeared += next.disappearedApps
+            let settled = next.snapshot.identity == reading.snapshot.identity
+            reading = next
+            if settled {
+                break
+            }
+        }
+        return ScreenObservation(snapshot: reading.snapshot, disappearedApps: disappeared)
+    }
 }
