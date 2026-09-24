@@ -13,7 +13,10 @@ struct ActionCatalogTests {
         ])
         let names = ActionCatalog.actions(for: snapshot, texts: ["hello"]).map(\.optionName)
         #expect(names == [
-            "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "go_back", "none_of_these",
+            "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right",
+            "scroll_to_reveal_left", "go_back", "swipe_down_from_top_edge", "swipe_up_from_bottom_edge",
+            "swipe_in_from_right_edge", "press_home_button", "press_lock_button", "press_apple_pay_button",
+            "press_side_button", "press_siri_button", "none_of_these",
         ])
     }
 
@@ -21,7 +24,7 @@ struct ActionCatalogTests {
     func cap() {
         let entries = (1 ... 300).map { Fixtures.entry($0, "Row \($0)") }
         let names = ActionCatalog.actions(for: Fixtures.snapshot(entries: entries), texts: []).map(\.optionName)
-        #expect(names.count == ActionCatalog.maximumTapTargets + 4)
+        #expect(names.count == ActionCatalog.maximumTapTargets + SimUseDeviceAction.available(on: "ios").count + 1)
         #expect(names.count <= ActionCatalog.maximumOptions)
         #expect(Set(names).count == names.count)
     }

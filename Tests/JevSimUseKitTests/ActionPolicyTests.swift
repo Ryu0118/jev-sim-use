@@ -14,4 +14,11 @@ struct ActionPolicyTests {
         let policy = ActionPolicy(minimumSupport: 0.3)
         #expect(policy.requiredSupport(for: .paste(index: 0, text: "hi")) == ActionPolicy.irreversibleMinimum)
     }
+
+    @Test("demands more before leaving the app or locking the device", arguments: [
+        AgentAction.device(.press(.home)), .device(.press(.lock)), .device(.swipeFromBottomEdge),
+    ])
+    func leavingTheApp(action: AgentAction) {
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.irreversibleMinimum)
+    }
 }

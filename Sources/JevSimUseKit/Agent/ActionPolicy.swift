@@ -5,7 +5,7 @@ import Jev
 package struct ActionPolicy: Sendable, Hashable {
     /// Support at or above which acting needs no note.
     package static let confidentSupport = RoutingPolicy.default.autoAtOrAbove
-    /// Pasting text is not undone by going back, so it needs at least this much support.
+    /// Pasting text, leaving the app, or locking the device is not undone by going back, so it needs this much.
     package static let irreversibleMinimum = RoutingPolicy.default.autoAtOrAbove
     /// Scrolling and going back change nothing in the app and cost one step when wrong, so exploring needs less.
     package static let harmlessMaximum = 0.3
@@ -19,10 +19,10 @@ package struct ActionPolicy: Sendable, Hashable {
 
     /// The support `action` needs before it runs; higher for actions going back cannot undo.
     package func requiredSupport(for action: AgentAction) -> Double {
-        switch action {
-        case .paste: max(minimumSupport, Self.irreversibleMinimum)
-        case .device: min(minimumSupport, Self.harmlessMaximum)
-        case .tap, .noneApplies: minimumSupport
+        switch action.risk {
+        case .harmless: min(minimumSupport, Self.harmlessMaximum)
+        case .reversible: minimumSupport
+        case .irreversible: max(minimumSupport, Self.irreversibleMinimum)
         }
     }
 }

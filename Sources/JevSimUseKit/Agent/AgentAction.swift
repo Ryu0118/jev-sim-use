@@ -14,9 +14,7 @@ package enum AgentAction: Sendable, Hashable {
     var optionName: String {
         switch self {
         case let .tap(alias, _, _): PlanningState.elementID(alias)
-        case .device(.revealContentBelow): "scroll_to_reveal_below"
-        case .device(.revealContentAbove): "scroll_to_reveal_above"
-        case .device(.goBack): "go_back"
+        case let .device(action): action.optionName
         case let .paste(index, _): "paste_text_\(index)"
         case .noneApplies: "none_of_these"
         }
@@ -36,11 +34,21 @@ package enum AgentAction: Sendable, Hashable {
     var optionDescription: String {
         switch self {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""
-        case .device(.revealContentBelow): "Scroll down to show the items after the last one in `screen.elements`"
-        case .device(.revealContentAbove): "Scroll up to show the items before the first one in `screen.elements`"
-        case .device(.goBack): "Go back to the previous screen, when `screen` is unrelated to `goal` or a dead end"
+        case let .device(action): action.optionDescription
         case let .paste(_, text): "Paste the text \"\(text)\" into the focused input field"
         case .noneApplies: "Nothing helps, not even scrolling or going back to look elsewhere"
+        }
+    }
+}
+
+extension AgentAction {
+    /// How costly the action is when wrong.
+    var risk: ActionRisk {
+        switch self {
+        case .tap: .reversible
+        case let .device(action): action.risk
+        case .paste: .irreversible
+        case .noneApplies: .harmless
         }
     }
 }
