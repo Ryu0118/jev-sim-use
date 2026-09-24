@@ -3,10 +3,10 @@ extension ElementGesture {
     var optionDescription: String {
         switch self {
         case .longPress: "Press and hold an element, to open its context menu or start rearranging"
-        case .swipeLeft: "Swipe left across an element, to reveal row actions or move a carousel forward"
-        case .swipeRight: "Swipe right across an element, to reveal leading row actions or move a carousel back"
-        case .swipeUp: "Swipe up within an element, to move its own content up"
-        case .swipeDown: "Swipe down within an element, to move its own content down or refresh it"
+        case .swipeLeft: "Swipe left across one element, to reveal a row's actions or move a carousel inside it; not for moving the whole screen to the next page or photo, which scrolling sideways does"
+        case .swipeRight: "Swipe right across one element, to reveal a row's leading actions or move a carousel inside it back; not for moving the whole screen back a page or photo, which scrolling sideways does"
+        case .swipeUp: "Swipe up within one element, to move only that element's content; not for scrolling the screen"
+        case .swipeDown: "Swipe down within one element, to move only that element's content or refresh it; not for scrolling the screen"
         case .pinchOut: "Spread two fingers on an element, to zoom in"
         case .pinchIn: "Pinch two fingers on an element, to zoom out"
         case .rotateClockwise: "Rotate two fingers clockwise on an element"
