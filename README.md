@@ -52,7 +52,6 @@ With one booted simulator or connected Android device, it is picked automaticall
 ```sh
 sim-use devices                                   # list deviceIds
 jev-sim-use "Turn on Dark Mode in Settings" -d <deviceId>
-export SIM_USE_DEVICE=<deviceId>                  # or pin it for the shell
 ```
 
 Physical iPhones are not supported.
@@ -96,7 +95,7 @@ jev-sim-use config get|set|unset|list  base-url, model
 
 | Option | Default | |
 |---|---|---|
-| `-d, --device` | `$SIM_USE_DEVICE`, then the only usable device | A `deviceId` from `sim-use devices` |
+| `-d, --device` | the only usable device | A `deviceId` from `sim-use devices` |
 | `-t, --text` | none | Text it may paste. Repeatable |
 | `--max-steps` | 15 | |
 | `--min-confidence` | 0.6 | Stops and hands over when Jev is less sure |
