@@ -11,7 +11,8 @@ extension JevStepPlanner {
         guard menu.operations.contains(where: { $0.optionName == operationAnswer.value }) else {
             throw PlanningError.unknownChoice(operationAnswer.value)
         }
-        var (operation, operationSupport) = pooledOperation(operationAnswer, among: menu.operations)
+        let probabilities = operationAnswer.probabilities
+        var (operation, operationSupport) = pooledOperation(probabilities, among: menu.operations)
         // Tapping the field Jev would type into is only the first half of typing (enter_text taps it too): when the
         // tap target and the field target agree, the two operations are one intent and their probabilities add up.
         if [.tap, .enterText].contains(operation), menu.operations.contains(.enterText),
@@ -19,17 +20,17 @@ extension JevStepPlanner {
            element == (try? choice(fieldQuestion, in: response).value)
         {
             operation = .enterText
-            operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (operationAnswer.probabilities[$1.optionName] ?? 0) }
+            operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
         let (action, targetSupport) = try compose(operation, response: response, menu: menu)
-        let alternatives = operationAnswer.probabilities
+        let alternatives = probabilities
             .filter { $0.key != operation.optionName && $0.value >= 0.05 }
             .sorted { $0.value > $1.value }
             .prefix(2)
             .map { StepPlan.Alternative(name: $0.key, probability: $0.value) }
         return try StepPlan(
             action: action,
-            confidence: operationAnswer.confidence,
+            confidence: probabilities[operation.optionName] ?? 0,
             support: min(operationSupport, targetSupport),
             finishes: response.answers.noul(named: finishesQuestion),
             alternatives: Array(alternatives),
@@ -40,20 +41,17 @@ extension JevStepPlanner {
 
     /// The operation to run: the most probable group of equivalent operations wins (two rotation directions can
     /// together outweigh a scroll that is individually more probable), and within it the more probable member.
-    static func pooledOperation(_ answer: Answer.Choice, among operations: [Operation]) -> (Operation, Double) {
+    static func pooledOperation(_ probabilities: [String: Double], among operations: [Operation]) -> (Operation, Double) {
         func probability(_ operation: Operation) -> Double {
-            answer.probabilities[operation.optionName] ?? 0
+            probabilities[operation.optionName] ?? 0
         }
         let groups = operations.map { operation in
             (operation, operation.equivalents.reduce(0) { $0 + probability($1) })
         }
-        guard let best = groups.max(by: { $0.1 < $1.1 }), best.1 > 0,
+        guard let best = groups.max(by: { $0.1 < $1.1 }),
               let chosen = best.0.equivalents.max(by: { probability($0) < probability($1) })
-        else {
-            let chosen = operations.first { $0.optionName == answer.value } ?? .blocked
-            return (chosen, answer.confidence)
-        }
-        return (chosen, max(best.1, chosen.optionName == answer.value ? answer.confidence : 0))
+        else { return (.blocked, 0) }
+        return (chosen, best.1)
     }
 
     /// The chosen target and its support. Elements with the same role and label (two "Calendar" buttons) split the

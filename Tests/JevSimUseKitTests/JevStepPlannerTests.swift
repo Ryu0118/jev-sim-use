@@ -73,7 +73,7 @@ struct JevStepPlannerTests {
             }
             return nil
         }())
-        let (operation, support) = JevStepPlanner.pooledOperation(answer, among: [
+        let (operation, support) = JevStepPlanner.pooledOperation(answer.probabilities, among: [
             .device(.revealContentAbove), .gesture(.rotateClockwise), .gesture(.rotateCounterclockwise),
         ])
         #expect(operation == .gesture(.rotateClockwise))
