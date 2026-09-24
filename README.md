@@ -23,6 +23,22 @@ Requires macOS 15+ and sim-use 0.14.0+:
 brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use
 ```
 
+```sh
+curl -fsSL https://raw.githubusercontent.com/Ryu0118/jev-sim-use/main/install.sh | bash
+```
+
+To update, run the same command. It skips the download if already up-to-date.
+
+```sh
+# Install a specific version
+curl -fsSL https://raw.githubusercontent.com/Ryu0118/jev-sim-use/main/install.sh | VERSION=0.1.0 bash
+
+# Force reinstall
+curl -fsSL https://raw.githubusercontent.com/Ryu0118/jev-sim-use/main/install.sh | FORCE=1 bash
+```
+
+### Other methods
+
 #### Mise ([jdx/mise](https://github.com/jdx/mise))
 
 ```sh
@@ -72,13 +88,34 @@ jev-sim-use exec screenshot
 
 ---
 
-## Using it from an agent
+## Agent skill
 
-Add a line like this to your project's `CLAUDE.md`, so the agent delegates navigation instead of tapping step by step:
+The `jev-sim-use` skill teaches your agent to delegate navigation to one command instead of tapping step by step.
 
-```md
-To reach a screen in the simulator, run `jev-sim-use "<goal>"` (exit 0 means it got there).
-Use sim-use directly only to inspect or verify the screen once you are there.
+```sh
+jev-sim-use skill install --client claude    # ~/.claude/skills
+jev-sim-use skill install --client agents    # ~/.agents/skills (Codex and other AGENTS-style clients)
+```
+
+Or install it as a plugin or package:
+
+```sh
+# Claude Code
+/plugin marketplace add Ryu0118/jev-sim-use
+/plugin install jev-sim-use@jev-sim-use
+
+# Codex
+codex plugin marketplace add Ryu0118/jev-sim-use
+codex plugin add jev-sim-use@jev-sim-use
+
+# APM
+apm install Ryu0118/jev-sim-use
+
+# GitHub CLI
+gh skill install Ryu0118/jev-sim-use jev-sim-use --agent claude-code
+
+# skills CLI
+npx skills add Ryu0118/jev-sim-use --all
 ```
 
 ---
@@ -105,6 +142,7 @@ jev-sim-use [run] <goal> [options]   work toward a goal (default command)
 jev-sim-use doctor                   check sim-use, the device, and Jev settings
 jev-sim-use exec <sim-use args...>   run a sim-use command as-is
 jev-sim-use config get|set|unset|list  base-url, model
+jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agents or --dest <dir>)
 ```
 
 | Option | Default | |
