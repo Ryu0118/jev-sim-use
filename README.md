@@ -17,11 +17,27 @@ and it taps its way there on its own.
 
 ## Installation
 
-Requires macOS 15+, Swift 6.2+, and sim-use 0.14.0+:
+Requires macOS 15+ and sim-use 0.14.0+:
 
 ```sh
 brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use
 ```
+
+#### Mise ([jdx/mise](https://github.com/jdx/mise))
+
+```sh
+mise use -g github:Ryu0118/jev-sim-use
+```
+
+#### Nest ([mtj0928/nest](https://github.com/mtj0928/nest))
+
+```sh
+nest install Ryu0118/jev-sim-use
+```
+
+#### Build from source
+
+Requires Swift 6.2+.
 
 ```sh
 git clone https://github.com/Ryu0118/jev-sim-use.git
