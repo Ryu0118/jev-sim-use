@@ -136,7 +136,12 @@ jobs:
             echo "Version files already at $VERSION, skipping commit"
           else
             git commit -m "chore: bump version to $VERSION"
-            git push origin main
+            # The binaries were built from the dispatched commit, so the release must tag exactly that source.
+            # If main moved during the run, stop instead of rebasing unbuilt commits under the tag.
+            if ! git push origin HEAD:main; then
+              echo "::error::main moved while the release was running. Re-run the release from the new main."
+              exit 1
+            fi
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
         env:
