@@ -163,4 +163,4 @@ Exit status: 0 goal reached, 1 not reached, 2 setup error, 3 sim-use or Jev fail
 
 ## License
 
-No license yet. Third-party notices are in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
+MIT. See [LICENSE](LICENSE). Third-party notices are in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
