@@ -8,7 +8,7 @@ let package = Package(
         .macOS(.v15),
     ],
     products: [
-        .executable(name: "SimJevUse", targets: ["SimJevUse"]),
+        .executable(name: "sim-jev-use", targets: ["SimJevUse"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),

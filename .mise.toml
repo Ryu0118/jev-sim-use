@@ -64,7 +64,7 @@ run = "docsync update-checksum --config docsync.yml"
 
 [tasks.run]
 description = "Run the executable"
-run = "swift run SimJevUse"
+run = "swift run sim-jev-use"
 
 [tasks.setup-hooks]
 description = "Configure Git to use the shared hooks"

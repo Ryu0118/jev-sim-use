@@ -1,4 +1,4 @@
-# SimJevUse
+# sim-jev-use
 
 CLI that drives an iOS Simulator / Android device toward a natural-language goal. It shells out to
 [sim-use](https://github.com/lycorp-jp/sim-use) (lycorp-jp, Apache-2.0) to observe and act, and asks
@@ -15,14 +15,16 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 ## Architecture
 
-- `SimJevUse` (executable): ArgumentParser commands `run` (default) and `doctor`. Stays thin.
+- `SimJevUse` target (binary `sim-jev-use`): ArgumentParser commands `run` (default, positional goal), `exec`
+  (execv sim-use with arguments passed through), `doctor`, `config`. Stays thin.
 - `SimJevUseKit/Process`: `CommandRunning` seam; `ProcessCommandRunner` drains stdout and stderr
   concurrently, because `ui --json` output can exceed the pipe buffer.
 - `SimJevUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
   distinct from exit 127), version gate (`SimUseBootstrap.minimumVersion`), device pinning, and
   `--json` envelope decoding.
-- `SimJevUseKit/Configuration`: `JevSettings` resolves flag > env > default for the endpoint and model.
-  The key comes only from `TYPESAFE_API_KEY`.
+- `SimJevUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
+  (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
+  wire format; other providers go behind a compatible proxy.
 - `SimJevUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
   noul `goal_reached` and a runtime-built choice `next_action`.
 

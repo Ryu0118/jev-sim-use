@@ -1,11 +1,11 @@
-# SimJevUse
+# sim-jev-use
 
 Drives an iOS Simulator or Android emulator toward a goal written in plain language.
 [sim-use](https://github.com/lycorp-jp/sim-use) reads the screen and performs actions;
 [Jev](https://docs.typesafe.ai/) (via [swift-jev](https://github.com/d-date/swift-jev))
 picks the next action.
 
-Jev does not write text, it answers typed questions. On each step SimJevUse asks it two
+Jev does not write text, it answers typed questions. On each step sim-jev-use asks it two
 things in one request: *is the goal reached?* (a probability) and *which of these actions
 comes next?* (a choice over the elements sim-use found on screen, plus scroll, back, and
 any texts you allowed it to paste).
@@ -27,24 +27,35 @@ observe (sim-use ui) → ask Jev → act (sim-use tap / gesture / button / paste
 ## Usage
 
 ```sh
-export TYPESAFE_API_KEY=...        # never passed as a flag
-swift run SimJevUse doctor         # checks sim-use, the device, and Jev settings
-swift run SimJevUse run --goal "Turn on Dark Mode in Settings"
-swift run SimJevUse run --goal "Search for ramen" --text "ramen" --device <sim-use device id>
+export TYPESAFE_API_KEY=...                       # read from the environment only
+sim-jev-use doctor                                # checks sim-use, the device, and Jev settings
+sim-jev-use "Turn on Dark Mode in Settings"
+sim-jev-use "Search for ramen" -t ramen -d <sim-use device id>
+sim-jev-use exec ui                               # any sim-use command, run as-is
+sim-jev-use config set base-url https://proxy.example   # persist settings
 ```
 
-The app must already be open, because sim-use cannot launch apps. Progress goes to stderr.
-The final outcome goes to stdout, and the exit status is 0 only when the goal is reached.
+From a checkout, use `swift run sim-jev-use ...`. The app must already be open, because
+sim-use cannot launch apps. Progress goes to stderr and the final outcome to stdout.
 
 | Option | Default | |
 |---|---|---|
-| `--goal` | required | What to accomplish |
-| `--device` | the only usable device | A `deviceId` from `sim-use devices` |
-| `--text` | none | Text the agent may paste. Repeatable. Jev can only choose it, not write it |
+| `<goal>` | required | What to accomplish. Use `sim-jev-use run "doctor"` for a goal that collides with a subcommand |
+| `-d, --device` | `$SIM_USE_DEVICE`, then the only usable device | A `deviceId` from `sim-use devices` |
+| `-t, --text` | none | Text the agent may paste. Repeatable. Jev can only choose it, not write it |
 | `--max-steps` | 15 | Upper bound on actions |
 | `--min-confidence` | 0.6 | Stop and hand over when Jev is less sure than this |
-| `--endpoint` | `$TYPESAFE_ENDPOINT`, then `https://api.typesafe.ai/v1/systemone` | The full evaluation URL. HTTPS, or HTTP on localhost only |
-| `--model` | `$TYPESAFE_MODEL`, then `jev-latest` | |
+| `--base-url` | `$TYPESAFE_BASE_URL`, then `config` `base-url`, then `https://api.typesafe.ai` | `/v1/systemone` is appended. HTTPS, or HTTP on localhost only |
+| `--model` | `$TYPESAFE_MODEL`, then `config` `model`, then `jev-latest` | |
+
+`config` stores `base-url` and `model` in `$XDG_CONFIG_HOME/sim-jev-use/config.json`
+(default `~/.config`). The API key is never stored.
+
+To use Jev through another provider (e.g. Cloudflare Workers AI), put a proxy that speaks
+TypeSafe's `POST /v1/systemone` format in front of it and point `base-url` at the proxy.
+
+Exit status: 0 goal reached, 1 goal not reached, 2 setup error (sim-use, device, key, URL),
+3 sim-use or Jev failure, 64 invalid arguments. `exec` exits with sim-use's own status.
 
 Each step sends the screen outline (visible labels and values), your goal, the action history,
 and every `--text` value to the Jev endpoint. Do not run it on screens with data you may not share.
