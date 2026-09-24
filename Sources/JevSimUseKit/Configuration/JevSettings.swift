@@ -15,7 +15,9 @@ package struct JevSettings: Sendable, Hashable {
     /// The base URL used when nothing else names one.
     package static let defaultBaseURL = URL(string: "https://api.typesafe.ai")!
     /// The model used when nothing else names one.
-    package static let defaultModel = "jev-latest"
+    /// Pinned rather than `jev-latest`: the alias moves on each release, and the action thresholds were tuned
+    /// against this version. Move it deliberately, re-running the real-device runs.
+    package static let defaultModel = "jev-1.13.0"
 
     /// The base URL requests go to, without the evaluation path.
     package let baseURL: URL

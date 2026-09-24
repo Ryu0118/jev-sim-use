@@ -26,7 +26,7 @@ struct JevSettingsTests {
     func defaults() throws {
         let settings = try resolve()
         #expect(settings.endpoint.absoluteString == "https://api.typesafe.ai/v1/systemone")
-        #expect(settings.model == "jev-latest")
+        #expect(settings.model == "jev-1.13.0")
     }
 
     @Test("prefers flag, then environment, then config")

@@ -12,6 +12,6 @@ struct ConnectionOptions: ParsableArguments {
     @Option(help: "Jev base URL. Overrides $TYPESAFE_BASE_URL and `config set base-url`.")
     var baseURL: String?
 
-    @Option(help: "Jev model. Overrides $TYPESAFE_MODEL and `config set model`. Default: jev-latest.")
+    @Option(help: "Jev model. Overrides $TYPESAFE_MODEL and `config set model`. Default: jev-1.13.0.")
     var model: String?
 }

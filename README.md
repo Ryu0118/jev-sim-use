@@ -114,7 +114,7 @@ jev-sim-use config get|set|unset|list  base-url, model
 | `--max-steps` | 15 | |
 | `--min-confidence` | 0.6 | Stops and hands over when Jev is less sure |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
-| `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-latest` | |
+| `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
 
 The API key is read only from `TYPESAFE_API_KEY` and never stored. Settings live in
 `$XDG_CONFIG_HOME/jev-sim-use/config.json` (default `~/.config`).
