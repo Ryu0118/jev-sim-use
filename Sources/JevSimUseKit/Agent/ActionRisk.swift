@@ -1,6 +1,6 @@
 /// How costly an action is when Jev picked the wrong one.
 package enum ActionRisk: Sendable, Hashable {
-    /// Changes nothing in the app and costs one step (scrolling, going back).
+    /// Changes nothing in the app and costs one step (scrolling, going back, zooming, rotating).
     case harmless
     /// Changes something going back can undo (a tap, an edge swipe).
     case reversible

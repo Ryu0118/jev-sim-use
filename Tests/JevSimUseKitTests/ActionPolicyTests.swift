@@ -29,4 +29,10 @@ struct ActionPolicyTests {
         let swipe = AgentAction.gesture(.swipeLeft, alias: 1, role: role, label: "x")
         #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: swipe) == required)
     }
+
+    @Test("treats zooming and rotating like scrolling: they only change the view")
+    func viewOnlyGestures() {
+        let rotate = AgentAction.gesture(.rotateClockwise, alias: 1, role: "Image", label: "Map")
+        #expect(ActionPolicy(minimumSupport: 0.6).requiredSupport(for: rotate) == ActionPolicy.harmlessMaximum)
+    }
 }

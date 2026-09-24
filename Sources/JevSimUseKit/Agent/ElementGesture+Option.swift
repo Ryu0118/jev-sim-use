@@ -34,7 +34,9 @@ extension ElementGesture {
         switch self {
         // A long horizontal swipe on a list row can delete it; on a slider, image, or carousel it only moves.
         case .swipeLeft, .swipeRight: ActionCatalog.rowRoles.contains { role.contains($0) } ? .irreversible : .reversible
-        case .longPress, .swipeUp, .swipeDown, .pinchOut, .pinchIn, .rotateClockwise, .rotateCounterclockwise: .reversible
+        // Zooming and rotating only change the view, like scrolling.
+        case .pinchOut, .pinchIn, .rotateClockwise, .rotateCounterclockwise: .harmless
+        case .longPress, .swipeUp, .swipeDown: .reversible
         }
     }
 }
