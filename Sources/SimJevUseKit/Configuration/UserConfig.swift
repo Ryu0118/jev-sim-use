@@ -1,7 +1,7 @@
 /// Persistent settings kept in the user's config file. Never holds secrets.
-public struct UserConfig: Codable, Sendable, Hashable {
+package struct UserConfig: Codable, Sendable, Hashable {
     /// Keys accepted by `sim-jev-use config`.
-    public enum Key: String, CaseIterable, Sendable {
+    package enum Key: String, CaseIterable, Sendable {
         case baseURL = "base-url"
         case model
     }
@@ -12,18 +12,18 @@ public struct UserConfig: Codable, Sendable, Hashable {
     }
 
     /// Jev base URL, validated when set.
-    public var baseURL: String?
+    package var baseURL: String?
     /// Jev model name.
-    public var model: String?
+    package var model: String?
 
     /// Creates a config with the given values.
-    public init(baseURL: String? = nil, model: String? = nil) {
+    package init(baseURL: String? = nil, model: String? = nil) {
         self.baseURL = baseURL
         self.model = model
     }
 
     /// The value stored for `key`.
-    public subscript(key: Key) -> String? {
+    package subscript(key: Key) -> String? {
         get {
             switch key {
             case .baseURL: baseURL

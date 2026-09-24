@@ -1,6 +1,6 @@
 import Foundation
 
-public extension JevSettings {
+package extension JevSettings {
     /// Resolves settings with the precedence flag > environment > config file > default.
     static func resolve(
         baseURLFlag: String?,

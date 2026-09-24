@@ -1,5 +1,5 @@
 /// Configuration problems found before any request is sent.
-public enum JevSettingsError: Error, Sendable, Equatable, CustomStringConvertible {
+package enum JevSettingsError: Error, Sendable, Equatable, CustomStringConvertible {
     /// `TYPESAFE_API_KEY` is unset or blank.
     case missingAPIKey
     /// The base URL does not parse as an absolute URL.
@@ -8,7 +8,7 @@ public enum JevSettingsError: Error, Sendable, Equatable, CustomStringConvertibl
     case insecureBaseURL(String)
 
     /// A message that tells the user how to fix the configuration.
-    public var description: String {
+    package var description: String {
         switch self {
         case .missingAPIKey:
             "Set \(JevSettings.apiKeyVariable) to your API key (bring your own key)."
