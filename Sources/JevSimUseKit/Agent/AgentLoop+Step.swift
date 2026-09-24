@@ -38,6 +38,12 @@ extension AgentLoop {
             return .act(action)
         }
         if plan.support < configuration.actionPolicy.requiredSupport(for: plan.action) {
+            // An unsure reversible pick often means the target is off screen. Exploring costs one step; handing over
+            // costs the supervisor a turn. Irreversible picks still hand over at once.
+            if plan.action.risk != .irreversible, let action = Exploration.next(excluding: progress.ineffectiveActions) {
+                report(.exploring(step: step, action: action))
+                return .act(action)
+            }
             return .stop(.escalated(step: step, action: plan.action, confidence: plan.support))
         }
         if plan.support < ActionPolicy.confidentSupport {

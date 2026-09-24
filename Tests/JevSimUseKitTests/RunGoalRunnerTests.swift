@@ -46,7 +46,10 @@ struct RunGoalRunnerTests {
 
     @Test("saves the session with its device, history, and run outcome")
     func savesSession() async throws {
-        _ = try await runner(plans: [.tapNext(confidence: 0.3)]).run(request()) { _ in }
+        let unsurePaste = StepPlan(
+            goalReached: .init(clamping: 0.05), action: .paste(index: 0, text: "x"), confidence: 0.3, costUSD: 0,
+        )
+        _ = try await runner(plans: [unsurePaste]).run(request()) { _ in }
         let session = try SessionStore(environment: environment).load("s1")
         #expect(session.goal == "Open Settings")
         #expect(session.deviceID == "B34F0000-0000-0000-0000-000000000001")

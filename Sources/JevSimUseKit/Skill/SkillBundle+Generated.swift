@@ -59,8 +59,9 @@ extension SkillBundle {
 
     Stop reasons on exit 1:
 
-    - **confidence below the threshold**: Jev was unsure which action is next. Low confidence is a handover signal, not a
-      crash: `tell` what it is missing and `resume`.
+    - **confidence below the threshold**: Jev was unsure which action is next, even after scrolling down and going back
+      on this screen (it explores first when the unsure action is a tap or scroll). Low confidence is a handover signal,
+      not a crash: `tell` what it is missing and `resume`.
     - **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is and `resume`,
       or navigate closer yourself with `exec`, then `resume`.
     - **the screen stopped changing**: taps are not landing. Inspect with `exec ui` / `exec screenshot` before resuming.

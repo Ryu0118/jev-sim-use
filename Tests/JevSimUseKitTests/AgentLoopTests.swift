@@ -19,12 +19,12 @@ struct AgentLoopTests {
         #expect(driver.performedActions == ["tap @1", "tap @1"])
     }
 
-    @Test("stops without acting when confidence is below the threshold")
+    @Test("explores down, then back, before handing over an unsure tap, and never taps")
     func escalates() async throws {
         let driver = FakeDriver(outlines: ["A"])
         let outcome = try await run(driver, [.tapNext(confidence: 0.3)])
-        #expect(outcome == .escalated(step: 1, action: .tap(alias: 1, role: "Button", label: "Next"), confidence: 0.3))
-        #expect(driver.performedActions.isEmpty)
+        #expect(outcome == .escalated(step: 3, action: .tap(alias: 1, role: "Button", label: "Next"), confidence: 0.3))
+        #expect(driver.performedActions == ["revealContentBelow", "goBack"])
     }
 
     @Test("stops when actions stop changing the screen")
