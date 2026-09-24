@@ -15,8 +15,7 @@ extension RunGoalRequest {
         do {
             result = try await runner.run(self) { context.output.standardError($0.description) }
         } catch {
-            context.output.standardError("Error: \(error)")
-            throw ExitCode(ExitStatus.of(error))
+            throw context.failure(error)
         }
         context.output.standardOutput("\(result.outcome)")
         guard !result.outcome.isSuccess else { return }

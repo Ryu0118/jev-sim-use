@@ -18,8 +18,7 @@ struct ExecCommand: ContextualCommand {
             let bootstrap = SimUseBootstrap(locator: ExecutableLocator(environment: context.environment))
             executable = try await bootstrap.verifyInstallation().executable
         } catch {
-            context.output.standardError("Error: \(error)")
-            throw ExitCode(ExitStatus.of(error))
+            throw context.failure(error)
         }
         let path = executable.path(percentEncoded: false)
         let argv = ([path] + arguments).map { strdup($0) } + [nil]

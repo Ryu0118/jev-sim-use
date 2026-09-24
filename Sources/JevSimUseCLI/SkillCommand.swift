@@ -43,8 +43,7 @@ extension SkillCommand {
         do {
             outcome = try SkillRunner(environment: context.environment).run(operation)
         } catch {
-            context.output.standardError("Error: \(error)")
-            throw ExitCode(ExitStatus.of(error))
+            throw context.failure(error)
         }
         switch outcome {
         case let .installed(url): context.output.standardOutput("Installed the skill at \(url.path(percentEncoded: false))")

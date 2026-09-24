@@ -21,8 +21,7 @@ struct SessionCommand: AsyncParsableCommand {
         do {
             outcome = try SessionRunner(store: SessionStore(environment: context.environment)).run(operation)
         } catch {
-            context.output.standardError("Error: \(error)")
-            throw ExitCode(ExitStatus.of(error))
+            throw context.failure(error)
         }
         switch outcome {
         case let .sessions(sessions): sessions.forEach { context.output.standardOutput($0.summaryLine) }
