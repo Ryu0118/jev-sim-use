@@ -33,15 +33,17 @@ public struct SimUseClient: DeviceDriving {
 
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
     public func paste(_ text: String) async throws -> [String] {
-        try await run(["paste", text])
+        try await run(["paste"], operands: [text])
     }
 
     private var deviceArguments: [String] {
         ["--device", device.deviceId]
     }
 
-    private func run(_ arguments: [String]) async throws -> [String] {
-        let envelope = try await invoker.invoke(arguments + deviceArguments, as: EmptyPayload.self)
+    private func run(_ arguments: [String], operands: [String] = []) async throws -> [String] {
+        let envelope = try await invoker.invoke(
+            arguments + deviceArguments, operands: operands, as: EmptyPayload.self,
+        )
         return envelope.process?.disappearedBundleIDs ?? []
     }
 }

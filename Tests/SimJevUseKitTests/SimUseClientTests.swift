@@ -42,9 +42,16 @@ struct SimUseClientTests {
     func validationFailure() async throws {
         let output = CommandOutput(exitCode: 64, stdout: Data(), stderr: "Error: Missing text\n")
         let runner = FakeCommandRunner(["paste": output])
-        let expected = SimUseError.malformedOutput(arguments: ["paste", ""] + device, detail: "Error: Missing text")
+        let expected = SimUseError.malformedOutput(arguments: ["paste"] + device, detail: "Error: Missing text")
         await #expect(throws: expected) {
             try await client(runner).paste("")
         }
+    }
+
+    @Test("passes paste text after a terminator so it is never parsed as an option")
+    func pasteTerminator() async throws {
+        let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#)])
+        _ = try await client(runner).paste("-5")
+        #expect(runner.recordedCalls == [["paste"] + device + ["--json", "--", "-5"]])
     }
 }

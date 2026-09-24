@@ -7,11 +7,14 @@ struct SimUseInvoker: Sendable {
 
     /// Handles both failure shapes: an error envelope on stdout (exit 1), and plain
     /// text on stderr with an empty stdout (argument validation, exit 64).
+    ///
+    /// `operands` go after a `--` terminator, so user text such as `-5` is never parsed as an option.
     func invoke<Payload: Decodable & Sendable>(
         _ arguments: [String],
+        operands: [String] = [],
         as _: Payload.Type = Payload.self,
     ) async throws -> SimUseEnvelope<Payload> {
-        let fullArguments = arguments + ["--json"]
+        let fullArguments = arguments + ["--json"] + (operands.isEmpty ? [] : ["--"] + operands)
         let output = try await runner.run(executable, arguments: fullArguments)
         let envelope = try? JSONDecoder().decode(SimUseEnvelope<Payload>.self, from: output.stdout)
         guard let envelope else {
