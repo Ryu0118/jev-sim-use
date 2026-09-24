@@ -14,5 +14,5 @@ if [ ! -d "$HOOKS_DIR" ]; then
 fi
 
 git -C "$SOURCE_ROOT" config --local core.hooksPath .githooks
-chmod +x "$HOOKS_DIR/pre-commit"
+chmod +x "$HOOKS_DIR"/*
 echo "Configured Git hooks: $HOOKS_DIR"

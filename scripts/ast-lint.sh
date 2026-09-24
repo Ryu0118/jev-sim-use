@@ -20,23 +20,25 @@ if [ "${1:-}" = "--staged" ]; then
     [ -z "$FILES" ] && exit 0
     LINT_ARGS=()
     while IFS= read -r file; do
-        LINT_ARGS+=("$SOURCE_ROOT/$file")
+        LINT_ARGS+=("$file")
     done <<< "$FILES"
 elif [ "${1:-}" = "--changed" ]; then
     FILES=$(git -C "$SOURCE_ROOT" diff --name-only --diff-filter=ACM HEAD | grep '\.swift$' || true)
     [ -z "$FILES" ] && exit 0
     LINT_ARGS=()
     while IFS= read -r file; do
-        LINT_ARGS+=("$SOURCE_ROOT/$file")
+        LINT_ARGS+=("$file")
     done <<< "$FILES"
 elif [ "$#" -gt 0 ]; then
     LINT_ARGS=("$@")
 else
-    LINT_ARGS=("$SOURCE_ROOT/Sources" "$SOURCE_ROOT/Tests")
+    LINT_ARGS=(Sources Tests Package.swift)
 fi
 
+# Include globs in .swift-ast-lint.yml are relative to the package root.
+cd "$SOURCE_ROOT"
 if [ -n "$FIX_FLAG" ]; then
-    exec "$BINARY" "$FIX_FLAG" "${LINT_ARGS[@]}"
+    exec "$BINARY" --config "$SOURCE_ROOT/.swift-ast-lint.yml" --no-cache "$FIX_FLAG" "${LINT_ARGS[@]}"
 else
-    exec "$BINARY" "${LINT_ARGS[@]}"
+    exec "$BINARY" --config "$SOURCE_ROOT/.swift-ast-lint.yml" --no-cache "${LINT_ARGS[@]}"
 fi
