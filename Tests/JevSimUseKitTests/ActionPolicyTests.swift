@@ -22,12 +22,12 @@ struct ActionPolicyTests {
         #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.irreversibleMinimum)
     }
 
-    @Test("treats a sideways swipe as irreversible only on list rows, which it can delete", arguments: [
-        ("Cell", ActionPolicy.irreversibleMinimum), ("Slider", 0.3), ("Image", 0.3),
-    ])
-    func sidewaysSwipe(role: String, required: Double) {
-        let swipe = AgentAction.gesture(.swipeLeft, alias: 1, role: role, label: "x")
-        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: swipe) == required)
+    @Test("treats tapping a destructive control as irreversible, and a short sideways swipe as reversible")
+    func destructive() {
+        let policy = ActionPolicy(minimumSupport: 0.3)
+        #expect(policy.requiredSupport(for: .tap(alias: 1, role: "Button", label: "削除")) == ActionPolicy.irreversibleMinimum)
+        #expect(policy.requiredSupport(for: .tap(alias: 1, role: "Button", label: "Delete List")) == ActionPolicy.irreversibleMinimum)
+        #expect(policy.requiredSupport(for: .gesture(.swipeLeft, alias: 1, role: "Cell", label: "x")) == 0.3)
     }
 
     @Test("treats zooming and rotating like scrolling: they only change the view")

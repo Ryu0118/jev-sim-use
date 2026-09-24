@@ -70,7 +70,7 @@ struct SimUseClientTests {
 
     @Test("aims long-press at the alias, swipes across the frame, and pinches at its centre", arguments: [
         (ElementGesture.longPress, ["long-press", "@9"]),
-        (.swipeLeft, ["swipe", "--from", "336.0,200.0", "--to", "64.0,200.0"]),
+        (.swipeLeft, ["swipe", "--from", "336.0,200.0", "--to", "200.0,200.0"]),
         (.pinchOut, ["gesture", "pinch-out", "--center-x", "200.0", "--center-y", "200.0"]),
     ])
     func elementGestures(gesture: ElementGesture, expected: [String]) async throws {

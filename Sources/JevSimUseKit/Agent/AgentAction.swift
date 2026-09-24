@@ -31,8 +31,8 @@ extension AgentAction {
     /// How costly the action is when wrong.
     var risk: ActionRisk {
         switch self {
-        case .tap: .reversible
-        case let .gesture(gesture, _, role, _): gesture.risk(on: role)
+        case let .tap(_, _, label): ActionCatalog.isDestructive(label) ? .irreversible : .reversible
+        case let .gesture(gesture, _, _, _): gesture.risk
         case let .device(action): action.risk
         case .enterText: .irreversible
         case .done, .noneApplies: .harmless

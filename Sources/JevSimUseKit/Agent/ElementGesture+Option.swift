@@ -29,14 +29,13 @@ extension ElementGesture {
         }
     }
 
-    /// How costly the gesture is when wrong on an element with `role`.
-    func risk(on role: String) -> ActionRisk {
+    /// How costly the gesture is when wrong. Horizontal swipes stop short of a full swipe, so they reveal a row's
+    /// actions rather than run them.
+    var risk: ActionRisk {
         switch self {
-        // A long horizontal swipe on a list row can delete it; on a slider, image, or carousel it only moves.
-        case .swipeLeft, .swipeRight: ActionCatalog.rowRoles.contains { role.contains($0) } ? .irreversible : .reversible
         // Zooming and rotating only change the view, like scrolling.
         case .pinchOut, .pinchIn, .rotateClockwise, .rotateCounterclockwise: .harmless
-        case .longPress, .swipeUp, .swipeDown: .reversible
+        case .longPress, .swipeLeft, .swipeRight, .swipeUp, .swipeDown: .reversible
         }
     }
 }
