@@ -9,8 +9,8 @@ extension ElementGesture {
         case .swipeDown: "Swipe down within one element, to move only that element's content or refresh it; not for scrolling the screen"
         case .pinchOut: "Spread two fingers on an element, to zoom in"
         case .pinchIn: "Pinch two fingers on an element, to zoom out"
-        case .rotateClockwise: "Rotate two fingers clockwise on an element"
-        case .rotateCounterclockwise: "Rotate two fingers counterclockwise on an element"
+        case .rotateClockwise: "Rotate two fingers clockwise on an element, to turn a map or picture and change the heading its compass shows"
+        case .rotateCounterclockwise: "Rotate two fingers counterclockwise on an element, to turn a map or picture and change the heading its compass shows"
         }
     }
 
