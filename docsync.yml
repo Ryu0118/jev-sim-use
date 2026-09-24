@@ -38,6 +38,9 @@ rules:
 - name: skill-cli
   sources:
   - Sources/JevSimUseCLI/RunCommand.swift
+  - Sources/JevSimUseCLI/AgentOptions.swift
+  - Sources/JevSimUseCLI/SessionCommand.swift
+  - Sources/JevSimUseCLI/SessionCommand+Subcommands.swift
   - Sources/JevSimUseCLI/ConnectionOptions.swift
   - Sources/JevSimUseCLI/ExecCommand.swift
   - Sources/JevSimUseCLI/ExitStatus.swift
@@ -45,4 +48,4 @@ rules:
   doc: skills/jev-sim-use/SKILL.md
   message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
     then run `mise run generate-skill`.
-  checksum: ed4041fb289f8bdb04fd81ec9858c50aab34d5d5b55d774195effc1a740fc334
+  checksum: 0a7483e4908bb8cf38c4bfecf3e35464bab48148742d3a833d742eafccf9d213

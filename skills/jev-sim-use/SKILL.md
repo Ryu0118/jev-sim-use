@@ -43,19 +43,39 @@ jev-sim-use "Open Wi-Fi settings" -d <deviceId>
 | Exit | Meaning | What to do |
 |---|---|---|
 | 0 | Goal reached | Verify with `exec ui` if the next step depends on it |
-| 1 | Stopped before the goal | Read the stdout line (below) |
+| 1 | Stopped before the goal | Read the stdout line (below), then supervise the session |
 | 2 | Setup problem | Run `jev-sim-use doctor` and fix what it reports |
 | 3 | sim-use or Jev failed mid-run | Retry once; if it repeats, read the error |
 
 Stop reasons on exit 1:
 
-- **confidence below the threshold**: Jev was unsure which action is next. Take over from the current screen with
-  `exec ui`, or rerun with a more specific goal. Low confidence is a handover signal, not a crash.
-- **no offered action advances the goal**: the target is not reachable from this screen. Navigate closer yourself,
-  then rerun.
-- **the screen stopped changing**: taps are not landing. Inspect with `exec ui` / `exec screenshot`.
-- **step limit reached**: raise `--max-steps` or split the goal into smaller goals.
-- **app crashed or disappeared**: relaunch the app; do not rerun blindly.
+- **confidence below the threshold**: Jev was unsure which action is next. Low confidence is a handover signal, not a
+  crash: `tell` what it is missing and `resume`.
+- **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is and `resume`,
+  or navigate closer yourself with `exec`, then `resume`.
+- **the screen stopped changing**: taps are not landing. Inspect with `exec ui` / `exec screenshot` before resuming.
+- **step limit reached**: `resume` gives it another `--max-steps` actions.
+- **app crashed or disappeared**: relaunch the app; do not resume blindly.
+
+## Supervising a session
+
+Every run is a session. When it stops short, you are the supervisor: look, add what Jev cannot know, and continue.
+Do not start a new run with a longer goal; the session keeps the goal, the history, and your notes.
+
+```sh
+jev-sim-use session show                  # goal, notes, how each run ended, every action taken
+jev-sim-use exec ui                       # the screen it stopped on
+jev-sim-use session tell -n "Dark Mode is the Dark Appearance switch under Developer"
+jev-sim-use session tell -n "The goal is reached when the Dark Appearance switch is on"
+jev-sim-use session resume                # same goal, with the notes and history; exits like a run
+```
+
+- Notes are facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
+  finished screen looks like. Jev reads them when choosing each action and when judging whether the goal is reached.
+- Jev picks visible targets well but does not know where an off-screen setting lives, and judges toggle goals poorly.
+  Those are the notes worth adding.
+- You may act with `exec` between runs (for example to open the right app); `resume` starts from the current screen.
+- Commands take a session id; without one they use the most recent session. `session list` shows them all.
 
 ## Options
 
@@ -63,10 +83,10 @@ Stop reasons on exit 1:
 |---|---|---|
 | `-t, --text` | none | Text it may paste into fields |
 | `-d, --device` | the only usable device | A `deviceId` from `exec devices` |
-| `--max-steps` | 15 | Upper bound on actions |
+| `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.6 | Lower it to hand over less often, raise it to be more careful |
 
 ## Privacy
 
-Each step sends the screen's visible labels and values, the goal, the action history, and every `-t` value to the Jev
-endpoint. Do not run it on screens with data that may not leave the machine.
+Each step sends the screen's visible labels and values, the goal, the action history, the session notes, and every
+`-t` value to the Jev endpoint. Sessions are saved locally with the goal, texts, notes, and actions. Do not run it on screens with data that may not leave the machine.

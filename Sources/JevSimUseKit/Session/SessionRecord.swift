@@ -29,9 +29,4 @@ package struct SessionRecord: Codable, Sendable, Hashable {
         self.createdAt = createdAt
         updatedAt = createdAt
     }
-
-    /// Whether the last run reached the goal.
-    package var isFinished: Bool {
-        runs.last?.succeeded == true
-    }
 }

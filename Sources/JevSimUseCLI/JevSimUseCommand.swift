@@ -12,7 +12,10 @@ package struct JevSimUseCommand: AsyncParsableCommand {
         64 invalid arguments.
         """,
         version: JevSimUseVersion.current,
-        subcommands: [RunCommand.self, ExecCommand.self, DoctorCommand.self, ConfigCommand.self, SkillCommand.self],
+        subcommands: [
+            RunCommand.self, SessionCommand.self, ExecCommand.self, DoctorCommand.self, ConfigCommand.self,
+            SkillCommand.self,
+        ],
         defaultSubcommand: RunCommand.self,
     )
 

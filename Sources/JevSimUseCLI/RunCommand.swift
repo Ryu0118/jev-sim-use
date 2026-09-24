@@ -1,5 +1,4 @@
 import ArgumentParser
-import Jev
 import JevSimUseKit
 
 struct RunCommand: ContextualCommand {
@@ -15,25 +14,15 @@ struct RunCommand: ContextualCommand {
     @Argument(help: "What to accomplish, in natural language.")
     var goal: String
 
-    @OptionGroup var connection: ConnectionOptions
-
     @Option(name: [.customShort("t"), .customLong("text")], help: "Text the agent may paste into fields. Repeatable.")
     var texts: [String] = []
 
-    @Option(help: "Maximum number of actions.")
-    var maxSteps = 15
-
-    @Option(help: "Hand over when Jev's support for the next tap, scroll, or back is below this (0...1). Pasting needs at least 0.85.")
-    var minConfidence = RoutingPolicy.default.escalateBelow
-
-    func validate() throws {
-        guard maxSteps > 0 else { throw ValidationError("--max-steps must be positive.") }
-        guard (0 ... 1).contains(minConfidence) else { throw ValidationError("--min-confidence must be within 0...1.") }
-    }
+    @OptionGroup var connection: ConnectionOptions
+    @OptionGroup var agent: AgentOptions
 
     func run(context: CLIContext) async throws {
         try await RunGoalRequest(
-            session: .new(goal: goal, texts: texts), maxSteps: maxSteps, minConfidence: minConfidence,
+            session: .new(goal: goal, texts: texts), maxSteps: agent.maxSteps, minConfidence: agent.minConfidence,
             deviceID: connection.device, baseURL: connection.baseURL, model: connection.model,
         ).perform(context: context)
     }
