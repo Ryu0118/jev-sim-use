@@ -17,6 +17,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "SimJevUse",
+            dependencies: ["SimJevUseCLI"],
+        ),
+        .target(
+            name: "SimJevUseCLI",
             dependencies: [
                 "SimJevUseKit",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
@@ -27,6 +31,10 @@ let package = Package(
             dependencies: [
                 .product(name: "Jev", package: "swift-jev"),
             ],
+        ),
+        .testTarget(
+            name: "SimJevUseCLITests",
+            dependencies: ["SimJevUseCLI"],
         ),
         .testTarget(
             name: "SimJevUseKitTests",

@@ -1,9 +1,9 @@
 import ArgumentParser
 import SimJevUseKit
 
-@main
-struct SimJevUseCommand: AsyncParsableCommand {
-    static let configuration = CommandConfiguration(
+/// The root `sim-jev-use` command.
+package struct SimJevUseCommand: AsyncParsableCommand {
+    package static let configuration = CommandConfiguration(
         commandName: "sim-jev-use",
         abstract: "Drive an iOS Simulator or Android device toward a goal, with Jev choosing each action via sim-use.",
         discussion: """
@@ -14,4 +14,6 @@ struct SimJevUseCommand: AsyncParsableCommand {
         subcommands: [RunCommand.self, ExecCommand.self, DoctorCommand.self, ConfigCommand.self],
         defaultSubcommand: RunCommand.self,
     )
+
+    package init() {}
 }

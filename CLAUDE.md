@@ -15,8 +15,9 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 ## Architecture
 
-- `SimJevUse` target (binary `sim-jev-use`): ArgumentParser commands `run` (default, positional goal), `exec`
-  (execv sim-use with arguments passed through), `doctor`, `config`. Stays thin.
+- `SimJevUse` (executable, binary `sim-jev-use`): `@main` only; starts `SimJevUseCommand`.
+- `SimJevUseCLI` (+ `SimJevUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
+  (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, validate, call one Kit Runner, present.
 - `SimJevUseKit/Process`: `CommandRunning` seam; `ProcessCommandRunner` drains stdout and stderr
   concurrently, because `ui --json` output can exceed the pipe buffer.
 - `SimJevUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
