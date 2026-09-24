@@ -1,4 +1,4 @@
-# sim-jev-use
+# jev-sim-use
 
 CLI that drives an iOS Simulator / Android device toward a natural-language goal. It shells out to
 [sim-use](https://github.com/lycorp-jp/sim-use) (lycorp-jp, Apache-2.0) to observe and act, and asks
@@ -15,18 +15,18 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 ## Architecture
 
-- `SimJevUse` (executable, binary `sim-jev-use`): `@main` only; starts `SimJevUseCommand`.
-- `SimJevUseCLI` (+ `SimJevUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
+- `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.
+- `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, validate, call one Kit Runner, present.
-- `SimJevUseKit/Process`: `CommandRunning` seam; `ProcessCommandRunner` drains stdout and stderr
+- `JevSimUseKit/Process`: `CommandRunning` seam; `ProcessCommandRunner` drains stdout and stderr
   concurrently, because `ui --json` output can exceed the pipe buffer.
-- `SimJevUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
+- `JevSimUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
   distinct from exit 127), version gate (`SimUseBootstrap.minimumVersion`), device pinning, and
   `--json` envelope decoding.
-- `SimJevUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
+- `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy.
-- `SimJevUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
+- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
   noul `goal_reached` and a runtime-built choice `next_action`.
 
 ## sim-use contract (verified against v0.14.0)
@@ -64,5 +64,5 @@ Access policy: use `package` for anything shared across modules in this package;
 
 ## Release
 
-`.github/workflows/release.yml` bumps `Sources/SimJevUseKit/Version.swift` via `workflow_dispatch`.
+`.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
 Keep `THIRD_PARTY_LICENSES` in sync when dependencies change.

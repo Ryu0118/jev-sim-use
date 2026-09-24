@@ -1,6 +1,6 @@
 # Swift Coding Rules
 
-Language-level conventions for SimJevUse. Architecture, layering, Runners, dependency injection, and the SSoT / DRY / SOLID principles live in `coding-rules.md`; lint-enforced details in `lint-and-format.md`.
+Language-level conventions for JevSimUse. Architecture, layering, Runners, dependency injection, and the SSoT / DRY / SOLID principles live in `coding-rules.md`; lint-enforced details in `lint-and-format.md`.
 
 ## Files and directories
 
@@ -18,7 +18,7 @@ Language-level conventions for SimJevUse. Architecture, layering, Runners, depen
 ## Comments and Documentation
 
 - Comment the "why", not the "what". Add a comment only where the logic has a non-obvious invariant or encodes an external spec (a file format, a CLI contract, an OS quirk). Do not comment self-explanatory code.
-- Every `package` or `public` declaration in `SimJevUseKit` needs a `///` doc comment (enforced by the `missing-docs` AST lint rule). Initializers, `CodingKeys`, `errorDescription`, `==`, and result-builder / string-interpolation hooks are exempt.
+- Every `package` or `public` declaration in `JevSimUseKit` needs a `///` doc comment (enforced by the `missing-docs` AST lint rule). Initializers, `CodingKeys`, `errorDescription`, `==`, and result-builder / string-interpolation hooks are exempt.
 
 ## Abstraction
 
@@ -41,7 +41,7 @@ Language-level conventions for SimJevUse. Architecture, layering, Runners, depen
 ## Testing
 
 - Use Swift Testing only (`import Testing`, `@Test`, `@Suite`, `#expect`, `#require`). Do not use XCTest.
-- Import the module under test with `@testable import SimJevUseKit`.
+- Import the module under test with `@testable import JevSimUseKit`.
 - Test functions use lowerCamelCase names, never a `test` prefix, underscores, or backtick phrases. Put the human-readable sentence in `@Test("…")`, and make it add information beyond the function name. `@Suite` descriptions must describe behavior, not repeat the type name.
 - Unit tests never touch the real network or depend on the developer's home directory. Inject fakes, and use a temporary directory for file-system tests. Tests that need real external tools belong in integration / contract tests (see `coding-rules.md`).
 - Parameterize with `@Test(arguments:)` instead of copy-pasted tests.

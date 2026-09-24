@@ -70,6 +70,6 @@ rules:
         - kinds: [func]
           name_pattern: "^(buildBlock|buildExpression|buildOptional|buildEither|buildArray|appendLiteral|appendInterpolation)$"
     include:
-      - "Sources/SimJevUseKit/**"
+      - "Sources/JevSimUseKit/**"
     exclude:
       - "**/*Generated.swift"

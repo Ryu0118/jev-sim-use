@@ -1,4 +1,4 @@
-# SwiftLint configuration for SimJevUse.
+# SwiftLint configuration for JevSimUse.
 
 excluded:
   - .build

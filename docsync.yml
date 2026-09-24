@@ -16,7 +16,7 @@ rules:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: ef075a9b827fd7c4c8467135a4cd521e4ad8a17cd47226f3ff5e0578db4eedc9
+  checksum: 56e8454d0d056ac5fa7f03fde528b836ff06021b2c7a84fb490b70604751e752
 - name: rules-lint-and-format
   sources:
   - .swiftformat
@@ -25,7 +25,7 @@ rules:
   doc: .agents/rules/lint-and-format.md
   message: A lint or format config changed; update .agents/rules/lint-and-format.md
     to match.
-  checksum: 5ed16b8daa37d4158e7d4315afe9516e8d54df92652bdbe80cb332aed8f71f51
+  checksum: ed342f3da72c2bfbe6e858034c78b8ac88a6a919ef5756ed65ae36a72da53dcc
 - name: rules-workflow
   sources:
   - .gitnagg.yml
