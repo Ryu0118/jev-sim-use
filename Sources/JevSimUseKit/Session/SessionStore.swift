@@ -47,15 +47,9 @@ package struct SessionStore: Sendable {
         return try decoder.decode(SessionRecord.self, from: data)
     }
 
-    /// All sessions, most recently updated first.
+    /// All readable sessions, most recently updated first.
     package func list() throws -> [SessionRecord] {
-        let path = directory.path(percentEncoded: false)
-        guard fileManager.fileExists(atPath: path) else { return [] }
-        return try fileManager.contentsOfDirectory(atPath: path)
-            .filter { $0.hasSuffix(".json") }
-            .compactMap { fileManager.contents(atPath: directory.appending(path: $0).path(percentEncoded: false)) }
-            .map { try decoder.decode(SessionRecord.self, from: $0) }
-            .sorted { $0.updatedAt > $1.updatedAt }
+        try files().compactMap(\.session).sorted { $0.updatedAt > $1.updatedAt }
     }
 
     /// Deletes the session with `id`, if it exists.
@@ -65,11 +59,25 @@ package struct SessionStore: Sendable {
         try fileManager.removeItem(atPath: path)
     }
 
-    /// Deletes sessions that last changed more than `timeToLive` before `now`.
+    /// Deletes sessions that last changed more than `timeToLive` before `now`, and files that no longer decode.
     package func removeExpired(now: Date) throws {
-        for session in try list() where now.timeIntervalSince(session.updatedAt) > Self.timeToLive {
-            try delete(session.id)
+        for file in try files() where file.session.map({ now.timeIntervalSince($0.updatedAt) > Self.timeToLive }) ?? true {
+            try delete(file.id)
         }
+    }
+
+    /// Every session file with its decoded contents. A file that does not decode (truncated, or written by an
+    /// incompatible version) has `nil`, so one bad file cannot block every other session and every run.
+    private func files() throws -> [(id: String, session: SessionRecord?)] {
+        let path = directory.path(percentEncoded: false)
+        guard fileManager.fileExists(atPath: path) else { return [] }
+        return try fileManager.contentsOfDirectory(atPath: path)
+            .filter { $0.hasSuffix(".json") }
+            .map { name in
+                let id = String(name.dropLast(".json".count))
+                let data = fileManager.contents(atPath: fileURL(for: id).path(percentEncoded: false))
+                return (id, data.flatMap { try? decoder.decode(SessionRecord.self, from: $0) })
+            }
     }
 
     private func fileURL(for id: String) -> URL {

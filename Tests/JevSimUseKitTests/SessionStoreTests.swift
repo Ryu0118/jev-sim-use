@@ -43,4 +43,14 @@ struct SessionStoreTests {
         try store.removeExpired(now: now)
         #expect(try store.list().map(\.id) == ["fresh"])
     }
+
+    @Test("skips a file that does not decode, and removes it when pruning")
+    func corruptFile() throws {
+        try store.save(SessionRecord(id: "good", goal: "g", texts: [], updatedAt: Date()))
+        let broken = store.directory.appending(path: "broken.json")
+        FileManager.default.createFile(atPath: broken.path(percentEncoded: false), contents: Data("{broken".utf8))
+        #expect(try store.list().map(\.id) == ["good"])
+        try store.removeExpired(now: Date())
+        #expect(!FileManager.default.fileExists(atPath: broken.path(percentEncoded: false)))
+    }
 }
