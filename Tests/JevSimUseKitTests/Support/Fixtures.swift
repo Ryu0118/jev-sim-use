@@ -20,7 +20,7 @@ enum Fixtures {
     }
 
     static func snapshot(outline: String = "App: Settings  402x874", entries: [UIEntry] = []) -> UISnapshot {
-        UISnapshot(platform: "ios", outline: outline, entries: entries, crashDialog: nil)
+        UISnapshot(platform: "ios", outline: outline, appLabel: "Settings", entries: entries, crashDialog: nil)
     }
 
     static func entry(_ alias: Int, _ label: String, role: String = "Button", states: [String] = []) -> UIEntry {

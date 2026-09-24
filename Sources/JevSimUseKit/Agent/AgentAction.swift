@@ -13,7 +13,7 @@ package enum AgentAction: Sendable, Hashable {
     /// The option key sent to Jev. Unique within one catalog.
     var optionName: String {
         switch self {
-        case let .tap(alias, _, _): "tap_\(alias)"
+        case let .tap(alias, _, _): PlanningState.elementID(alias)
         case .device(.revealContentBelow): "scroll_to_reveal_below"
         case .device(.revealContentAbove): "scroll_to_reveal_above"
         case .device(.goBack): "go_back"
@@ -22,7 +22,17 @@ package enum AgentAction: Sendable, Hashable {
         }
     }
 
-    /// The rubric Jev reads for this option.
+    /// The rubric sent to Jev. `nil` for taps: the option name is the element id, and the state already
+    /// carries the element's role and label, so repeating them only spends tokens.
+    var optionCriteria: String? {
+        if case .tap = self {
+            nil
+        } else {
+            optionDescription
+        }
+    }
+
+    /// A human-readable description, used for progress lines and `history`.
     var optionDescription: String {
         switch self {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""

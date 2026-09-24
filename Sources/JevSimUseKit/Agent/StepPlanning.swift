@@ -14,8 +14,8 @@ package struct PlanRequest: Sendable, Hashable {
     package var snapshot: UISnapshot
     /// The options to choose from, in presentation order.
     package var actions: [AgentAction]
-    /// Descriptions of the actions already taken, oldest first.
-    package var history: [String]
+    /// The steps already taken, oldest first.
+    package var history: [HistoryEntry]
 }
 
 /// A planner's judgement for one step.

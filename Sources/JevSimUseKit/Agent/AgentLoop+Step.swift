@@ -3,7 +3,9 @@ extension AgentLoop {
         let request = PlanRequest(
             goal: configuration.goal,
             snapshot: snapshot,
-            actions: ActionCatalog.actions(for: snapshot, texts: configuration.texts),
+            actions: ActionCatalog.actions(
+                for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions,
+            ),
             history: progress.history,
         )
         let plan = try await planner.plan(request)

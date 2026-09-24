@@ -13,7 +13,7 @@ struct ActionCatalogTests {
         ])
         let names = ActionCatalog.actions(for: snapshot, texts: ["hello"]).map(\.optionName)
         #expect(names == [
-            "tap_1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "go_back", "none_of_these",
+            "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "go_back", "none_of_these",
         ])
     }
 
@@ -29,8 +29,8 @@ struct ActionCatalogTests {
     @Test("drops actions that already failed to change this screen")
     func exclusion() {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Wi-Fi")])
-        let names = ActionCatalog.actions(for: snapshot, texts: [], excluding: ["tap_1"]).map(\.optionName)
-        #expect(!names.contains("tap_1"))
+        let names = ActionCatalog.actions(for: snapshot, texts: [], excluding: ["e1"]).map(\.optionName)
+        #expect(!names.contains("e1"))
     }
 
     @Test("offers unlabelled input fields so pasted text has a target")

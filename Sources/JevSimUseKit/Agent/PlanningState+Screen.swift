@@ -1,0 +1,31 @@
+extension PlanningState {
+    /// The current screen as Jev sees it.
+    struct Screen: Encodable, Sendable {
+        let app: String?
+        let elements: [Element]
+
+        init(_ snapshot: UISnapshot) {
+            app = snapshot.appLabel
+            elements = (snapshot.entries ?? []).map(Element.init)
+        }
+    }
+
+    /// One on-screen element; empty or absent attributes are omitted to save tokens.
+    struct Element: Encodable, Sendable {
+        let id: String
+        let role: String
+        let label: String?
+        let value: String?
+        let states: [String]?
+        let region: String?
+
+        init(_ entry: UIEntry) {
+            id = PlanningState.elementID(entry.aliases.alias)
+            role = entry.role
+            label = entry.label.isEmpty ? nil : entry.label
+            value = entry.value
+            states = entry.states.isEmpty ? nil : entry.states
+            region = entry.region.map { region in region.label.map { "\(region.kind): \($0)" } ?? region.kind }
+        }
+    }
+}

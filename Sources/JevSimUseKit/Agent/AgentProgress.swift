@@ -1,11 +1,11 @@
-/// Mutable bookkeeping for one run: history, stall detection, crash detection.
+/// Mutable bookkeeping for one run: history, stall detection, crash detection, and actions that did nothing.
 struct AgentProgress: Sendable {
-    /// Appended to a history entry whose action left the screen as it was, so Jev can avoid repeating it.
-    static let unchangedMarker = " (screen unchanged)"
-
-    private(set) var history: [String] = []
+    private(set) var history: [HistoryEntry] = []
     private(set) var steps = 0
+    /// Option names that left the current screen unchanged; code drops them instead of asking Jev to remember.
+    private(set) var ineffectiveActions: Set<String> = []
     private var previousOutline: String?
+    private var lastActionName: String?
     private var unchangedCount = 0
     private var pendingDisappearances: [String] = []
 
@@ -20,8 +20,13 @@ struct AgentProgress: Sendable {
         }
         let outline = observation.snapshot.outline
         let unchanged = previousOutline == outline
-        if unchanged, let last = history.indices.last {
-            history[last] += Self.unchangedMarker
+        if let last = history.indices.last {
+            history[last].screenChanged = !unchanged
+        }
+        if unchanged {
+            lastActionName.map { _ = ineffectiveActions.insert($0) }
+        } else {
+            ineffectiveActions = []
         }
         unchangedCount = unchanged ? unchangedCount + 1 : 0
         previousOutline = outline
@@ -30,7 +35,8 @@ struct AgentProgress: Sendable {
 
     mutating func recordAction(_ action: AgentAction, disappeared: [String]) {
         steps += 1
-        history.append(action.description)
+        history.append(HistoryEntry(step: steps, action: action.description, screenChanged: nil))
+        lastActionName = action.optionName
         pendingDisappearances = disappeared
     }
 }
