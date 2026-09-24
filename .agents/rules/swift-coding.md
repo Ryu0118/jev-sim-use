@@ -1,14 +1,12 @@
 # Swift Coding Rules
 
-Rules for writing Swift in SimJevUse. Lint-enforced details live in `lint-and-format.md`; this file covers design and conventions that the linters cannot fully check.
+Language-level conventions for SimJevUse. Architecture, layering, Runners, dependency injection, and the SSoT / DRY / SOLID principles live in `coding-rules.md`; lint-enforced details in `lint-and-format.md`.
 
-## Architecture
+## Files and directories
 
-- `Sources/SimJevUse/` is the entry point only. It parses the process arguments and calls into `SimJevUseKit`; it holds no business logic.
-- `Sources/SimJevUseKit/` holds **all implementation**. Anything worth testing lives here.
-- `Tests/SimJevUseKitTests/` holds the unit tests for the Kit target.
-- SwiftPM discovers sources recursively, so moving files between subdirectories needs no `Package.swift` change.
-- Group 2-3 or more related files per subdirectory. Do not create a directory for a single file, and do not turn the module root into nothing but directories: keep the entry-point type and single-file concerns at the module root.
+- One concern per file; extensions go in `Type+Concern.swift`.
+- Group 2-3 or more related files per subdirectory. Do not create a directory for a single file, and do not turn the module root into nothing but directories.
+- SwiftPM discovers sources recursively, so moving files between subdirectories needs no `Package.swift` change. Do pure moves with `git mv` in their own behavior-neutral commit.
 
 ## Access Control
 
@@ -26,29 +24,26 @@ Rules for writing Swift in SimJevUse. Lint-enforced details live in `lint-and-fo
 
 - Do not extract abstractions from code that only looks similar. Before factoring out a shared helper, check what is actually identical across call sites. If the guard condition, the non-shared branch, and the return shape all differ, leave the near-duplicates alone; only extract when the shared part is substantial.
 - Free functions are not allowed at file scope (`no-top-level-function`). Put helpers on a type, in an extension, or in a caseless namespace `enum`.
+- Use an `enum` namespace only for stateless pure helpers or process-wide constants; use a `struct` when operations share configuration or a dependency; use an `actor` only for mutable state shared across concurrent tasks.
 
 ## Concurrency
 
 - The package builds in Swift 6 language mode with complete strict concurrency checking. Code must compile with no data-race diagnostics.
-- Never use `@unchecked Sendable` to silence the compiler. Fix the isolation instead.
+- Do not use `@unchecked Sendable` to silence the compiler; fix the isolation. If it is genuinely required (e.g. wrapping a non-Sendable system handle), keep it minimal and add a `//` rationale. Treat `try?` and cleanup races the same way.
+- Use `Mutex` (Synchronization) for small locked state that does not warrant an actor.
 - Shared mutable state goes in an `actor`. Value types and immutable classes conform to `Sendable` normally.
 - Protocols whose conformers cross concurrency domains are declared `Sendable` (for example `protocol GitCloning: Sendable`).
 
 ## Errors
 
-- Domain errors are `enum`s (or structs) conforming to `LocalizedError`, with an `errorDescription` that tells the user what went wrong and, where possible, how to fix it.
-- Throw typed domain errors from `SimJevUseKit`; the executable target only catches, prints `localizedDescription`, and sets the exit code.
-
-## Dependency Injection
-
-- Side effects (running processes, file system access, network, clocks, environment variables) sit behind a protocol: a `ProcessRunning` protocol for subprocesses and a `FileManagerProtocol` for the file system (add them as package dependencies or define them in the Kit; neither ships with the template), and small capability protocols of your own (named with an `-ing` suffix, e.g. `GitCloning`, `DirectoryWatching`).
-- Types store dependencies as `private let x: any Protocol` and take them through the initializer as `some Protocol`, with the live implementation as the default argument (`processRunner: some ProcessRunning = ProcessRunner()`).
-- Tests supply hand-written fakes or mocks that record calls and return canned results. No mocking frameworks.
+- See `coding-rules.md` (`Error, Equatable, Sendable, CustomStringConvertible` enums, never swallowed).
 
 ## Testing
 
 - Use Swift Testing only (`import Testing`, `@Test`, `@Suite`, `#expect`, `#require`). Do not use XCTest.
 - Import the module under test with `@testable import SimJevUseKit`.
 - Test functions use lowerCamelCase names, never a `test` prefix, underscores, or backtick phrases. Put the human-readable sentence in `@Test("…")`, and make it add information beyond the function name. `@Suite` descriptions must describe behavior, not repeat the type name.
-- Unit tests never touch the real network, spawn real processes, or depend on the developer's home directory. Inject fakes, and use a temporary directory for file-system tests.
+- Unit tests never touch the real network or depend on the developer's home directory. Inject fakes, and use a temporary directory for file-system tests. Tests that need real external tools belong in integration / contract tests (see `coding-rules.md`).
+- Parameterize with `@Test(arguments:)` instead of copy-pasted tests.
+- All identifiers, comments, test names, and diagnostics are in English.
 - Put test fixture files under a `Fixtures/` directory; the AST linter skips it.

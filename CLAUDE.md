@@ -53,7 +53,8 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 Read these before writing or reviewing code. They are the source of truth (`.claude/rules` is a symlink to `.agents/rules`):
 
-- `.agents/rules/swift-coding.md` — architecture, access control, concurrency, errors, DI, testing
+- `.agents/rules/coding-rules.md` — SSoT / DRY / SOLID, layering (executable / CLI / Kit), Runners, side effects behind protocols (swift-subprocess via ProcessRunning, FileManagerProtocol), errors, tests
+- `.agents/rules/swift-coding.md` — files, access control, comments, abstraction, concurrency, testing conventions
 - `.agents/rules/code-review.md` — review and refactoring checklist
 - `.agents/rules/lint-and-format.md` — what SwiftFormat, SwiftLint, and the AST linter enforce
 - `.agents/rules/workflow.md` — commit size, Git and agent hooks, docsync, CI
