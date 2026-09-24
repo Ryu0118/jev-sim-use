@@ -7,10 +7,10 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 ## Development workflow
 
 - `mise run setup` — install tools, configure Git hooks
-- `mise run check` — format, lint, build, test, docsync
+- `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
 - See `.mise.toml` for the full task list (`mise tasks`)
-- Git hooks in `.githooks/` enforce format + lint on staged changes
+- Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
 - Keep commits small and easy to revert
 
 ## Architecture
@@ -49,13 +49,16 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
   surfaced as `PlanningError.rejected`.
 - Never call the real API from `swift test`; use `StubTransport`.
 
-## Code standards
+## Coding rules
 
-- Keep business logic in `SimJevUseKit` (testable); executable entry point stays thin
-- Swift 6 strict-concurrency compatible; default to package-internal access, `public` only when
-  another module needs the symbol
-- Doc comments required for non-obvious public APIs and compatibility constraints
-- my-swift-linter caps each type at 50 lines per file; split with extensions in separate files
+Read these before writing or reviewing code. They are the source of truth (`.claude/rules` is a symlink to `.agents/rules`):
+
+- `.agents/rules/swift-coding.md` — architecture, access control, concurrency, errors, DI, testing
+- `.agents/rules/code-review.md` — review and refactoring checklist
+- `.agents/rules/lint-and-format.md` — what SwiftFormat, SwiftLint, and the AST linter enforce
+- `.agents/rules/workflow.md` — commit size, Git and agent hooks, docsync, CI
+
+Access policy: use `package` for anything shared across modules in this package; `public` only for symbols consumed outside it.
 
 ## Release
 

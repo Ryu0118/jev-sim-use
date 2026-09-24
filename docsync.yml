@@ -16,4 +16,22 @@ rules:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: 8883124e5d861751aabc5570aa54e535e6ccc62839bb0efd18801b4db7adffc5
+  checksum: ef075a9b827fd7c4c8467135a4cd521e4ad8a17cd47226f3ff5e0578db4eedc9
+- name: rules-lint-and-format
+  sources:
+  - .swiftformat
+  - .swiftlint.yml
+  - .swift-ast-lint.yml
+  doc: .agents/rules/lint-and-format.md
+  message: A lint or format config changed; update .agents/rules/lint-and-format.md
+    to match.
+  checksum: 58dc5fb1f3d5ffaf8b75b81528b7e41b67d35ab9416a9405398624efd17c07d2
+- name: rules-workflow
+  sources:
+  - .gitnagg.yml
+  - .githooks/pre-commit
+  - .githooks/pre-push
+  - scripts/lint-staged.sh
+  doc: .agents/rules/workflow.md
+  message: A commit gate or hook changed; update .agents/rules/workflow.md to match.
+  checksum: be6c0d95dfba25fad025fdfa4df30901190fc6f2ed2d1fbcb0fdeac8c2ebbcc4
