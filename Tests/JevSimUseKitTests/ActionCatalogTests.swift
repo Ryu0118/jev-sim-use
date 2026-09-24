@@ -4,7 +4,7 @@ import Testing
 struct ActionCatalogTests {
     private let frame = ElementFrame(x: 0, y: 0, width: 10, height: 10)
 
-    @Test("offers every enabled element as a target, text rows included, and skips disabled ones")
+    @Test("offers enabled, labelled elements as targets, text rows included; skips disabled and unlabelled ones")
     func elements() {
         let snapshot = Fixtures.snapshot(entries: [
             Fixtures.entry(1, "Wi-Fi"),
@@ -14,7 +14,7 @@ struct ActionCatalogTests {
             Fixtures.entry(5, "  "),
         ])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        #expect(menu.elements.map(\.alias) == [1, 3, 4])
+        #expect(menu.elements.map(\.alias) == [1, 3])
         #expect(menu.operations.first == .tap)
         #expect(menu.operations.suffix(2) == [.done, .blocked])
         #expect(!menu.operations.contains(.enterText))
