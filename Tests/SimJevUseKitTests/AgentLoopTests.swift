@@ -44,4 +44,11 @@ struct AgentLoopTests {
         let outcome = try await run(driver, [.tapNext()])
         #expect(outcome == .appCrashed(detail: "the app disappeared (com.example.app)."))
     }
+
+    @Test("keeps acting while the goal is only moderately likely")
+    func moderateGoalIsNotSuccess() async throws {
+        let driver = FakeDriver(outlines: ["A", "B", "C"])
+        let outcome = try await run(driver, [.tapNext(goal: 0.7), .tapNext(goal: 0.9)])
+        #expect(outcome == .goalReached(steps: 1))
+    }
 }

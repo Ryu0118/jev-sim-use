@@ -12,9 +12,10 @@ extension AgentLoop {
     }
 
     /// Checks completion before the step limit, so a goal reached by the last allowed action counts.
+    /// Only an `.auto` judgement counts as reached, because the exit status claims success.
     func verdict(on plan: StepPlan, progress: AgentProgress) -> AgentOutcome? {
         let done = configuration.policy.decide(plan.goalReached)
-        if done.answer == true, done.decision != .escalate {
+        if done.answer == true, done.decision == .auto {
             return .goalReached(steps: progress.steps)
         }
         if progress.steps >= configuration.maxSteps {
