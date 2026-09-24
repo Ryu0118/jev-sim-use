@@ -15,7 +15,8 @@ package enum RunGoalEvent: Sendable, Hashable, CustomStringConvertible {
     package var description: String {
         switch self {
         case let .connected(device, endpoint): "Device: \(device.name) (\(device.deviceId)); Jev: \(endpoint)"
-        case let .session(id, resumed): resumed ? "Resuming session \(id)" : "Session: \(id)"
+        case let .session(id, resumed):
+            (resumed ? "Resuming session \(id)" : "Session: \(id)") + " (deleted when the goal is reached)"
         case let .warning(message): "Warning: \(message)"
         case let .agent(event): event.description
         }

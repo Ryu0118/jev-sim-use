@@ -74,3 +74,12 @@ struct RunGoalRunnerTests {
         #expect(events.withLock { $0.contains { $0.description.hasPrefix("Warning: sim-use 0.15.0") } })
     }
 }
+
+@Suite("The progress line names the session and says it goes away on success")
+struct RunGoalEventSessionTests {
+    @Test("new and resumed sessions both say they are deleted when the goal is reached")
+    func sessionLine() {
+        #expect(RunGoalEvent.session(id: "s1", resumed: false).description == "Session: s1 (deleted when the goal is reached)")
+        #expect(RunGoalEvent.session(id: "s1", resumed: true).description == "Resuming session s1 (deleted when the goal is reached)")
+    }
+}
