@@ -2,7 +2,13 @@ import FileManagerProtocol
 import Foundation
 
 /// Keeps one JSON file per session in `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`).
+///
+/// Sessions exist to be resumed: a finished one is deleted, and an unfinished one expires `timeToLive` after its last
+/// change.
 package struct SessionStore: Sendable {
+    /// How long an unfinished session is kept after it last changed: one week.
+    package static let timeToLive: TimeInterval = 7 * 24 * 60 * 60
+
     /// The directory holding `<id>.json` files.
     package let directory: URL
     private let fileManager: any FileManagerProtocol
@@ -50,6 +56,20 @@ package struct SessionStore: Sendable {
             .compactMap { fileManager.contents(atPath: directory.appending(path: $0).path(percentEncoded: false)) }
             .map { try decoder.decode(SessionRecord.self, from: $0) }
             .sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    /// Deletes the session with `id`, if it exists.
+    package func delete(_ id: String) throws {
+        let path = fileURL(for: id).path(percentEncoded: false)
+        guard fileManager.fileExists(atPath: path) else { return }
+        try fileManager.removeItem(atPath: path)
+    }
+
+    /// Deletes sessions that last changed more than `timeToLive` before `now`.
+    package func removeExpired(now: Date) throws {
+        for session in try list() where now.timeIntervalSince(session.updatedAt) > Self.timeToLive {
+            try delete(session.id)
+        }
     }
 
     private func fileURL(for id: String) -> URL {

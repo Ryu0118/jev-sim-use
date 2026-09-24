@@ -7,7 +7,8 @@ struct RunCommand: ContextualCommand {
         abstract: "Work toward a goal, starting from the current screen (the default command).",
         discussion: """
         Requires $TYPESAFE_API_KEY. The app must already be open: sim-use cannot launch apps. Every run starts a \
-        session; stdout ends with `Session: <id>` for `session show`, `session tell`, and `session resume`.
+        session. When the goal is not reached, stdout ends with `Session: <id>` for `session show`, `session tell`, \
+        and `session resume`; reaching the goal deletes the session.
         """,
     )
 

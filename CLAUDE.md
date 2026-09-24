@@ -29,7 +29,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
     usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
-    session (`SessionStart.new` or `.resume`), saved before and after the loop.
+    session (`SessionStart.new` or `.resume`), saved before and after the loop and deleted once the goal is reached.
+    Unfinished sessions expire a week after they last changed (`SessionStore.timeToLive`, pruned on every run and
+    `session` command).
   - `SessionRunner` (`Session/`): list / show / tell on `SessionStore` (`$XDG_STATE_HOME/jev-sim-use/sessions`).
   - `DoctorRunner` (`Doctor/`): sim-use, device (reads the screen once), and Jev settings checks → `DoctorReport`.
   - `ConfigRunner` (`Configuration/`): get / set (validated) / unset / list on `UserConfigStore`.

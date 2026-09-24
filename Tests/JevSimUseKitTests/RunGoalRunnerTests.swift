@@ -41,6 +41,7 @@ struct RunGoalRunnerTests {
         let first = try #require(events.withLock { $0.first })
         #expect(first.description.hasPrefix("Device: iPhone 17 Pro"))
         #expect(events.withLock { $0.contains(.session(id: "s1", resumed: false)) })
+        #expect(try SessionStore(environment: environment).list().isEmpty)
     }
 
     @Test("saves the session with its device, history, and run outcome")
@@ -49,10 +50,10 @@ struct RunGoalRunnerTests {
         let session = try SessionStore(environment: environment).load("s1")
         #expect(session.goal == "Open Settings")
         #expect(session.deviceID == "B34F0000-0000-0000-0000-000000000001")
-        #expect(session.runs.map(\.succeeded) == [false])
+        #expect(session.runs.count == 1)
     }
 
-    @Test("resuming continues the latest session with its notes and history")
+    @Test("resuming continues the latest session, which is deleted once the goal is reached")
     func resumes() async throws {
         let store = SessionStore(environment: environment)
         var session = SessionRecord(id: "old", goal: "Turn on dark mode", texts: [], createdAt: Date())
@@ -63,7 +64,7 @@ struct RunGoalRunnerTests {
         let result = try await runner().run(request(.resume(id: nil))) { event in events.withLock { $0.append(event) } }
         #expect(result.sessionID == "old")
         #expect(events.withLock { $0.contains(.session(id: "old", resumed: true)) })
-        #expect(try store.load("old").runs.count == 1)
+        #expect(throws: SessionStoreError.notFound(id: "old")) { try store.load("old") }
     }
 
     @Test("warns when sim-use is newer than the tested version")

@@ -12,6 +12,7 @@ package struct SessionRunner: Sendable {
 
     /// Performs `operation`.
     package func run(_ operation: SessionOperation) throws -> SessionOutcome {
+        try store.removeExpired(now: now())
         switch operation {
         case .list:
             return try .sessions(store.list())

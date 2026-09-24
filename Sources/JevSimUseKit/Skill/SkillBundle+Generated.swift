@@ -40,8 +40,9 @@ extension SkillBundle {
 
     - Write the goal as the end state you want, specific enough to recognize ("Wi-Fi settings screen is open").
     - Jev never writes text. If the goal needs typing, pass every string with `-t`, or it cannot finish.
-    - stdout is the outcome line, then `Session: <id>`; stderr is step-by-step progress. Every run is saved as a session
-      under `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`).
+    - stdout is the outcome line; when the goal was not reached, `Session: <id>` follows. stderr is step-by-step progress.
+    - Every run is a session under `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`). Reaching the goal
+      deletes it; an unfinished session expires one week after it last changed.
 
     ## Results
 
@@ -94,7 +95,8 @@ extension SkillBundle {
     ## Privacy
 
     Each step sends the screen's visible labels and values, the goal, the action history, the session notes, and every
-    `-t` value to the Jev endpoint. Sessions are saved locally with the goal, texts, notes, and actions. Do not run it on screens with data that may not leave the machine.
+    `-t` value to the Jev endpoint. Unfinished sessions are kept locally for up to a week
+    with the goal, texts, notes, and actions. Do not run it on screens with data that may not leave the machine.
 
     """#####
 }

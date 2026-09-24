@@ -25,10 +25,6 @@ extension SessionRecord {
     }
 
     private var status: String {
-        switch runs.last?.succeeded {
-        case true: "goal reached"
-        case false: "stopped"
-        case nil: "not run"
-        }
+        runs.isEmpty ? "not run" : "stopped"
     }
 }

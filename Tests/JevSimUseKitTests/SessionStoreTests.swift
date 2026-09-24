@@ -12,7 +12,7 @@ struct SessionStoreTests {
         var session = SessionRecord(id: "a1", goal: "g", texts: ["t"], deviceID: "D", createdAt: Date(timeIntervalSince1970: 0))
         session.notes = ["Dark mode is under Developer."]
         session.history = [HistoryEntry(step: 1, action: "Tap e3", screenChanged: true)]
-        session.runs = [SessionRun(endedAt: Date(timeIntervalSince1970: 5), steps: 1, succeeded: false, outcome: "Stopped.")]
+        session.runs = [SessionRun(endedAt: Date(timeIntervalSince1970: 5), steps: 1, outcome: "Stopped.")]
         try store.save(session)
         #expect(try store.load("a1") == session)
         #expect(store.directory.path(percentEncoded: false).hasSuffix("jev-sim-use/sessions"))
@@ -33,5 +33,14 @@ struct SessionStoreTests {
     func missing() {
         #expect(throws: SessionStoreError.notFound(id: "nope")) { try store.load("nope") }
         #expect(throws: SessionStoreError.empty) { try store.load(nil) }
+    }
+
+    @Test("removes sessions untouched for longer than a week, keeps newer ones")
+    func expiry() throws {
+        let now = Date(timeIntervalSince1970: 30 * 24 * 60 * 60)
+        try store.save(SessionRecord(id: "stale", goal: "g", texts: [], createdAt: now - SessionStore.timeToLive - 1))
+        try store.save(SessionRecord(id: "fresh", goal: "g", texts: [], createdAt: now - SessionStore.timeToLive + 60))
+        try store.removeExpired(now: now)
+        #expect(try store.list().map(\.id) == ["fresh"])
     }
 }

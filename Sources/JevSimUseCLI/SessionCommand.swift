@@ -9,7 +9,8 @@ struct SessionCommand: AsyncParsableCommand {
         Every `run` saves a session: the goal, the device, every action, and how each run ended. When a run stops \
         short, `show` it, `tell` it what you know (where a setting lives, what the finished screen looks like), and \
         `resume` it: Jev continues the same goal with the notes and history. Omit the id for the most recent session. \
-        Stored in $XDG_STATE_HOME/jev-sim-use/sessions (default ~/.local/state).
+        Stored in $XDG_STATE_HOME/jev-sim-use/sessions (default ~/.local/state). Reaching the goal deletes the \
+        session; an unfinished one expires a week after it last changed.
         """,
         subcommands: [List.self, Show.self, Tell.self, Resume.self],
     )

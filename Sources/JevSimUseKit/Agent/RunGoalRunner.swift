@@ -31,7 +31,8 @@ package struct RunGoalRunner: Sendable {
 
     /// Resolves settings, pins the device, and runs the agent loop until it stops.
     ///
-    /// A resumed session continues its history with its notes, and gets a fresh `maxSteps` budget.
+    /// A resumed session continues its history with its notes, and gets a fresh `maxSteps` budget. The session is
+    /// deleted once the goal is reached; expired sessions are removed first.
     package func run(
         _ request: RunGoalRequest,
         report: @escaping @Sendable (RunGoalEvent) -> Void,
@@ -39,6 +40,7 @@ package struct RunGoalRunner: Sendable {
         let settings = try JevSettings.resolve(
             baseURLFlag: request.baseURL, modelFlag: request.model, config: configStore.load(), environment: environment,
         )
+        try sessionStore.removeExpired(now: now())
         var session = switch request.session {
         case let .new(goal, texts): SessionRecord(id: makeSessionID(), goal: goal, texts: texts, createdAt: now())
         case let .resume(id): try sessionStore.load(id)
@@ -63,11 +65,13 @@ package struct RunGoalRunner: Sendable {
             report: { report(.agent($0)) },
         ).run(continuing: session.history)
 
+        if result.outcome.isSuccess {
+            try sessionStore.delete(session.id)
+            return RunGoalOutcome(sessionID: session.id, outcome: result.outcome)
+        }
         let steps = result.history.count - session.history.count
         session.history = result.history
-        session.runs.append(SessionRun(
-            endedAt: now(), steps: steps, succeeded: result.outcome.isSuccess, outcome: result.outcome.description,
-        ))
+        session.runs.append(SessionRun(endedAt: now(), steps: steps, outcome: result.outcome.description))
         session.updatedAt = now()
         try sessionStore.save(session)
         return RunGoalOutcome(sessionID: session.id, outcome: result.outcome)
