@@ -10,11 +10,8 @@ package struct UserConfigStore: Sendable {
 
     /// Creates a store for the config directory `environment` points at.
     package init(environment: [String: String], fileManager: some FileManagerProtocolMacOS = FileManager.default) {
-        let home = environment["HOME"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
-            ?? fileManager.homeDirectoryForCurrentUser
-        let base = environment["XDG_CONFIG_HOME"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
-            ?? home.appending(path: ".config")
-        fileURL = base.appending(path: "jev-sim-use/config.json")
+        fileURL = UserDirectories(environment: environment, fileManager: fileManager).config
+            .appending(path: "jev-sim-use/config.json")
         self.fileManager = fileManager
     }
 

@@ -8,8 +8,7 @@ package struct SkillRunner: Sendable {
 
     /// Resolves client directories against `environment["HOME"]`, falling back to the current user's home.
     package init(environment: [String: String], fileManager: some FileManagerProtocolMacOS = FileManager.default) {
-        home = environment["HOME"].flatMap { $0.isEmpty ? nil : URL(filePath: $0) }
-            ?? fileManager.homeDirectoryForCurrentUser
+        home = UserDirectories(environment: environment, fileManager: fileManager).home
         self.fileManager = fileManager
     }
 
