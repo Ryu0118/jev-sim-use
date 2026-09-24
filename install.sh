@@ -97,6 +97,15 @@ main() {
     error "failed to determine version to install"
   fi
 
+  # The version becomes part of a URL and a path, so accept only a release tag.
+  case "$version" in
+    v[0-9]*.[0-9]*.[0-9]* | [0-9]*.[0-9]*.[0-9]*) ;;
+    *) error "invalid version '$version' (expected e.g. v1.2.3)" ;;
+  esac
+  case "$version" in
+    *[!v0-9.]*) error "invalid version '$version' (expected e.g. v1.2.3)" ;;
+  esac
+
   local clean_version
   clean_version="$(echo "$version" | sed 's/^v//')"
   local current
