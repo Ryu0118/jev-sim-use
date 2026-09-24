@@ -17,7 +17,7 @@ package enum ElementGesture: String, Sendable, Hashable, CaseIterable {
     /// coordinates share describe-ui's space (points on iOS).
     func arguments(alias: Int, frame: ElementFrame) -> [String] {
         typealias Gesture = SimUseContract.Gesture
-        let center = (x: frame.x + frame.width / 2, y: frame.y + frame.height / 2)
+        let center = frame.center
         // Swipes run across 80% of the element, so they start and end inside it.
         let insetX = frame.width * 0.1, insetY = frame.height * 0.1
         func swipe(from: (Double, Double), to: (Double, Double)) -> [String] {

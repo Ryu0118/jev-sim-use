@@ -24,21 +24,20 @@ package struct SimUseClient: DeviceDriving {
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
     /// on the switch itself, at the row's trailing edge, with a short hold.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
-        guard snapshot.platform == "ios",
-              let entry = snapshot.entries?.first(where: { $0.aliases.alias == alias }), entry.isToggle,
-              let frame = entry.frame
+        guard snapshot.platform == SimUseContract.Platform.ios,
+              let entry = snapshot.entry(alias: alias), entry.isToggle, let frame = entry.frame
         else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
         // A UISwitch is 51 pt wide and sits at the trailing edge of its row.
-        let x = max(frame.x + frame.width / 2, frame.x + frame.width - 26)
+        let x = max(frame.center.x, frame.x + frame.width - 26)
         return try await run([
-            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.y + frame.height / 2)",
+            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
             SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
         ])
     }
 
     /// Runs `long-press`, `swipe`, or a two-finger preset on the element's frame.
     package func perform(_ gesture: ElementGesture, alias: Int, on snapshot: UISnapshot) async throws -> [String] {
-        guard let frame = snapshot.entries?.first(where: { $0.aliases.alias == alias })?.frame else {
+        guard let frame = snapshot.entry(alias: alias)?.frame else {
             throw SimUseError.malformedOutput(
                 arguments: [SimUseContract.Command.ui], detail: "element @\(alias) has no frame to aim \(gesture.rawValue) at",
             )

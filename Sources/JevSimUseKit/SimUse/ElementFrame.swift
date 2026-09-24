@@ -15,4 +15,9 @@ package struct ElementFrame: Decodable, Sendable, Hashable {
         self.width = width
         self.height = height
     }
+
+    /// The frame's centre.
+    package var center: (x: Double, y: Double) {
+        (x: x + width / 2, y: y + height / 2)
+    }
 }

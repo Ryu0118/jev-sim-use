@@ -36,11 +36,11 @@ package enum SimUseDeviceAction: Sendable, Hashable {
         case .revealContentRight: [gesture, Gesture.scrollLeft, Gesture.duration, Gesture.sidewaysSeconds]
         case .revealContentLeft: [gesture, Gesture.scrollRight, Gesture.duration, Gesture.sidewaysSeconds]
         case .goBack:
-            platform == "android"
+            platform == SimUseContract.Platform.android
                 ? [SimUseContract.Command.button, SimUseContract.Button.back]
                 : [gesture, Gesture.swipeFromLeftEdge]
         case .swipeFromRightEdge: [gesture, Gesture.swipeFromRightEdge]
-        case let .press(button): [SimUseContract.Command.button, button.argument]
+        case let .press(button): [SimUseContract.Command.button, button.rawValue]
         }
     }
 }

@@ -13,7 +13,7 @@ package struct SimUseDevice: Decodable, Sendable, Hashable {
 
     /// sim-use supports only a few verbs on physical iPhones, so the agent cannot drive them.
     package var isPhysicalIOS: Bool {
-        platform == "ios" && kind == "physical"
+        platform == SimUseContract.Platform.ios && kind == "physical"
     }
 }
 

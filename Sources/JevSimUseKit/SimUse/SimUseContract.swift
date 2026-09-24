@@ -12,6 +12,12 @@ package enum SimUseContract {
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 
+    /// Values of the `platform` field in sim-use's JSON.
+    enum Platform {
+        static let ios = "ios"
+        static let android = "android"
+    }
+
     /// Subcommands.
     enum Command {
         static let ui = "ui"
@@ -54,22 +60,13 @@ package enum SimUseContract {
         /// Pivot of a two-finger preset. On iOS these are device-native portrait points, the space describe-ui uses.
         static let centerX = "--center-x"
         static let centerY = "--center-y"
-        static let scale = "--scale"
-        static let angle = "--angle"
         static let duration = "--duration"
         /// Duration that makes a sideways scroll turn one page.
         static let sidewaysSeconds = "0.3"
     }
 
-    /// Hardware buttons. iOS has home, lock, apple-pay, side-button, and siri; Android has home, back, lock, and
-    /// recents.
+    /// Hardware buttons. `back` is how Android goes back; the others are `HardwareButton` raw values.
     enum Button {
-        static let home = "home"
-        static let lock = "lock"
         static let back = "back"
-        static let recents = "recents"
-        static let applePay = "apple-pay"
-        static let sideButton = "side-button"
-        static let siri = "siri"
     }
 }
