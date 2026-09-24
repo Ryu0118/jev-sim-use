@@ -12,8 +12,6 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var maxSteps: Int
     /// Stop after this many consecutive actions left the screen unchanged.
     package var stallLimit: Int
-    /// Thresholds for trusting Jev's goal-reached judgement.
-    package var goalPolicy: RoutingPolicy
     /// Thresholds for acting on Jev's chosen action.
     package var actionPolicy: ActionPolicy
 
@@ -24,7 +22,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         notes: [String] = [],
         maxSteps: Int = 15,
         stallLimit: Int = 3,
-        goalPolicy: RoutingPolicy = .default,
         actionPolicy: ActionPolicy = ActionPolicy(),
     ) {
         self.goal = goal
@@ -32,7 +29,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.notes = notes
         self.maxSteps = maxSteps
         self.stallLimit = stallLimit
-        self.goalPolicy = goalPolicy
         self.actionPolicy = actionPolicy
     }
 }

@@ -3,35 +3,29 @@ extension AgentLoop {
         let request = PlanRequest(
             goal: configuration.goal,
             snapshot: snapshot,
-            actions: ActionCatalog.actions(
-                for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions,
-            ),
+            menu: ActionCatalog.menu(for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions),
             history: progress.history,
             notes: configuration.notes,
-            gestureTargets: ActionCatalog.gestureTargets(for: snapshot),
         )
         let plan = try await planner.plan(request)
         report(.planned(step: progress.nextStep, plan: plan))
         return plan
     }
 
-    /// Checks completion before the step limit, so a goal reached by the last allowed action counts.
-    /// Only an `.auto` judgement counts as reached, because the exit status claims success.
+    /// DONE is Jev's claim, not proof, so exit 0 needs it to clear a bar; below it the run stops as probably done.
     func decide(on plan: StepPlan, progress: AgentProgress) -> StepDecision {
-        let done = configuration.goalPolicy.decide(plan.goalReached)
-        if done.answer == true, done.decision == .auto {
-            return .stop(.goalReached(steps: progress.steps))
+        if plan.action == .done {
+            return plan.support >= ActionPolicy.doneMinimum
+                ? .stop(.goalReached(steps: progress.steps))
+                : .stop(.goalProbablyReached(steps: progress.steps, probability: plan.support))
         }
         if progress.steps >= configuration.maxSteps {
             return .stop(.stepLimitReached(steps: progress.steps))
         }
-        if plan.action == .noneApplies, done.answer == true {
-            return .stop(.goalProbablyReached(steps: progress.steps, probability: plan.goalReached.value))
-        }
         let step = progress.nextStep
-        // Code does not explore on Jev's behalf: scrolling or going back when Jev is unsure moved away from the right
-        // screen as often as it found anything. Nothing fitting, or a repeat of a gesture that did nothing here (it
-        // is composed from answers, not picked from filtered options), hands over like low support does.
+        // Code does not explore on Jev's behalf: scrolling or going back when Jev was unsure moved away from the right
+        // screen as often as it found anything. Nothing fitting, or a repeat of an action that did nothing on this
+        // screen, hands over like low support does.
         if plan.action == .noneApplies || progress.ineffectiveActions.contains(plan.action.optionName) {
             return .stop(.noActionFits(step: step))
         }
@@ -49,8 +43,9 @@ extension AgentLoop {
         case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
         case let .gesture(gesture, alias, _, _): try await driver.perform(gesture, alias: alias, on: snapshot)
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
-        case let .paste(_, text): try await driver.paste(text.value)
-        case .noneApplies: []
+        case let .enterText(field, _, text):
+            try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value)
+        case .done, .noneApplies: []
         }
     }
 

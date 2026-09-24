@@ -1,16 +1,16 @@
 extension ElementGesture {
-    /// The rubric Jev reads in `element_gesture`, which says what the gesture is for.
+    /// The rubric Jev reads in `operation`, which says what the gesture is for.
     var optionDescription: String {
         switch self {
-        case .longPress: "Press and hold it, to open its context menu or start rearranging"
-        case .swipeLeft: "Swipe left across it, to reveal row actions or move a carousel forward"
-        case .swipeRight: "Swipe right across it, to reveal leading row actions or move a carousel back"
-        case .swipeUp: "Swipe up within it, to move its own content up"
-        case .swipeDown: "Swipe down within it, to move its own content down or refresh it"
-        case .pinchOut: "Spread two fingers on it, to zoom in"
-        case .pinchIn: "Pinch two fingers on it, to zoom out"
-        case .rotateClockwise: "Rotate two fingers clockwise on it"
-        case .rotateCounterclockwise: "Rotate two fingers counterclockwise on it"
+        case .longPress: "Press and hold an element, to open its context menu or start rearranging"
+        case .swipeLeft: "Swipe left across an element, to reveal row actions or move a carousel forward"
+        case .swipeRight: "Swipe right across an element, to reveal leading row actions or move a carousel back"
+        case .swipeUp: "Swipe up within an element, to move its own content up"
+        case .swipeDown: "Swipe down within an element, to move its own content down or refresh it"
+        case .pinchOut: "Spread two fingers on an element, to zoom in"
+        case .pinchIn: "Pinch two fingers on an element, to zoom out"
+        case .rotateClockwise: "Rotate two fingers clockwise on an element"
+        case .rotateCounterclockwise: "Rotate two fingers counterclockwise on an element"
         }
     }
 

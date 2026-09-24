@@ -14,7 +14,7 @@ struct RunGoalRunnerTests {
         RunGoalRequest(session: session, maxSteps: 3, minConfidence: 0.6, deviceID: nil, baseURL: nil, model: nil)
     }
 
-    private func runner(version: String = "v0.14.0", plans: [StepPlan] = [.tapNext(goal: 0.95)]) throws -> RunGoalRunner {
+    private func runner(version: String = "v0.14.0", plans: [StepPlan] = [.done()]) throws -> RunGoalRunner {
         let commands = FakeCommandRunner([
             "--version": .text(version),
             "devices": .json(Fixtures.devices(Fixtures.simulator)),
@@ -47,7 +47,7 @@ struct RunGoalRunnerTests {
     @Test("saves the session with its device, history, and run outcome")
     func savesSession() async throws {
         let unsurePaste = StepPlan(
-            goalReached: .init(clamping: 0.05), action: .paste(index: 0, text: InputText(name: "text", value: "x")), confidence: 0.3, costUSD: 0,
+            action: .enterText(field: 1, label: "Name", text: InputText(name: "text", value: "x")), confidence: 0.3, costUSD: 0,
         )
         _ = try await runner(plans: [unsurePaste]).run(request()) { _ in }
         let session = try SessionStore(environment: environment).load("s1")

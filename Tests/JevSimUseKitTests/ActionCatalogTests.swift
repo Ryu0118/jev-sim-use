@@ -2,57 +2,45 @@
 import Testing
 
 struct ActionCatalogTests {
-    @Test("offers enabled, labelled, pressable elements plus texts, gestures, and a way out")
-    func catalog() {
+    private let frame = ElementFrame(x: 0, y: 0, width: 10, height: 10)
+
+    @Test("offers every enabled element as a target, text rows included, and skips disabled ones")
+    func elements() {
         let snapshot = Fixtures.snapshot(entries: [
             Fixtures.entry(1, "Wi-Fi"),
             Fixtures.entry(2, "Locked", states: ["disabled"]),
-            Fixtures.entry(3, "  "),
-            Fixtures.entry(4, "General", role: "Heading"),
-            Fixtures.entry(5, "Battery 100%", role: "GenericElement"),
+            Fixtures.entry(3, "牛乳を買う、未実行", role: "StaticText"),
+            Fixtures.entry(4, "", role: "Group", frame: frame),
+            Fixtures.entry(5, "  "),
         ])
-        let names = ActionCatalog.actions(for: snapshot, texts: [InputText(name: "greeting", value: "hello")]).map(\.optionName)
-        #expect(names == [
-            "e1", "paste_text_0", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right",
-            "scroll_to_reveal_left", "go_back", "swipe_in_from_right_edge", "press_home", "press_lock", "press_apple_pay", "press_side_button", "press_siri", "none_of_these",
-        ])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [])
+        #expect(menu.elements.map(\.alias) == [1, 3, 4])
+        #expect(menu.operations.first == .tap)
+        #expect(menu.operations.suffix(2) == [.done, .blocked])
+        #expect(!menu.operations.contains(.enterText))
     }
 
-    @Test("stays within Jev's option limit and keeps option names unique")
+    @Test("offers typing only when there is a named text and an editable field")
+    func enterText() {
+        let field = Fixtures.entry(7, "", role: "TextField")
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [field]), texts: [InputText(name: "email", value: "a@b")])
+        #expect(menu.operations.contains(.enterText))
+        #expect(menu.fields == [ElementTarget(alias: 7, role: "TextField", label: "empty input field")])
+    }
+
+    @Test("stays within Jev's option limit")
     func cap() {
         let entries = (1 ... 300).map { Fixtures.entry($0, "Row \($0)") }
-        let names = ActionCatalog.actions(for: Fixtures.snapshot(entries: entries), texts: []).map(\.optionName)
-        #expect(names.count == ActionCatalog.maximumTapTargets + SimUseDeviceAction.available(on: "ios").count + 1)
-        #expect(names.count <= ActionCatalog.maximumOptions)
-        #expect(Set(names).count == names.count)
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: entries), texts: [])
+        #expect(menu.elements.count == ActionCatalog.maximumOptions)
+        #expect(menu.operations.count <= ActionCatalog.maximumOptions)
     }
 
-    @Test("drops actions that already failed to change this screen")
+    @Test("drops screen-level actions that already did nothing on this screen")
     func exclusion() {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Wi-Fi")])
-        let names = ActionCatalog.actions(for: snapshot, texts: [], excluding: ["e1"]).map(\.optionName)
-        #expect(!names.contains("e1"))
-    }
-
-    @Test("offers unlabelled input fields so pasted text has a target")
-    func unlabelledInput() {
-        let field = UIEntry(
-            aliases: ElementAliases(alias: 7), role: "TextField", label: "", states: [], value: nil, uniqueId: nil, region: nil, frame: nil,
-        )
-        let actions = ActionCatalog.actions(for: Fixtures.snapshot(entries: [field]), texts: [])
-        #expect(actions.first == .tap(alias: 7, role: "TextField", label: "empty input field"))
-    }
-
-    @Test("aims gestures at controls, images, and groups, not at plain text")
-    func gestureTargets() {
-        let frame = ElementFrame(x: 0, y: 0, width: 10, height: 10)
-        let snapshot = Fixtures.snapshot(entries: [
-            Fixtures.entry(1, "Photos", frame: frame),
-            Fixtures.entry(2, "Map", role: "Image", frame: frame),
-            Fixtures.entry(3, "Title", role: "StaticText", frame: frame),
-            Fixtures.entry(4, "No frame"),
-        ])
-        #expect(ActionCatalog.gestureTargets(for: snapshot).map(\.alias) == [1, 2])
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [Fixtures.entry(1, "A")]), texts: [], excluding: ["go_back"])
+        #expect(!menu.operations.contains(.device(.goBack)))
+        #expect(menu.operations.contains(.device(.revealContentBelow)))
     }
 
     @Test("leaves the iOS back button to go_back, so the two do not split Jev's probability")
@@ -61,9 +49,8 @@ struct ActionCatalogTests {
             aliases: ElementAliases(alias: 6), role: "Button", label: "一般", states: [], value: nil,
             uniqueId: "BackButton", region: nil, frame: nil,
         )
-        let names = ActionCatalog.actions(for: Fixtures.snapshot(entries: [back, Fixtures.entry(7, "キーボード")]), texts: [])
-            .map(\.optionName)
-        #expect(!names.contains("e6"))
-        #expect(names.contains("e7") && names.contains("go_back"))
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [back, Fixtures.entry(7, "キーボード")]), texts: [])
+        #expect(menu.elements.map(\.alias) == [7])
+        #expect(menu.operations.contains(.device(.goBack)))
     }
 }

@@ -11,10 +11,10 @@ struct AgentLoopTests {
         ).run().outcome
     }
 
-    @Test("acts until Jev judges the goal reached")
+    @Test("acts until Jev chooses DONE")
     func reachesGoal() async throws {
         let driver = FakeDriver(outlines: ["A", "B", "C"])
-        let outcome = try await run(driver, [.tapNext(), .tapNext(), .tapNext(goal: 0.95)])
+        let outcome = try await run(driver, [.tapNext(), .tapNext(), .done()])
         #expect(outcome == .goalReached(steps: 2))
         #expect(driver.performedActions == ["tap @1", "tap @1"])
     }
@@ -48,28 +48,34 @@ struct AgentLoopTests {
         #expect(outcome == .appCrashed(detail: "the app disappeared (com.example.app)."))
     }
 
-    @Test("keeps acting while the goal is only moderately likely")
-    func moderateGoalIsNotSuccess() async throws {
-        let driver = FakeDriver(outlines: ["A", "B", "C"])
-        let outcome = try await run(driver, [.tapNext(goal: 0.7), .tapNext(goal: 0.9)])
-        #expect(outcome == .goalReached(steps: 1))
+    @Test("a DONE below the bar stops as probably reached, not as success")
+    func unsureDone() async throws {
+        let driver = FakeDriver(outlines: ["A"])
+        #expect(try await run(driver, [.done(confidence: 0.4)]) == .goalProbablyReached(steps: 0, probability: 0.4))
+        #expect(driver.performedActions.isEmpty)
+    }
+
+    @Test("finishes without asking again when Jev expected the action to finish and the screen changed")
+    func earlyFinish() async throws {
+        let driver = FakeDriver(outlines: ["A", "B"])
+        let planner = FakePlanner([.tapNext(finishes: 0.9), .blocked()])
+        let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        #expect(outcome.outcome == .goalReached(steps: 1))
     }
 
     @Test("hands over at once when nothing fits")
     func noActionFits() async throws {
-        let plan = StepPlan(goalReached: Probability(clamping: 0.05), action: .noneApplies, confidence: 0.9, costUSD: 0)
         let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [plan]) == .noActionFits(step: 1))
+        #expect(try await run(driver, [.blocked()]) == .noActionFits(step: 1))
         #expect(driver.performedActions.isEmpty)
     }
 
-    @Test("will not paste on support that would be enough for a tap")
-    func pasteNeedsMoreSupport() async throws {
-        let plan = StepPlan(
-            goalReached: Probability(clamping: 0.05), action: .paste(index: 0, text: InputText(name: "text", value: "hi")), confidence: 0.7, costUSD: 0,
-        )
+    @Test("will not enter text on support that would be enough for a tap")
+    func textNeedsMoreSupport() async throws {
+        let enter = AgentAction.enterText(field: 1, label: "Name", text: InputText(name: "name", value: "hi"))
         let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [plan]) == .escalated(step: 1, action: .paste(index: 0, text: InputText(name: "text", value: "hi")), confidence: 0.7))
+        #expect(try await run(driver, [StepPlan(action: enter, confidence: 0.7, costUSD: 0)])
+            == .escalated(step: 1, action: enter, confidence: 0.7))
     }
 }
 
@@ -80,7 +86,7 @@ struct AgentLoopResumeTests {
         let earlier = (1 ... 2).map { HistoryEntry(step: $0, action: "Tap e1", screenChanged: true) }
         let result = try await AgentLoop(
             driver: FakeDriver(outlines: ["A", "B", "C"]),
-            planner: FakePlanner([.tapNext(), .tapNext(goal: 0.95)]),
+            planner: FakePlanner([.tapNext(), .done()]),
             configuration: AgentConfiguration(goal: "Finish onboarding", maxSteps: 2),
         ).run(continuing: earlier)
         #expect(result.outcome == .goalReached(steps: 1))
@@ -90,32 +96,15 @@ struct AgentLoopResumeTests {
 
 @Suite("A gesture that did nothing on a screen is not repeated there")
 struct AgentLoopGestureTests {
-    @Test("explores instead of long-pressing the same element on the same screen again")
+    @Test("hands over instead of long-pressing the same element on the same screen again")
     func repeatedGesture() async throws {
-        let longPress = StepPlan(
-            goalReached: .init(clamping: 0.05), action: .gesture(.longPress, alias: 1, role: "Button", label: "Next"),
-            confidence: 0.9, costUSD: 0,
-        )
+        let longPress = StepPlan(action: .gesture(.longPress, alias: 1, role: "Button", label: "Next"), confidence: 0.9, costUSD: 0)
         let driver = FakeDriver(outlines: ["A"])
         _ = try await AgentLoop(
             driver: driver, planner: FakePlanner([longPress]), configuration: AgentConfiguration(goal: "g", maxSteps: 3),
         ).run()
         #expect(driver.performedActions.first == "long_press @1")
         #expect(driver.performedActions.dropFirst().allSatisfy { !$0.hasPrefix("long_press") })
-    }
-}
-
-@Suite("When Jev leans toward done and has nothing to do, the loop stops instead of exploring away")
-struct AgentLoopProbablyDoneTests {
-    @Test("stops with goalProbablyReached and takes no exploring action")
-    func probablyDone() async throws {
-        let plan = StepPlan(goalReached: Probability(clamping: 0.84), action: .noneApplies, confidence: 0.6, costUSD: 0)
-        let driver = FakeDriver(outlines: ["A"])
-        let outcome = try await AgentLoop(
-            driver: driver, planner: FakePlanner([plan]), configuration: AgentConfiguration(goal: "g"),
-        ).run().outcome
-        #expect(outcome == .goalProbablyReached(steps: 0, probability: Probability(clamping: 0.84).value))
-        #expect(driver.performedActions.isEmpty)
     }
 }
 

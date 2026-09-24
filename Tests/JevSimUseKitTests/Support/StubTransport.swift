@@ -21,17 +21,17 @@ final class StubTransport: JevTransport {
         return response
     }
 
-    /// A response choosing `choice` for `next_action`, plus any other choice questions in `extra` (name → answer).
+    /// A response choosing `operation`, plus other choice answers in `extra` (question, choice, confidence).
     static func answer(
-        choice: String,
+        operation: String,
         confidence: Double = 0.9,
-        goal: Double = 0.1,
+        finishes: Double = 0.1,
         extra: [(question: String, choice: String, confidence: Double)] = [],
     ) -> String {
-        let choices = ([("next_action", choice, confidence)] + extra).map { question, choice, confidence in
+        let choices = ([("operation", operation, confidence)] + extra).map { question, choice, confidence in
             #""\#(question)":{"type":"choice","choice":"\#(choice)","probabilities":{"\#(choice)":\#(confidence)},"confidence":\#(confidence)}"#
         }
-        return #"{"model":"jev-latest","answers":{"goal_reached":{"type":"noul","noul":\#(goal)},"#
+        return #"{"model":"jev-latest","answers":{"finishes":{"type":"noul","noul":\#(finishes)},"#
             + choices.joined(separator: ",") + #"},"usage":{"input_tokens":1000,"output_tokens":10}}"#
     }
 

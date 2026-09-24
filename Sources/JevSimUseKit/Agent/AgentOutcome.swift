@@ -12,8 +12,7 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case appCrashed(detail: String)
     /// Jev judged that none of the offered actions advances the goal.
     case noActionFits(step: Int)
-    /// Jev leaned toward the goal being reached, short of the bar for success, and had nothing left to do. Exploring
-    /// would only move away from a screen that is probably the goal.
+    /// Jev chose DONE with support below `ActionPolicy.doneMinimum`: probably reached, but not enough to claim success.
     case goalProbablyReached(steps: Int, probability: Double)
 
     /// Whether the goal was reached.

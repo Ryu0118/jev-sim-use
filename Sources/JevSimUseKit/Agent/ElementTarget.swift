@@ -1,6 +1,5 @@
-/// An element Jev may aim a gesture at. Unlike tap targets, content roles such as `Image` count: a map or a photo
-/// is what gets pinched or swiped.
-package struct GestureTarget: Sendable, Hashable {
+/// An element Jev may act on: tap it, gesture on it, or type into it.
+package struct ElementTarget: Sendable, Hashable {
     /// The element's alias.
     package let alias: Int
     /// Its accessibility role.
@@ -12,5 +11,10 @@ package struct GestureTarget: Sendable, Hashable {
         self.alias = alias
         self.role = role
         self.label = label
+    }
+
+    /// The element's id in the state, which is also its option name in target questions.
+    var optionName: String {
+        PlanningState.elementID(alias)
     }
 }

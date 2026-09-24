@@ -67,9 +67,8 @@ extension SkillBundle {
     - **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is and `resume`,
       or navigate closer yourself with `exec`, then `resume`.
     - **the screen stopped changing**: taps are not landing. Inspect with `exec ui` / `exec screenshot` before resuming.
-    - **the goal is probably reached, but not surely**: Jev leaned toward done and had nothing left to do, so it stopped
-      instead of exploring away. Check with `exec ui`; if it is not done, `tell` what the finished screen looks like and
-      `resume`.
+    - **the goal is probably reached, but not surely**: Jev chose DONE with too little confidence to claim success.
+      Check with `exec ui`; if it is not done, `tell` what the finished screen looks like and `resume`.
     - **step limit reached**: `resume` gives it another `--max-steps` actions.
     - **app crashed or disappeared**: relaunch the app; do not resume blindly.
 

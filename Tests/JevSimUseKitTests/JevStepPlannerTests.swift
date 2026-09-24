@@ -4,73 +4,76 @@ import Jev
 import Testing
 
 struct JevStepPlannerTests {
-    private let request = PlanRequest(
-        goal: "Open Wi-Fi settings",
-        snapshot: Fixtures.snapshot(entries: [Fixtures.entry(4, "Wi-Fi")]),
-        actions: ActionCatalog.actions(for: Fixtures.snapshot(entries: [Fixtures.entry(4, "Wi-Fi")]), texts: []),
-        history: [],
-    )
+    private let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Wi-Fi"), Fixtures.entry(5, "Wi-Fi")])
 
-    @Test("maps the chosen option back to the offered action")
-    func plan() async throws {
-        let transport = StubTransport(body: StubTransport.answer(choice: "e4"))
-        let plan = try await transport.planner().plan(request)
+    private func request(texts: [InputText] = []) -> PlanRequest {
+        PlanRequest(
+            goal: "Open Wi-Fi settings", snapshot: snapshot, menu: ActionCatalog.menu(for: snapshot, texts: texts), history: [],
+        )
+    }
+
+    @Test("composes the operation with its target and takes the weaker of the two as support")
+    func composesTap() async throws {
+        let transport = StubTransport(body: StubTransport.answer(
+            operation: "tap", confidence: 0.9, finishes: 0.8, extra: [("element_target", "e4", 0.6)],
+        ))
+        let plan = try await transport.planner().plan(request())
         #expect(plan.action == .tap(alias: 4, role: "Button", label: "Wi-Fi"))
-        #expect(plan.confidence == 0.9)
-        #expect(plan.goalReached.value == 0.1)
+        #expect(plan.support == 0.6)
+        #expect(plan.finishes.value == 0.8)
         let body = try #require(transport.lastRequestBody)
-        #expect(body.contains(#""e4":null"#))
-        #expect(body.contains(#""id":"e4""#))
-        #expect(body.contains(#""label":"Wi-Fi""#))
-        #expect(!body.contains("Tap the Button labelled"))
+        #expect(body.contains(#""e4":null"#) && body.contains(#""id":"e4""#))
         #expect(body.contains(#""goal":"Open Wi-Fi settings""#))
     }
 
-    @Test("rejects a choice that was not offered")
-    func unknownChoice() async {
-        let transport = StubTransport(body: StubTransport.answer(choice: "e99"))
-        await #expect(throws: PlanningError.unknownChoice("e99")) { try await transport.planner().plan(request) }
+    @Test("reads DONE and BLOCKED from the operation answer alone")
+    func stops() async throws {
+        let done = try await StubTransport(body: StubTransport.answer(operation: "done", confidence: 0.7)).planner().plan(request())
+        #expect(done.action == .done && done.support == 0.7)
+        let blocked = try await StubTransport(body: StubTransport.answer(operation: "blocked")).planner().plan(request())
+        #expect(blocked.action == .noneApplies)
+    }
+
+    @Test("rejects a target that was not offered")
+    func unknownTarget() async {
+        let transport = StubTransport(body: StubTransport.answer(operation: "tap", extra: [("element_target", "e99", 0.9)]))
+        await #expect(throws: PlanningError.unknownChoice("e99")) { try await transport.planner().plan(request()) }
     }
 
     @Test("explains a 422 as a possibly oversized screen")
     func rejected() async {
         let transport = StubTransport(status: 422, body: "too long")
-        await #expect(throws: PlanningError.rejected(body: "too long")) { try await transport.planner().plan(request) }
+        await #expect(throws: PlanningError.rejected(body: "too long")) { try await transport.planner().plan(request()) }
     }
 
-    @Test("adds up probability split between options that do the same thing")
-    func equivalentProbability() {
-        let actions: [AgentAction] = [
-            .tap(alias: 1, role: "Button", label: "Calendar"),
-            .tap(alias: 2, role: "Button", label: "Calendar"),
-            .device(.goBack),
-        ]
-        let support = JevStepPlanner.equivalentProbability(
-            of: actions[0], among: actions, ["e1": 0.45, "e2": 0.4, "go_back": 0.15],
-        )
+    @Test("adds up target probability split between elements with the same role and label")
+    func pooledTarget() throws {
+        let body = #"{"model":"m","answers":{"element_target":{"type":"choice","choice":"e4","probabilities":{"e4":0.45,"e5":0.4},"confidence":0.45}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let response = try JSONDecoder().decode(JevResponse.self, from: Data(body.utf8))
+        let (_, support) = try JevStepPlanner.target("element_target", among: request().menu.elements, in: response)
         #expect(abs(support - 0.85) < 0.0001)
     }
-}
 
-struct PlanningStateTests {
-    @Test("presents toggle values as on and off", arguments: [("1", "on"), ("0", "off"), ("2", "2")])
-    func toggleValues(raw: String, expected: String) {
-        let entry = UIEntry(
-            aliases: ElementAliases(alias: 9), role: "CheckBox", label: "Dark", states: [], value: raw,
-            uniqueId: nil, region: nil, frame: nil,
-        )
-        #expect(PlanningState.Element.readableValue(entry) == expected)
+    @Test("every question carries the shared rules, since target questions cannot see the operation answer")
+    func sharedRules() throws {
+        let data = try JSONEncoder().encode(JevStepPlanner.questions(for: request(texts: []).menu))
+        let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
+        #expect(Set(questions.keys) == ["operation", "element_target", "finishes"])
+        for (name, question) in questions {
+            let instructions = try #require(question["instructions"] as? String)
+            #expect(instructions.contains("`notes`") && instructions.contains("no visible effect"), "\(name) lacks the rules")
+        }
     }
 }
 
 @Suite("Supervisor notes reach Jev, and long sessions are trimmed to fit the state limit")
 struct PlanningStateNotesTests {
-    @Test("sends notes and only the most recent history and notes")
+    @Test("sends notes, the effect of each step, and only the most recent history and notes")
     func trimsSession() throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Wi-Fi")])
         let request = PlanRequest(
-            goal: "g", snapshot: snapshot, actions: [],
-            history: (1 ... 30).map { HistoryEntry(step: $0, action: "a") },
+            goal: "g", snapshot: snapshot, menu: ActionCatalog.menu(for: snapshot, texts: []),
+            history: (1 ... 30).map { HistoryEntry(step: $0, action: "a", screenChanged: false) },
             notes: (1 ... 12).map { "note \($0)" },
         )
         let state = PlanningState(request)
@@ -78,59 +81,23 @@ struct PlanningStateNotesTests {
         #expect(state.notes.first == "note 3")
         let json = try String(decoding: JSONEncoder().encode(state), as: UTF8.self)
         #expect(json.contains(#""notes":["note 3""#))
-    }
-
-    @Test("both questions tell Jev to use the notes")
-    func questionsMentionNotes() throws {
-        let data = try JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies]))
-        let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
-        for name in [JevStepPlanner.goalQuestion, JevStepPlanner.actionQuestion] {
-            let instructions = try #require(questions[name]?["instructions"] as? String)
-            #expect(instructions.contains("`notes`"), "\(name) does not mention notes")
-        }
-    }
-}
-
-@Suite("Gestures other than taps are chosen through two speculative questions in the same request")
-struct JevStepPlannerGestureTests {
-    private let targets = [GestureTarget(alias: 3, role: "Image", label: "Map")]
-
-    private func request() -> PlanRequest {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(3, "Map", role: "Image")])
-        return PlanRequest(goal: "Zoom in on the map", snapshot: snapshot, actions: [.noneApplies], history: [], gestureTargets: targets)
-    }
-
-    @Test("composes the gate, the gesture, and the element into one action, with the weakest confidence as support")
-    func composes() async throws {
-        let transport = StubTransport(body: StubTransport.answer(
-            choice: "gesture_on_element",
-            extra: [("element_gesture", "pinch_out", 0.8), ("gesture_target", "e3", 0.95)],
-        ))
-        let plan = try await transport.planner().plan(request())
-        #expect(plan.action == .gesture(.pinchOut, alias: 3, role: "Image", label: "Map"))
-        #expect(plan.support == 0.8)
-        let body = try #require(transport.lastRequestBody)
-        #expect(body.contains("element_gesture") && body.contains("gesture_target") && body.contains("gesture_on_element"))
-    }
-
-    @Test("asks no gesture questions when the screen has no targets")
-    func noTargets() throws {
-        let body = try String(decoding: JSONEncoder().encode(JevStepPlanner.questions(for: [.noneApplies])), as: UTF8.self)
-        #expect(!body.contains("gesture"))
+        #expect(json.contains(#""result":"no visible effect""#))
     }
 }
 
 @Suite("Named texts reach Jev by name only, never by value")
 struct JevStepPlannerTextTests {
-    @Test("sends the text's name and keeps its value out of the request")
+    @Test("types into the chosen field with the chosen text, and keeps the value out of the request")
     func valueStaysLocal() async throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Password", role: "SecureTextField")])
-        let actions = ActionCatalog.actions(for: snapshot, texts: [InputText(name: "password", value: "hunter2")])
-        let transport = StubTransport(body: StubTransport.answer(choice: "paste_text_0"))
-        let plan = try await transport.planner().plan(PlanRequest(goal: "Log in", snapshot: snapshot, actions: actions, history: []))
+        let menu = ActionCatalog.menu(for: snapshot, texts: [InputText(name: "password", value: "hunter2")])
+        let transport = StubTransport(body: StubTransport.answer(
+            operation: "enter_text", extra: [("field_target", "e4", 0.9), ("text_to_enter", "password", 0.95)],
+        ))
+        let plan = try await transport.planner().plan(PlanRequest(goal: "Log in", snapshot: snapshot, menu: menu, history: []))
+        #expect(plan.action == .enterText(field: 4, label: "Password", text: InputText(name: "password", value: "hunter2")))
+        #expect(plan.action.description == "Enter the password into \"Password\"")
         let body = try #require(transport.lastRequestBody)
-        #expect(body.contains("Enter the password into the focused input field"))
         #expect(!body.contains("hunter2"))
-        #expect(plan.action.description == "Enter the password")
     }
 }

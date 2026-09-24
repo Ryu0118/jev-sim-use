@@ -12,44 +12,41 @@ package struct PlanRequest: Sendable, Hashable {
     package var goal: String
     /// The current screen.
     package var snapshot: UISnapshot
-    /// The options to choose from, in presentation order.
-    package var actions: [AgentAction]
+    /// The operations and targets to choose from.
+    package var menu: ActionMenu
     /// The steps already taken, oldest first.
     package var history: [HistoryEntry]
     /// Facts about the app from a supervisor, oldest first.
     package var notes: [String] = []
-    /// Elements a gesture other than a tap may target; empty means no gesture questions are asked.
-    package var gestureTargets: [GestureTarget] = []
 }
 
 /// A planner's judgement for one step.
 package struct StepPlan: Sendable, Hashable {
-    /// Probability that the goal is already reached.
-    package var goalReached: Probability
-    /// The action Jev ranked highest.
+    /// The action Jev chose, composed from its operation and target answers; `.done` or `.noneApplies` to stop.
     package var action: AgentAction
-    /// Jev's confidence in `action`, 0...1.
+    /// Jev's confidence in the operation, 0...1.
     package var confidence: Double
-    /// What the action policy compares: `confidence`, or more when several options do the same thing
-    /// (identical role and label) and split the probability between them.
+    /// What the action policy compares: the weakest answer the action depends on.
     package var support: Double
+    /// Probability that this action, if it works, completes the goal.
+    package var finishes: Probability
     /// Estimated request cost, for logging.
     package var costUSD: Double
     /// The model version that answered, for logs.
     package var model: String
 
     package init(
-        goalReached: Probability,
         action: AgentAction,
         confidence: Double,
         support: Double? = nil,
+        finishes: Probability = Probability(clamping: 0),
         costUSD: Double,
         model: String = "",
     ) {
-        self.goalReached = goalReached
         self.action = action
         self.confidence = confidence
         self.support = support ?? confidence
+        self.finishes = finishes
         self.costUSD = costUSD
         self.model = model
     }

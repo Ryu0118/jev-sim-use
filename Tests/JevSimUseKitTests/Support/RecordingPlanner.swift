@@ -11,6 +11,6 @@ final class RecordingPlanner: StepPlanning {
 
     func plan(_ request: PlanRequest) async throws -> StepPlan {
         seen.withLock { $0.append(request.snapshot.outline) }
-        return StepPlan(goalReached: .init(clamping: 0.05), action: .noneApplies, confidence: 0.9, costUSD: 0)
+        return .blocked()
     }
 }

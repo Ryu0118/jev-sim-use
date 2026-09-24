@@ -20,12 +20,20 @@ final class FakePlanner: StepPlanning {
 }
 
 extension StepPlan {
-    static func tapNext(confidence: Double = 0.9, goal: Double = 0.05) -> StepPlan {
+    static func tapNext(confidence: Double = 0.9, finishes: Double = 0.05) -> StepPlan {
         StepPlan(
-            goalReached: Probability(clamping: goal),
             action: .tap(alias: 1, role: "Button", label: "Next"),
             confidence: confidence,
+            finishes: Probability(clamping: finishes),
             costUSD: 0,
         )
+    }
+
+    static func done(confidence: Double = 0.9) -> StepPlan {
+        StepPlan(action: .done, confidence: confidence, costUSD: 0)
+    }
+
+    static func blocked() -> StepPlan {
+        StepPlan(action: .noneApplies, confidence: 0.9, costUSD: 0)
     }
 }

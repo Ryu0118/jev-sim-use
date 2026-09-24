@@ -47,8 +47,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
-- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request with a
-  noul `goal_reached` and a runtime-built choice `next_action`.
+- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
+  operation to run, which target it would use, and whether it would finish the goal.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/SKILL.md` (SSoT) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
   `jev-sim-use skill install|uninstall|print` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
@@ -81,10 +81,16 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 
 - Use the TypeSafe skill (`typesafe@typesafe-ai`, enabled in `.claude/settings.json`) when designing or
   changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
-- One request per step: noul `goal_reached`, choice `next_action`, and, when the screen has elements with frames, the
-  speculative choices `element_gesture` and `gesture_target`, read only when `next_action` picks `gesture_on_element`.
-  Asking gesture and element separately keeps options at elements + gestures instead of their product. Do not add a
-  second round trip; speed is the point. The gesture questions cost about 50% more per step on busy screens.
+- One request per step, the jev-ultrafast shape: choice `operation` (tap, each element gesture, `enter_text`, each
+  screen-level action, `done`, `blocked`), speculative target choices (`element_target` shared by tap and gestures;
+  `field_target` and `text_to_enter` when typing is possible), and noul `finishes` ("if the chosen operation works,
+  is the whole goal satisfied?"). Code reads only the target that matches the chosen operation. Asking operation and
+  target apart keeps a scroll or DONE from competing with every element for probability. Every question carries the
+  same `JevStepPlanner.rules`, since target questions cannot see the operation answer. Do not add a second round trip.
+- Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.6) exits 0, below it stops as
+  `goalProbablyReached`; `finishes` >= 0.85 followed by a changed screen ends the run without another request (as in
+  jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
+  depends on (operation, target, text); targets with the same role and label pool their probability.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
   four directions, go back, a right-edge swipe, and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`);
   and pastes. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
@@ -93,19 +99,20 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.3, reversible at `--min-confidence`,
   irreversible (paste, hardware buttons, horizontal swipes on a list row) at least 0.85. Sideways scrolls pass
   `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
-  iOS 26, and Control Center blinds `sim-use ui`). When Jev leans toward done and picks `none_of_these`, the loop stops
-  with `goalProbablyReached` instead of exploring away from a probable goal screen.
-- State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts, referenced by both questions), `platform`, `screen.elements` (id `eN`, role, label, value, states,
-  region), and `history` (`step`, `action`, `screen_changed`). Questions refer to it by backticked paths.
-- `-t` texts are `InputText` (`name=value`). The option shows only the name ("Enter the password into the focused
-  input field"); the value is entered by code and never sent to Jev, following "select instead of generate".
-- Tap options are named by element id with `null` criteria; other options carry a description. `ActionCatalog` offers
-  only pressable roles (not `StaticText` / `Heading` / `GenericElement` / `Group` / `Image`), at most 200 taps within
-  Jev's 255-option limit, and always `none_of_these`, which hands over (`AgentOutcome.noActionFits`).
+  iOS 26, and Control Center blinds `sim-use ui`).
+- State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
+  role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
+  effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
+  agree): a mid-transition reading made Jev tap again and hit an element of the next screen.
+- `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes
+  the value, which never reaches Jev ("select instead of generate").
+- Targets are named by element id with `null` criteria (the state carries role, label, value). Every enabled element
+  is a target, whatever its role: Reminders exposes its rows only as `StaticText`. At most 255 per question.
+  `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
   anyway hands over, and landing on screens already seen counts toward the stall limit. `history` tells Jev each
-  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `none_of_these` and
+  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen.
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev
