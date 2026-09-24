@@ -28,7 +28,7 @@ The app must already be open; sim-use cannot launch apps. The API key comes only
 
 ```sh
 jev-sim-use "Turn on Dark Mode in Settings"
-jev-sim-use "Search for ramen" -t ramen            # -t: text it may paste; repeat for several
+jev-sim-use "Search for ramen" -t ramen            # -t: a string Jev may type into a field; repeat for several
 jev-sim-use exec devices                           # list deviceIds when several are booted
 jev-sim-use "Open Wi-Fi settings" -d <deviceId>
 ```

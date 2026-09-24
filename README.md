@@ -63,8 +63,12 @@ nest install Ryu0118/jev-sim-use
 export TYPESAFE_API_KEY=...
 jev-sim-use doctor
 jev-sim-use "Turn on Dark Mode in Settings"
-jev-sim-use "Search for ramen" -t ramen
+jev-sim-use "Search for ramen" -t ramen   # -t: text Jev may type into a field
 ```
+
+Jev chooses actions but never writes text. When a goal needs typing (a search term, an email address), pass each
+string with `-t` (`--text`); Jev then decides which field gets which one. Repeat it for several strings. These texts
+are sent to the Jev endpoint and kept in unfinished sessions.
 
 ### Choosing a device
 

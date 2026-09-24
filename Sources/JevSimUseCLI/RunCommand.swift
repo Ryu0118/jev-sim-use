@@ -15,7 +15,7 @@ struct RunCommand: ContextualCommand {
     @Argument(help: "What to accomplish, in natural language.")
     var goal: String
 
-    @Option(name: [.customShort("t"), .customLong("text")], help: "Text the agent may paste into fields. Repeatable.")
+    @Option(name: [.customShort("t"), .customLong("text")], help: "A string Jev may type into a field. Jev never writes text itself, so pass every string the goal needs. Repeatable.")
     var texts: [String] = []
 
     @OptionGroup var connection: ConnectionOptions
