@@ -20,4 +20,11 @@ struct ActionCatalogTests {
         #expect(names.count == ActionCatalog.maximumTapTargets + 3)
         #expect(Set(names).count == names.count)
     }
+
+    @Test("offers unlabelled input fields so pasted text has a target")
+    func unlabelledInput() {
+        let field = UIEntry(aliases: ElementAliases(alias: 7), role: "TextField", label: "", states: [], value: nil)
+        let actions = ActionCatalog.actions(for: Fixtures.snapshot(entries: [field]), texts: [])
+        #expect(actions.first == .tap(alias: 7, role: "TextField", label: "empty input field"))
+    }
 }

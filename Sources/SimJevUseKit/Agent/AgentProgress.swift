@@ -1,5 +1,8 @@
 /// Mutable bookkeeping for one run: history, stall detection, crash detection.
 struct AgentProgress: Sendable {
+    /// Appended to a history entry whose action left the screen as it was, so Jev can avoid repeating it.
+    static let unchangedMarker = " (screen unchanged)"
+
     private(set) var history: [String] = []
     private(set) var steps = 0
     private var previousOutline: String?
@@ -16,7 +19,11 @@ struct AgentProgress: Sendable {
             return .appCrashed(detail: "a crash dialog is on screen (\(dialog.title ?? "untitled")).")
         }
         let outline = observation.snapshot.outline
-        unchangedCount = previousOutline == outline ? unchangedCount + 1 : 0
+        let unchanged = previousOutline == outline
+        if unchanged, let last = history.indices.last {
+            history[last] += Self.unchangedMarker
+        }
+        unchangedCount = unchanged ? unchangedCount + 1 : 0
         previousOutline = outline
         return unchangedCount >= stallLimit ? .stalled(steps: steps) : nil
     }
