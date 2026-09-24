@@ -2,6 +2,10 @@ import Foundation
 
 /// Runs commands with `Foundation.Process`, draining stdout and stderr concurrently.
 public struct ProcessCommandRunner: CommandRunning {
+    /// How long to keep reading after exit. A grandchild that inherited the pipes
+    /// would otherwise hold back end of file until it exits too.
+    static let drainGracePeriod = DispatchTimeInterval.milliseconds(300)
+
     /// Creates a runner.
     public init() {}
 
@@ -10,38 +14,37 @@ public struct ProcessCommandRunner: CommandRunning {
         let process = Process()
         process.executableURL = executable
         process.arguments = arguments
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
         process.standardInput = FileHandle.nullDevice
-
         let stdout = PipeCollector()
         let stderr = PipeCollector()
-        let group = DispatchGroup()
-        stdout.drain(stdoutPipe.fileHandleForReading, group: group)
-        stderr.drain(stderrPipe.fileHandleForReading, group: group)
-        group.enter()
-        process.terminationHandler = { _ in group.leave() }
+        process.standardOutput = stdout.pipe
+        process.standardError = stderr.pipe
 
-        do {
-            try process.run()
-        } catch {
-            stdoutPipe.fileHandleForReading.readabilityHandler = nil
-            stderrPipe.fileHandleForReading.readabilityHandler = nil
-            throw error
-        }
-        await withTaskCancellationHandler {
-            await withCheckedContinuation { continuation in
-                group.notify(queue: .global()) { continuation.resume() }
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+                let drained = DispatchGroup()
+                stdout.start(group: drained)
+                stderr.start(group: drained)
+                process.terminationHandler = { _ in
+                    DispatchQueue.global().async {
+                        _ = drained.wait(timeout: .now() + Self.drainGracePeriod)
+                        continuation.resume()
+                    }
+                }
+                do {
+                    try process.run()
+                } catch {
+                    _ = (stdout.finish(), stderr.finish())
+                    continuation.resume(throwing: error)
+                }
             }
         } onCancel: {
             process.terminate()
         }
         return CommandOutput(
             exitCode: process.terminationStatus,
-            stdout: stdout.data,
-            stderr: String(bytes: stderr.data, encoding: .utf8) ?? "",
+            stdout: stdout.finish(),
+            stderr: String(bytes: stderr.finish(), encoding: .utf8) ?? "",
         )
     }
 }

@@ -13,4 +13,16 @@ struct ProcessCommandRunnerTests {
         #expect(output.stdout.count == 300_000)
         #expect(output.stderr == "oops\n")
     }
+
+    @Test("returns soon after exit even when a grandchild keeps the pipes open")
+    func grandchildHoldsPipes() async throws {
+        let clock = ContinuousClock()
+        let start = clock.now
+        let output = try await ProcessCommandRunner().run(
+            URL(filePath: "/bin/sh"),
+            arguments: ["-c", "sleep 5 & echo done"],
+        )
+        #expect(clock.now - start < .seconds(3))
+        #expect(output.stdout == Data("done\n".utf8))
+    }
 }
