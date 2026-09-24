@@ -6,7 +6,10 @@ struct RunCommand: ContextualCommand {
     static let configuration = CommandConfiguration(
         commandName: "run",
         abstract: "Work toward a goal, starting from the current screen (the default command).",
-        discussion: "Requires $TYPESAFE_API_KEY. The app must already be open: sim-use cannot launch apps.",
+        discussion: """
+        Requires $TYPESAFE_API_KEY. The app must already be open: sim-use cannot launch apps. Every run starts a \
+        session; stdout ends with `Session: <id>` for `session show`, `session tell`, and `session resume`.
+        """,
     )
 
     @Argument(help: "What to accomplish, in natural language.")
@@ -28,16 +31,10 @@ struct RunCommand: ContextualCommand {
         guard (0 ... 1).contains(minConfidence) else { throw ValidationError("--min-confidence must be within 0...1.") }
     }
 
-    /// Progress goes to stderr; stdout carries only the final outcome.
     func run(context: CLIContext) async throws {
-        let outcome: AgentOutcome
-        do {
-            outcome = try await execute(context: context)
-        } catch {
-            context.output.standardError("Error: \(error)")
-            throw ExitCode(ExitStatus.of(error))
-        }
-        context.output.standardOutput("\(outcome)")
-        guard outcome.isSuccess else { throw ExitCode.failure }
+        try await RunGoalRequest(
+            session: .new(goal: goal, texts: texts), maxSteps: maxSteps, minConfidence: minConfidence,
+            deviceID: connection.device, baseURL: connection.baseURL, model: connection.model,
+        ).perform(context: context)
     }
 }

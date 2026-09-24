@@ -8,7 +8,7 @@ package enum FailureCategory: Sendable, Equatable {
     /// Classifies any error thrown by a Runner.
     package init(_ error: any Error) {
         switch error {
-        case is JevSettingsError: self = .setup
+        case is JevSettingsError, is SessionStoreError: self = .setup
         case let error as SimUseError where error.isSetupProblem: self = .setup
         default: self = .runtime
         }

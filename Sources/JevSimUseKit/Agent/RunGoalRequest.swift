@@ -1,14 +1,12 @@
-/// Everything the user asked for in one `run`.
+/// Everything the user asked for in one `run` or `session resume`.
 package struct RunGoalRequest: Sendable, Equatable {
-    /// The goal in natural language.
-    package var goal: String
-    /// Texts the agent may paste.
-    package var texts: [String]
-    /// Upper bound on actions.
+    /// Start a new session, or continue one.
+    package var session: SessionStart
+    /// Upper bound on actions in this run.
     package var maxSteps: Int
     /// Stop and hand over below this confidence.
     package var minConfidence: Double
-    /// `--device`, or `nil` to fall back to `$SIM_USE_DEVICE` and then the only usable device.
+    /// `--device`, or `nil` to use the session's device, then `$SIM_USE_DEVICE`, then the only usable device.
     package var deviceID: String?
     /// `--base-url`, if given.
     package var baseURL: String?
@@ -16,16 +14,14 @@ package struct RunGoalRequest: Sendable, Equatable {
     package var model: String?
 
     package init(
-        goal: String,
-        texts: [String],
+        session: SessionStart,
         maxSteps: Int,
         minConfidence: Double,
         deviceID: String?,
         baseURL: String?,
         model: String?,
     ) {
-        self.goal = goal
-        self.texts = texts
+        self.session = session
         self.maxSteps = maxSteps
         self.minConfidence = minConfidence
         self.deviceID = deviceID

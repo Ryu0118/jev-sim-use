@@ -35,7 +35,8 @@ jev-sim-use "Open Wi-Fi settings" -d <deviceId>
 
 - Write the goal as the end state you want, specific enough to recognize ("Wi-Fi settings screen is open").
 - Jev never writes text. If the goal needs typing, pass every string with `-t`, or it cannot finish.
-- stdout is one outcome line; stderr is step-by-step progress.
+- stdout is the outcome line, then `Session: <id>`; stderr is step-by-step progress. Every run is saved as a session
+  under `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`).
 
 ## Results
 

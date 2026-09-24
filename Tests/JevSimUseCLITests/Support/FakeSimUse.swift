@@ -25,6 +25,7 @@ struct FakeSimUse {
         return [
             "PATH": directory.path(percentEncoded: false),
             "XDG_CONFIG_HOME": directory.appending(path: "config").path(percentEncoded: false),
+            "XDG_STATE_HOME": directory.appending(path: "state").path(percentEncoded: false),
         ]
     }
 }

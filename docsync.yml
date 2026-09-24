@@ -45,4 +45,4 @@ rules:
   doc: skills/jev-sim-use/SKILL.md
   message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
     then run `mise run generate-skill`.
-  checksum: 22fccf9bf2eb655e415d5c58e33307e5ae0d42b6f72143200e0199bf68e659a1
+  checksum: ed4041fb289f8bdb04fd81ec9858c50aab34d5d5b55d774195effc1a740fc334

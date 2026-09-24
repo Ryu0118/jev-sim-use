@@ -8,8 +8,8 @@ package struct SessionRecord: Codable, Sendable, Hashable {
     package let goal: String
     /// Texts the agent may paste.
     package let texts: [String]
-    /// The device the session drives; resuming pins it again.
-    package let deviceID: String
+    /// The device the session drives, set once connected; resuming pins it again.
+    package var deviceID: String?
     /// Facts about the app a supervisor added with `session tell`, oldest first.
     package var notes: [String] = []
     /// Every action taken so far, across runs.
@@ -21,7 +21,7 @@ package struct SessionRecord: Codable, Sendable, Hashable {
     /// When the session last changed; `latest` means the largest value.
     package var updatedAt: Date
 
-    package init(id: String, goal: String, texts: [String], deviceID: String, createdAt: Date) {
+    package init(id: String, goal: String, texts: [String], deviceID: String? = nil, createdAt: Date) {
         self.id = id
         self.goal = goal
         self.texts = texts
