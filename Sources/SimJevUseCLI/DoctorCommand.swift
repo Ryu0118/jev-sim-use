@@ -10,7 +10,7 @@ struct DoctorCommand: ContextualCommand {
     @OptionGroup var connection: ConnectionOptions
 
     func run(context: CLIContext) async throws {
-        let bootstrap = SimUseBootstrap()
+        let bootstrap = SimUseBootstrap(locator: ExecutableLocator(environment: context.environment))
         let simUseReady = await check("sim-use", context) {
             let (path, version) = try await bootstrap.verifyInstallation()
             return "\(version) at \(path.path(percentEncoded: false))"

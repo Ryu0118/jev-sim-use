@@ -8,9 +8,9 @@ package struct SimUseBootstrap: Sendable {
     private let locator: ExecutableLocator
     private let runner: any CommandRunning
 
-    /// Creates a bootstrap. Both dependencies are injectable for tests.
+    /// Creates a bootstrap that finds sim-use with `locator`.
     package init(
-        locator: ExecutableLocator = ExecutableLocator(),
+        locator: ExecutableLocator,
         runner: any CommandRunning = ProcessCommandRunner(),
     ) {
         self.locator = locator

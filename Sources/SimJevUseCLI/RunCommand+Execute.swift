@@ -4,7 +4,8 @@ import SimJevUseKit
 extension RunCommand {
     func execute(context: CLIContext) async throws -> AgentOutcome {
         let settings = try connection.jevSettings(environment: context.environment)
-        let client = try await SimUseBootstrap().connect(deviceID: connection.resolvedDevice(environment: context.environment))
+        let bootstrap = SimUseBootstrap(locator: ExecutableLocator(environment: context.environment))
+        let client = try await bootstrap.connect(deviceID: connection.resolvedDevice(environment: context.environment))
         context.output.standardError("Device: \(client.device.name) (\(client.device.deviceId)); Jev: \(settings.endpoint)")
         let policy = RoutingPolicy(escalateBelow: minConfidence, autoAtOrAbove: max(minConfidence, 0.85))
         let loop = AgentLoop(

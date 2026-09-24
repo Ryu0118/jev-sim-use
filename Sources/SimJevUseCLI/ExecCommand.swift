@@ -15,7 +15,8 @@ struct ExecCommand: ContextualCommand {
     func run(context: CLIContext) async throws {
         let executable: URL
         do {
-            executable = try await SimUseBootstrap().verifyInstallation().executable
+            let bootstrap = SimUseBootstrap(locator: ExecutableLocator(environment: context.environment))
+            executable = try await bootstrap.verifyInstallation().executable
         } catch {
             context.output.standardError("Error: \(error)")
             throw ExitCode(ExitStatus.of(error))

@@ -3,18 +3,19 @@ import Foundation
 import Testing
 
 struct SimUseBootstrapTests {
-    private let installed = ExecutableLocator(
-        environment: ["PATH": "/opt/homebrew/bin"],
-        isExecutable: { $0 == "/opt/homebrew/bin/sim-use" },
-    )
+    private let installed: ExecutableLocator
+
+    init() throws {
+        installed = try ExecutableLocator(environment: ["PATH": TemporaryPath().withExecutable("sim-use")])
+    }
 
     @Test("asks the user to install sim-use when it is not on PATH")
     func notInstalled() async {
         let bootstrap = SimUseBootstrap(
-            locator: ExecutableLocator(environment: ["PATH": "/usr/bin"], isExecutable: { _ in false }),
+            locator: ExecutableLocator(environment: ["PATH": "/missing/bin"]),
             runner: FakeCommandRunner([:]),
         )
-        await #expect(throws: SimUseError.notInstalled(searchedPath: "/usr/bin")) {
+        await #expect(throws: SimUseError.notInstalled(searchedPath: "/missing/bin")) {
             try await bootstrap.verifyInstallation()
         }
         #expect(SimUseError.notInstalled(searchedPath: "").description.contains("brew install lycorp-jp/tap/sim-use"))

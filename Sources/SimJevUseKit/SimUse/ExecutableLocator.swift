@@ -1,3 +1,4 @@
+import FileManagerProtocol
 import Foundation
 
 /// Resolves a command name against `PATH`, the way a shell or `/usr/bin/env` would.
@@ -6,20 +7,17 @@ import Foundation
 /// distinguishable from the child's own exit status 127, and yields the path to report.
 package struct ExecutableLocator: Sendable {
     private let searchPath: String
-    private let isExecutable: @Sendable (String) -> Bool
+    private let fileManager: any FileManagerProtocol
 
     /// The raw `PATH` that was searched, for error messages.
     package var searchedPath: String {
         searchPath
     }
 
-    /// Creates a locator over `environment["PATH"]`. `isExecutable` is injectable for tests.
-    package init(
-        environment: [String: String] = ProcessInfo.processInfo.environment,
-        isExecutable: @escaping @Sendable (String) -> Bool = { FileManager.default.isExecutableFile(atPath: $0) },
-    ) {
+    /// Creates a locator over `environment["PATH"]`.
+    package init(environment: [String: String], fileManager: some FileManagerProtocol = FileManager.default) {
         searchPath = environment["PATH"] ?? ""
-        self.isExecutable = isExecutable
+        self.fileManager = fileManager
     }
 
     /// The first executable named `name` in `PATH` order, or `nil`.
@@ -28,6 +26,6 @@ package struct ExecutableLocator: Sendable {
             .split(separator: ":", omittingEmptySubsequences: true)
             .lazy
             .map { URL(filePath: String($0)).appending(path: name) }
-            .first { isExecutable($0.path(percentEncoded: false)) }
+            .first { fileManager.isExecutableFile(atPath: $0.path(percentEncoded: false)) }
     }
 }

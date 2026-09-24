@@ -6,7 +6,7 @@ package extension JevSettings {
         baseURLFlag: String?,
         modelFlag: String?,
         config: UserConfig,
-        environment: [String: String] = ProcessInfo.processInfo.environment,
+        environment: [String: String],
     ) throws(JevSettingsError) -> JevSettings {
         guard let key = environment[apiKeyVariable].flatMap(nonEmpty) else { throw .missingAPIKey }
         let rawBaseURL = nonEmpty(baseURLFlag) ?? environment[baseURLVariable].flatMap(nonEmpty) ?? config.baseURL
