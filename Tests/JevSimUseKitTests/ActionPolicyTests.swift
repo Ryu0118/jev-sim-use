@@ -2,10 +2,10 @@
 import Testing
 
 struct ActionPolicyTests {
-    @Test("uses the user's threshold for reversible actions", arguments: [0.3, 0.6, 0.9])
+    @Test("uses the user's threshold for taps and caps it for harmless scrolls and back", arguments: [0.3, 0.6, 0.9])
     func reversible(minimum: Double) {
         let policy = ActionPolicy(minimumSupport: minimum)
-        #expect(policy.requiredSupport(for: .device(.goBack)) == minimum)
+        #expect(policy.requiredSupport(for: .device(.goBack)) == min(minimum, ActionPolicy.harmlessMaximum))
         #expect(policy.requiredSupport(for: .tap(alias: 1, role: "Button", label: "OK")) == minimum)
     }
 

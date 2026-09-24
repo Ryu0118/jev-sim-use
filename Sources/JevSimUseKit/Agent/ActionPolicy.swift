@@ -7,6 +7,8 @@ package struct ActionPolicy: Sendable, Hashable {
     package static let confidentSupport = RoutingPolicy.default.autoAtOrAbove
     /// Pasting text is not undone by going back, so it needs at least this much support.
     package static let irreversibleMinimum = RoutingPolicy.default.autoAtOrAbove
+    /// Scrolling and going back change nothing in the app and cost one step when wrong, so exploring needs less.
+    package static let harmlessMaximum = 0.3
 
     /// Hand over below this support for reversible actions (taps, scrolls, going back).
     package var minimumSupport: Double
@@ -17,10 +19,10 @@ package struct ActionPolicy: Sendable, Hashable {
 
     /// The support `action` needs before it runs; higher for actions going back cannot undo.
     package func requiredSupport(for action: AgentAction) -> Double {
-        if case .paste = action {
-            max(minimumSupport, Self.irreversibleMinimum)
-        } else {
-            minimumSupport
+        switch action {
+        case .paste: max(minimumSupport, Self.irreversibleMinimum)
+        case .device: min(minimumSupport, Self.harmlessMaximum)
+        case .tap, .noneApplies: minimumSupport
         }
     }
 }

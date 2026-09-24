@@ -36,11 +36,11 @@ package enum AgentAction: Sendable, Hashable {
     var optionDescription: String {
         switch self {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""
-        case .device(.revealContentBelow): "Scroll to reveal content further down the screen"
-        case .device(.revealContentAbove): "Scroll to reveal content further up the screen"
-        case .device(.goBack): "Go back to the previous screen"
+        case .device(.revealContentBelow): "Scroll down to show the items after the last one in `screen.elements`"
+        case .device(.revealContentAbove): "Scroll up to show the items before the first one in `screen.elements`"
+        case .device(.goBack): "Go back to the previous screen, when `screen` is unrelated to `goal` or a dead end"
         case let .paste(_, text): "Paste the text \"\(text)\" into the focused input field"
-        case .noneApplies: "None of the other actions would advance the goal"
+        case .noneApplies: "Nothing helps, not even scrolling or going back to look elsewhere"
         }
     }
 }
