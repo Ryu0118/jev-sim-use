@@ -1,6 +1,6 @@
 /// One thing the agent can do next. Rebuilt from every observation, so tap aliases
 /// always refer to the outline sim-use just cached.
-public enum AgentAction: Sendable, Hashable {
+package enum AgentAction: Sendable, Hashable {
     /// Tap the element with alias `@alias`.
     case tap(alias: Int, role: String, label: String)
     /// A gesture or button press that does not target an element.
@@ -33,7 +33,7 @@ public enum AgentAction: Sendable, Hashable {
 
 extension AgentAction: CustomStringConvertible {
     /// A human-readable summary, also used as the history entry sent to Jev.
-    public var description: String {
+    package var description: String {
         optionDescription
     }
 }

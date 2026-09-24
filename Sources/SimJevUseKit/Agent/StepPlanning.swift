@@ -1,31 +1,31 @@
 import Jev
 
 /// Decides what to do on one screen. A seam so the loop can be tested without Jev.
-public protocol StepPlanning: Sendable {
+package protocol StepPlanning: Sendable {
     /// Judges whether the goal is reached and which action to take next.
     func plan(_ request: PlanRequest) async throws -> StepPlan
 }
 
 /// Everything a planner sees for one step.
-public struct PlanRequest: Sendable, Hashable {
+package struct PlanRequest: Sendable, Hashable {
     /// What the user wants done, in natural language.
-    public var goal: String
+    package var goal: String
     /// The current screen.
-    public var snapshot: UISnapshot
+    package var snapshot: UISnapshot
     /// The options to choose from, in presentation order.
-    public var actions: [AgentAction]
+    package var actions: [AgentAction]
     /// Descriptions of the actions already taken, oldest first.
-    public var history: [String]
+    package var history: [String]
 }
 
 /// A planner's judgement for one step.
-public struct StepPlan: Sendable, Hashable {
+package struct StepPlan: Sendable, Hashable {
     /// Probability that the goal is already reached.
-    public var goalReached: Probability
+    package var goalReached: Probability
     /// The action Jev ranked highest.
-    public var action: AgentAction
+    package var action: AgentAction
     /// Jev's confidence in `action`, 0...1.
-    public var confidence: Double
+    package var confidence: Double
     /// Estimated request cost, for logging.
-    public var costUSD: Double
+    package var costUSD: Double
 }

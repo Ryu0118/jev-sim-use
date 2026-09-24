@@ -1,14 +1,14 @@
 /// Observe → plan → act, until Jev judges the goal reached or a stop condition hits.
 ///
 /// sim-use has no launch verb, so a run starts from whatever is on screen.
-public struct AgentLoop: Sendable {
+package struct AgentLoop: Sendable {
     let driver: any DeviceDriving
     let planner: any StepPlanning
     let configuration: AgentConfiguration
     let report: @Sendable (AgentEvent) -> Void
 
     /// Creates a loop. `report` receives progress events as they happen.
-    public init(
+    package init(
         driver: any DeviceDriving,
         planner: any StepPlanning,
         configuration: AgentConfiguration,
@@ -21,7 +21,7 @@ public struct AgentLoop: Sendable {
     }
 
     /// Runs until an outcome is reached. Throws only for sim-use or Jev failures.
-    public func run() async throws -> AgentOutcome {
+    package func run() async throws -> AgentOutcome {
         var progress = AgentProgress()
         while true {
             try Task.checkCancellation()

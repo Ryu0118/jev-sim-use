@@ -2,19 +2,19 @@ import Jev
 
 /// Plans a step by asking Jev two questions in one request: is the goal reached,
 /// and which of this screen's actions comes next.
-public struct JevStepPlanner: StepPlanning {
+package struct JevStepPlanner: StepPlanning {
     static let goalQuestion = "goal_reached"
     static let actionQuestion = "next_action"
 
     private let client: JevClient
 
     /// Creates a planner that sends every step to `client`.
-    public init(client: JevClient) {
+    package init(client: JevClient) {
         self.client = client
     }
 
     /// Asks Jev about `request` in a single evaluation.
-    public func plan(_ request: PlanRequest) async throws -> StepPlan {
+    package func plan(_ request: PlanRequest) async throws -> StepPlan {
         let questions = try Self.questions(for: request.actions)
         let response: JevResponse
         do {

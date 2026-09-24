@@ -1,5 +1,5 @@
 /// How a run ended.
-public enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
+package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     /// Jev judged the goal reached after `steps` actions.
     case goalReached(steps: Int)
     /// `maxSteps` actions were taken without reaching the goal.
@@ -12,7 +12,7 @@ public enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case appCrashed(detail: String)
 
     /// Whether the goal was reached.
-    public var isSuccess: Bool {
+    package var isSuccess: Bool {
         if case .goalReached = self {
             true
         } else {
@@ -21,7 +21,7 @@ public enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     }
 
     /// A one-line summary of how the run ended.
-    public var description: String {
+    package var description: String {
         switch self {
         case let .goalReached(steps): "Goal reached after \(steps) action(s)."
         case let .stepLimitReached(steps): "Stopped: the step limit of \(steps) was reached."
