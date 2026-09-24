@@ -50,11 +50,20 @@ jev-sim-use "Search for ramen" -t ramen
 With one booted simulator or connected Android device, it is picked automatically. With several, pass one:
 
 ```sh
-sim-use devices                                   # list deviceIds
+jev-sim-use exec devices                          # list deviceIds
 jev-sim-use "Turn on Dark Mode in Settings" -d <deviceId>
 ```
 
 Physical iPhones are not supported.
+
+### Any sim-use command
+
+`exec` runs sim-use with your arguments unchanged, so one tool covers both fast navigation and precise checks:
+
+```sh
+jev-sim-use exec ui
+jev-sim-use exec screenshot
+```
 
 ---
 
