@@ -20,6 +20,8 @@ package enum SimUseContract {
         static let gesture = "gesture"
         static let button = "button"
         static let paste = "paste"
+        static let longPress = "long-press"
+        static let swipe = "swipe"
     }
 
     /// `tap` options for a coordinate tap that is held briefly.
@@ -31,15 +33,42 @@ package enum SimUseContract {
         static let switchHoldSeconds = "0.05"
     }
 
+    /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.
+    enum Swipe {
+        static let from = "--from"
+        static let to = "--to"
+    }
+
     /// Gesture presets, named by finger direction: `scroll-up` pages down.
     enum Gesture {
         static let scrollUp = "scroll-up"
         static let scrollDown = "scroll-down"
+        static let scrollLeft = "scroll-left"
+        static let scrollRight = "scroll-right"
         static let swipeFromLeftEdge = "swipe-from-left-edge"
+        static let swipeFromRightEdge = "swipe-from-right-edge"
+        static let swipeFromTopEdge = "swipe-from-top-edge"
+        static let swipeFromBottomEdge = "swipe-from-bottom-edge"
+        static let pinchIn = "pinch-in"
+        static let pinchOut = "pinch-out"
+        static let rotateClockwise = "rotate-cw"
+        static let rotateCounterclockwise = "rotate-ccw"
+        /// Pivot of a two-finger preset. On iOS these are device-native portrait points, the space describe-ui uses.
+        static let centerX = "--center-x"
+        static let centerY = "--center-y"
+        static let scale = "--scale"
+        static let angle = "--angle"
     }
 
-    /// Hardware buttons.
+    /// Hardware buttons. iOS has home, lock, apple-pay, side-button, and siri; Android has home, back, lock, and
+    /// recents.
     enum Button {
+        static let home = "home"
+        static let lock = "lock"
         static let back = "back"
+        static let recents = "recents"
+        static let applePay = "apple-pay"
+        static let sideButton = "side-button"
+        static let siri = "siri"
     }
 }
