@@ -12,7 +12,7 @@ and it taps its way there on its own.
 ## Features
 
 - ⚡ **Ultrafast navigation**: one small Jev call per step instead of a full LLM agent turn
-- 🤖 **One command for your agent**: Claude Code delegates "get to that screen" and spends its turns on the real work
+- 🔁 **Hands over, then picks up again**: when Jev is stuck it stops with a session your agent can inspect, teach, and resume
 - 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only enters text you pass with `-t name=value`
 
 ## Installation
@@ -63,14 +63,17 @@ nest install Ryu0118/jev-sim-use
 export TYPESAFE_API_KEY=...
 jev-sim-use doctor
 jev-sim-use "Turn on Dark Mode in Settings"
+```
+
+### Entering text
+
+Jev never writes text. Name each string the goal needs; Jev matches the name to a field's label, and the value is
+entered for it without being sent to Jev:
+
+```sh
 jev-sim-use "In Maps, search for ramen and show the results" -t query=ramen
 jev-sim-use "Log in to the app" -t email=alice@example.com -t password=hunter2
 ```
-
-The app must already be open. Jev chooses actions but never writes text. When a goal needs typing, pass each string
-as `-t name=value` (`--text`), once per string. Jev sees only the name (`email`, `password`) and matches it to a
-field's label; jev-sim-use then enters the value. Values are never sent to Jev; unfinished sessions keep them
-locally (readable only by you) so `session resume` can enter them.
 
 ### Choosing a device
 
@@ -91,6 +94,32 @@ Physical iPhones are not supported.
 jev-sim-use exec ui
 jev-sim-use exec screenshot
 ```
+
+---
+
+## When Jev gets stuck
+
+Jev picks well among what is on screen, but it cannot know where an off-screen setting lives or what an app-specific
+label means. When it is unsure, it first looks around on its own (scrolls down, then goes back). If that does not
+help, it stops before guessing and leaves a session, so a person or your agent can supply the missing fact and let
+it continue from where it stopped:
+
+```sh
+$ jev-sim-use "Turn on Dark Mode"
+Stopped at step 9: Jev's best action (Tap the Button labelled "一般") had confidence 0.19, below the threshold.
+Session: 9948937e
+
+$ jev-sim-use session show        # goal, notes, how each run ended, every action taken
+$ jev-sim-use exec ui             # the screen it stopped on
+$ jev-sim-use session tell -n "Dark Mode is the ダークの外観モード switch on the デベロッパ screen"
+$ jev-sim-use session tell -n "The goal is reached when that switch is on"
+$ jev-sim-use session resume      # same goal, with your notes and the history so far
+Goal reached after 8 action(s).
+```
+
+Notes are facts Jev reads on every later step; remove a wrong one with `session forget -n <number>`. A session is
+deleted when its goal is reached, and expires a week after it last changed. The installed skill teaches your agent
+this loop, so it can step in without you.
 
 ---
 
@@ -145,6 +174,7 @@ jev-sim-use config set base-url https://proxy.example
 
 ```
 jev-sim-use [run] <goal> [options]   work toward a goal (default command)
+jev-sim-use session list|show|tell|forget|resume   inspect, teach, and continue a stopped run
 jev-sim-use doctor                   check sim-use, the device, and Jev settings
 jev-sim-use exec <sim-use args...>   run a sim-use command as-is
 jev-sim-use config get|set|unset|list  base-url, model
@@ -155,15 +185,13 @@ jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agen
 |---|---|---|
 | `-d, --device` | the only usable device | A `deviceId` from `sim-use devices` |
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
-| `--max-steps` | 15 | |
-| `--min-confidence` | 0.6 | Stops and hands over when Jev is less sure |
+| `--max-steps` | 15 | Per run; `session resume` gets a fresh budget |
+| `--min-confidence` | 0.6 | Below this, Jev explores and then hands over instead of tapping |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
 | `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
 
 The API key is read only from `TYPESAFE_API_KEY` and never stored. Settings live in
 `$XDG_CONFIG_HOME/jev-sim-use/config.json` (default `~/.config`).
-
-Exit status: 0 goal reached, 1 not reached, 2 setup error, 3 sim-use or Jev failure. `exec` passes sim-use's status through.
 
 ---
 
