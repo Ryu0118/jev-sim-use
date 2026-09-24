@@ -47,8 +47,6 @@ package enum SimUseContract {
         static let scrollRight = "scroll-right"
         static let swipeFromLeftEdge = "swipe-from-left-edge"
         static let swipeFromRightEdge = "swipe-from-right-edge"
-        static let swipeFromTopEdge = "swipe-from-top-edge"
-        static let swipeFromBottomEdge = "swipe-from-bottom-edge"
         static let pinchIn = "pinch-in"
         static let pinchOut = "pinch-out"
         static let rotateClockwise = "rotate-cw"
@@ -58,6 +56,9 @@ package enum SimUseContract {
         static let centerY = "--center-y"
         static let scale = "--scale"
         static let angle = "--angle"
+        static let duration = "--duration"
+        /// Duration that makes a sideways scroll turn one page.
+        static let sidewaysSeconds = "0.3"
     }
 
     /// Hardware buttons. iOS has home, lock, apple-pay, side-button, and siri; Android has home, back, lock, and

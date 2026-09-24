@@ -16,7 +16,7 @@ struct ActionPolicyTests {
     }
 
     @Test("demands more before leaving the app or locking the device", arguments: [
-        AgentAction.device(.press(.home)), .device(.press(.lock)), .device(.swipeFromBottomEdge),
+        AgentAction.device(.press(.home)), .device(.press(.lock)),
     ])
     func leavingTheApp(action: AgentAction) {
         #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.irreversibleMinimum)

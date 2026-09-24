@@ -7,8 +7,6 @@ extension SimUseDeviceAction {
         case .revealContentRight: "scroll_to_reveal_right"
         case .revealContentLeft: "scroll_to_reveal_left"
         case .goBack: "go_back"
-        case .swipeFromTopEdge: "swipe_down_from_top_edge"
-        case .swipeFromBottomEdge: "swipe_up_from_bottom_edge"
         case .swipeFromRightEdge: "swipe_in_from_right_edge"
         case .press(.sideButton): "press_side_button"
         case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))_button"
@@ -23,9 +21,6 @@ extension SimUseDeviceAction {
         case .revealContentRight: "Scroll sideways to show the items to the right of those in `screen.elements`"
         case .revealContentLeft: "Scroll sideways to show the items to the left of those in `screen.elements`"
         case .goBack: "Go back to the previous screen, when `screen` is unrelated to `goal` or a dead end"
-        case .swipeFromTopEdge: "Swipe down from the top edge of the screen, which opens notifications"
-        // Going home is the Home button's option; describing both the same way splits Jev's probability.
-        case .swipeFromBottomEdge: "Swipe up from the bottom edge of the screen, to dismiss a sheet or reveal a bottom bar"
         case .swipeFromRightEdge: "Swipe in from the right edge of the screen"
         case .press(.home): "Press the Home button, which leaves the app for the Home Screen"
         case .press(.lock): "Press the lock button, which locks the device"
@@ -40,9 +35,9 @@ extension SimUseDeviceAction {
     var risk: ActionRisk {
         switch self {
         case .revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft, .goBack: .harmless
-        case .swipeFromTopEdge, .swipeFromRightEdge: .reversible
+        case .swipeFromRightEdge: .reversible
         // Leaving the app cannot be undone: sim-use has no launch verb.
-        case .swipeFromBottomEdge, .press: .irreversible
+        case .press: .irreversible
         }
     }
 }

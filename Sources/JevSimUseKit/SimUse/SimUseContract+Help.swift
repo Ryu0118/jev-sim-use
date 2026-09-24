@@ -6,9 +6,9 @@ package extension SimUseContract {
         (Command.tap, [deviceFlag, jsonFlag, Tap.x, Tap.y, Tap.duration, "UISwitch"]),
         (Command.gesture, [
             Gesture.scrollUp, Gesture.scrollDown, Gesture.scrollLeft, Gesture.scrollRight,
-            Gesture.swipeFromLeftEdge, Gesture.swipeFromRightEdge, Gesture.swipeFromTopEdge, Gesture.swipeFromBottomEdge,
+            Gesture.swipeFromLeftEdge, Gesture.swipeFromRightEdge,
             Gesture.pinchIn, Gesture.pinchOut, Gesture.rotateClockwise, Gesture.rotateCounterclockwise,
-            Gesture.centerX, Gesture.centerY, Gesture.scale, Gesture.angle, "device-native portrait", deviceFlag,
+            Gesture.centerX, Gesture.centerY, Gesture.scale, Gesture.angle, Gesture.duration, "device-native portrait", deviceFlag,
         ]),
         (Command.button, [
             Button.home, Button.lock, Button.back, Button.recents, Button.applePay, Button.sideButton, Button.siri,

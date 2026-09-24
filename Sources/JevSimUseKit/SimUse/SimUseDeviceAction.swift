@@ -10,11 +10,8 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     case revealContentLeft
     /// Navigate back: the edge swipe on iOS, the back button on Android.
     case goBack
-    /// Swipe down from the top edge.
-    case swipeFromTopEdge
-    /// Swipe up from the bottom edge.
-    case swipeFromBottomEdge
-    /// Swipe in from the right edge.
+    /// Swipe in from the right edge. There is no top- or bottom-edge action: on iOS 26 those presets did nothing, and a
+    /// real swipe from the top opens Control Center, which `sim-use ui` then cannot read.
     case swipeFromRightEdge
     /// Press a hardware button.
     case press(HardwareButton)
@@ -23,7 +20,7 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     static func available(on platform: String) -> [SimUseDeviceAction] {
         [
             .revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft, .goBack,
-            .swipeFromTopEdge, .swipeFromBottomEdge, .swipeFromRightEdge,
+            .swipeFromRightEdge,
         ] + HardwareButton.available(on: platform).map(SimUseDeviceAction.press)
     }
 
@@ -35,14 +32,13 @@ package enum SimUseDeviceAction: Sendable, Hashable {
         // sim-use names presets by finger direction: `scroll-up` pages down, `scroll-left` shows what is right.
         case .revealContentBelow: [gesture, Gesture.scrollUp]
         case .revealContentAbove: [gesture, Gesture.scrollDown]
-        case .revealContentRight: [gesture, Gesture.scrollLeft]
-        case .revealContentLeft: [gesture, Gesture.scrollRight]
+        // At the default 0.5 s a sideways scroll is too slow to turn a page; 0.3 s turns exactly one.
+        case .revealContentRight: [gesture, Gesture.scrollLeft, Gesture.duration, Gesture.sidewaysSeconds]
+        case .revealContentLeft: [gesture, Gesture.scrollRight, Gesture.duration, Gesture.sidewaysSeconds]
         case .goBack:
             platform == "android"
                 ? [SimUseContract.Command.button, SimUseContract.Button.back]
                 : [gesture, Gesture.swipeFromLeftEdge]
-        case .swipeFromTopEdge: [gesture, Gesture.swipeFromTopEdge]
-        case .swipeFromBottomEdge: [gesture, Gesture.swipeFromBottomEdge]
         case .swipeFromRightEdge: [gesture, Gesture.swipeFromRightEdge]
         case let .press(button): [SimUseContract.Command.button, button.argument]
         }

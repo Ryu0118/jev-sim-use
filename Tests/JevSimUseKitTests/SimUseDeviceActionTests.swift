@@ -16,8 +16,8 @@ struct SimUseDeviceActionTests {
 
     @Test("maps sideways scrolls, edge swipes, and buttons to sim-use's names")
     func otherActions() {
-        #expect(SimUseDeviceAction.revealContentRight.arguments(platform: "ios") == ["gesture", "scroll-left"])
-        #expect(SimUseDeviceAction.swipeFromTopEdge.arguments(platform: "ios") == ["gesture", "swipe-from-top-edge"])
+        #expect(SimUseDeviceAction.revealContentRight.arguments(platform: "ios") == ["gesture", "scroll-left", "--duration", "0.3"])
+        #expect(SimUseDeviceAction.swipeFromRightEdge.arguments(platform: "ios") == ["gesture", "swipe-from-right-edge"])
         #expect(SimUseDeviceAction.press(.sideButton).arguments(platform: "ios") == ["button", "side-button"])
     }
 
