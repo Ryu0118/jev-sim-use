@@ -49,7 +49,7 @@ jobs:
 
       - name: Bump Version.swift (build-time only)
         run: |
-          sed -i '' "s/public static let current = \".*\"/public static let current = \"$VERSION\"/" \
+          sed -i '' "s/package static let current = \".*\"/package static let current = \"$VERSION\"/" \
             Sources/SimJevUseKit/Version.swift
         env:
 
@@ -93,7 +93,7 @@ jobs:
 
       - name: Bump version file
         run: |
-          sed -i "s/public static let current = \".*\"/public static let current = \"$VERSION\"/" \
+          sed -i "s/package static let current = \".*\"/package static let current = \"$VERSION\"/" \
             Sources/SimJevUseKit/Version.swift
         env:
 
