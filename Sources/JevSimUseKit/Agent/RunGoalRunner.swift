@@ -39,17 +39,9 @@ package struct RunGoalRunner: Sendable {
             planner: makePlanner(settings),
             configuration: AgentConfiguration(
                 goal: request.goal, texts: request.texts, maxSteps: request.maxSteps,
-                policy: Self.policy(minConfidence: request.minConfidence),
+                actionPolicy: ActionPolicy(minimumSupport: request.minConfidence),
             ),
             report: { report(.agent($0)) },
         ).run()
-    }
-
-    /// The user sets the hand-over threshold; acting without a confirm band never drops below the default.
-    static func policy(minConfidence: Double) -> RoutingPolicy {
-        RoutingPolicy(
-            escalateBelow: minConfidence,
-            autoAtOrAbove: max(minConfidence, RoutingPolicy.default.autoAtOrAbove),
-        )
     }
 }

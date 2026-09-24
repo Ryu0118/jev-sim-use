@@ -9,9 +9,9 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     package var description: String {
         switch self {
         case let .planned(step, plan):
-            "[\(step)] \(plan.action) (confidence \(Self.format(plan.confidence)), "
+            "[\(step)] \(plan.action) (support \(Self.format(plan.support)), "
                 + "goal reached p=\(Self.format(plan.goalReached.value)), ~$\(plan.costUSD.formatted())"
-                + ")"
+                + (plan.model.isEmpty ? ")" : ", \(plan.model))")
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
         }

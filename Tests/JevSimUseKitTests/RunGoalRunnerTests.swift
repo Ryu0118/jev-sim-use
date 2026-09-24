@@ -41,11 +41,4 @@ struct RunGoalRunnerTests {
         _ = try await runner(version: "v0.15.0").run(request) { event in events.withLock { $0.append(event) } }
         #expect(events.withLock { $0.contains { $0.description.hasPrefix("Warning: sim-use 0.15.0") } })
     }
-
-    @Test("never acts without confirmation below the default auto threshold", arguments: [0.3, 0.9])
-    func policy(minConfidence: Double) {
-        let policy = RunGoalRunner.policy(minConfidence: minConfidence)
-        #expect(policy.escalateBelow == minConfidence)
-        #expect(policy.autoAtOrAbove == max(minConfidence, 0.85))
-    }
 }

@@ -10,8 +10,10 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var maxSteps: Int
     /// Stop after this many consecutive actions left the screen unchanged.
     package var stallLimit: Int
-    /// Thresholds for acting on Jev's answers.
-    package var policy: RoutingPolicy
+    /// Thresholds for trusting Jev's goal-reached judgement.
+    package var goalPolicy: RoutingPolicy
+    /// Thresholds for acting on Jev's chosen action.
+    package var actionPolicy: ActionPolicy
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -19,12 +21,14 @@ package struct AgentConfiguration: Sendable, Hashable {
         texts: [String] = [],
         maxSteps: Int = 15,
         stallLimit: Int = 3,
-        policy: RoutingPolicy = .default,
+        goalPolicy: RoutingPolicy = .default,
+        actionPolicy: ActionPolicy = ActionPolicy(),
     ) {
         self.goal = goal
         self.texts = texts
         self.maxSteps = maxSteps
         self.stallLimit = stallLimit
-        self.policy = policy
+        self.goalPolicy = goalPolicy
+        self.actionPolicy = actionPolicy
     }
 }

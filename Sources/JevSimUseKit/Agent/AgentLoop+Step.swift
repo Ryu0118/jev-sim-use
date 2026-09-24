@@ -16,7 +16,7 @@ extension AgentLoop {
     /// Checks completion before the step limit, so a goal reached by the last allowed action counts.
     /// Only an `.auto` judgement counts as reached, because the exit status claims success.
     func verdict(on plan: StepPlan, progress: AgentProgress) -> AgentOutcome? {
-        let done = configuration.policy.decide(plan.goalReached)
+        let done = configuration.goalPolicy.decide(plan.goalReached)
         if done.answer == true, done.decision == .auto {
             return .goalReached(steps: progress.steps)
         }
@@ -27,11 +27,11 @@ extension AgentLoop {
         if plan.action == .noneApplies {
             return .noActionFits(step: step)
         }
-        if plan.confidence < configuration.policy.escalateBelow {
-            return .escalated(step: step, action: plan.action, confidence: plan.confidence)
+        if plan.support < configuration.actionPolicy.requiredSupport(for: plan.action) {
+            return .escalated(step: step, action: plan.action, confidence: plan.support)
         }
-        if plan.confidence < configuration.policy.autoAtOrAbove {
-            report(.lowConfidence(step: step, confidence: plan.confidence))
+        if plan.support < ActionPolicy.confidentSupport {
+            report(.lowConfidence(step: step, confidence: plan.support))
         }
         return nil
     }

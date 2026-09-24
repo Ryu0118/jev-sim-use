@@ -43,4 +43,17 @@ struct JevStepPlannerTests {
         let transport = StubTransport(status: 422, body: "too long")
         await #expect(throws: PlanningError.rejected(body: "too long")) { try await planner(transport).plan(request) }
     }
+
+    @Test("adds up probability split between options that do the same thing")
+    func equivalentProbability() {
+        let actions: [AgentAction] = [
+            .tap(alias: 1, role: "Button", label: "Calendar"),
+            .tap(alias: 2, role: "Button", label: "Calendar"),
+            .device(.goBack),
+        ]
+        let support = JevStepPlanner.equivalentProbability(
+            of: actions[0], among: actions, ["e1": 0.45, "e2": 0.4, "go_back": 0.15],
+        )
+        #expect(abs(support - 0.85) < 0.0001)
+    }
 }

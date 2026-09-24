@@ -26,6 +26,27 @@ package struct StepPlan: Sendable, Hashable {
     package var action: AgentAction
     /// Jev's confidence in `action`, 0...1.
     package var confidence: Double
+    /// What the action policy compares: `confidence`, or more when several options do the same thing
+    /// (identical role and label) and split the probability between them.
+    package var support: Double
     /// Estimated request cost, for logging.
     package var costUSD: Double
+    /// The model version that answered, for logs.
+    package var model: String
+
+    package init(
+        goalReached: Probability,
+        action: AgentAction,
+        confidence: Double,
+        support: Double? = nil,
+        costUSD: Double,
+        model: String = "",
+    ) {
+        self.goalReached = goalReached
+        self.action = action
+        self.confidence = confidence
+        self.support = support ?? confidence
+        self.costUSD = costUSD
+        self.model = model
+    }
 }

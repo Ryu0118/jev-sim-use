@@ -15,7 +15,21 @@ extension JevStepPlanner {
             goalReached: goalReached,
             action: action,
             confidence: choice.confidence,
+            support: max(choice.confidence, equivalentProbability(of: action, among: actions, choice.probabilities)),
             costUSD: response.usage.estimatedCostUSD,
+            model: response.model,
         )
+    }
+
+    /// Probability mass of every offered option that does the same thing as `action`. Duplicate labels
+    /// (two "Calendar" buttons) split the distribution without making the choice any less clear.
+    static func equivalentProbability(
+        of action: AgentAction,
+        among actions: [AgentAction],
+        _ probabilities: [String: Double],
+    ) -> Double {
+        actions
+            .filter { $0.optionDescription == action.optionDescription }
+            .reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
     }
 }

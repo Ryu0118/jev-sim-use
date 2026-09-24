@@ -20,7 +20,7 @@ struct RunCommand: ContextualCommand {
     @Option(help: "Maximum number of actions.")
     var maxSteps = 15
 
-    @Option(help: "Stop and hand over when Jev's confidence in the next action is below this (0...1).")
+    @Option(help: "Hand over when Jev's support for the next tap, scroll, or back is below this (0...1). Pasting needs at least 0.85.")
     var minConfidence = RoutingPolicy.default.escalateBelow
 
     func validate() throws {

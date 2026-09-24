@@ -60,4 +60,13 @@ struct AgentLoopTests {
         #expect(try await run(driver, [plan]) == .noActionFits(step: 1))
         #expect(driver.performedActions.isEmpty)
     }
+
+    @Test("will not paste on support that would be enough for a tap")
+    func pasteNeedsMoreSupport() async throws {
+        let plan = StepPlan(
+            goalReached: Probability(clamping: 0.05), action: .paste(index: 0, text: "hi"), confidence: 0.7, costUSD: 0,
+        )
+        let driver = FakeDriver(outlines: ["A"])
+        #expect(try await run(driver, [plan]) == .escalated(step: 1, action: .paste(index: 0, text: "hi"), confidence: 0.7))
+    }
 }
