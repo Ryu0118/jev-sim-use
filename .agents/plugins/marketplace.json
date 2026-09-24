@@ -1,0 +1,20 @@
+{
+  "name": "jev-sim-use",
+  "interface": {
+    "displayName": "jev-sim-use"
+  },
+  "plugins": [
+    {
+      "name": "jev-sim-use",
+      "source": {
+        "source": "local",
+        "path": "./plugins/jev-sim-use"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
