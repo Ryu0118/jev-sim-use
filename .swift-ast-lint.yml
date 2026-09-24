@@ -8,6 +8,7 @@ excluded_paths:
   - "**/.build/**"
   - "**/.swiftpm/**"
   - "**/Generated/**"
+  - "**/Fixtures/**"
 
 rules:
   deep-nesting:
@@ -15,17 +16,30 @@ rules:
       warning_depth: 4
       error_depth: 4
       severity: error
+    include:
+      - "Sources/**"
+      - "Tests/**"
   single-large-type-per-file:
     args:
       warning_lines: 50
       error_lines: 50
       severity: error
+    include:
+      - "Sources/**"
+      - "Tests/**"
     exclude:
       - "**/*Generated.swift"
+      - "**/Fixtures/**"
   property-declaration-ordering:
     args:
       severity: error
   function-access-modifier-grouping:
+    args:
+      severity: error
+  swiftui-view-property:
+    args:
+      severity: error
+  branch-assignment-to-tuple:
     args:
       severity: error
   no-top-level-function:
@@ -37,6 +51,9 @@ rules:
   return-switch-expression:
     args:
       severity: error
+  use-url-file-path:
+    args:
+      severity: error
 
   missing-docs:
     args:
@@ -46,6 +63,12 @@ rules:
         - kinds: [init]
         - kinds: [enum]
           names: [CodingKeys]
+        - kinds: [var]
+          names: [errorDescription]
+        - kinds: [func]
+          names: ["=="]
+        - kinds: [func]
+          name_pattern: "^(buildBlock|buildExpression|buildOptional|buildEither|buildArray|appendLiteral|appendInterpolation)$"
     include:
       - "Sources/SimJevUseKit/**"
     exclude:
