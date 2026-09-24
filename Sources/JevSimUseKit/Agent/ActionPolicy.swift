@@ -17,10 +17,14 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Set from real runs: actions that did finish scored 0.78-0.95, actions that did not at most 0.48.
     package static let finishMinimum = 0.75
 
+    /// The default bar for reversible actions, set from real runs: correct taps scored 0.59 and up, wrong ones at most
+    /// 0.52. A wrong reversible tap costs a step and shows up in `history` as leading nowhere.
+    package static let defaultMinimumSupport = 0.55
+
     /// Hand over below this support for reversible actions (taps, scrolls, going back).
     package var minimumSupport: Double
 
-    package init(minimumSupport: Double = RoutingPolicy.default.escalateBelow) {
+    package init(minimumSupport: Double = Self.defaultMinimumSupport) {
         self.minimumSupport = minimumSupport
     }
 

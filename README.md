@@ -180,7 +180,7 @@ jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agen
 | `-d, --device` | the only usable device | A `deviceId` from `sim-use devices` |
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
 | `--max-steps` | 15 | Per run; `session resume` gets a fresh budget |
-| `--min-confidence` | 0.6 | Below this, it hands over instead of guessing |
+| `--min-confidence` | 0.55 | Below this, it hands over instead of guessing |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
 | `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
 

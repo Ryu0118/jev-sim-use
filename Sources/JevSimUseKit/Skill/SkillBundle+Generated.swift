@@ -101,7 +101,7 @@ extension SkillBundle {
     | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name |
     | `-d, --device` | the only usable device | A `deviceId` from `exec devices` |
     | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
-    | `--min-confidence` | 0.6 | Lower it to hand over less often, raise it to be more careful |
+    | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
 
     ## Privacy
 

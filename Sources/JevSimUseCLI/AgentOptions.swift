@@ -1,5 +1,5 @@
 import ArgumentParser
-import Jev
+import JevSimUseKit
 
 /// Per-run limits shared by `run` and `session resume`.
 struct AgentOptions: ParsableArguments {
@@ -7,7 +7,7 @@ struct AgentOptions: ParsableArguments {
     var maxSteps = 15
 
     @Option(help: "Hand over when Jev's support for a tap or scroll is below this (0...1). Pasting and buttons need at least 0.85.")
-    var minConfidence = RoutingPolicy.default.escalateBelow
+    var minConfidence = ActionPolicy.defaultMinimumSupport
 
     func validate() throws {
         guard maxSteps > 0 else { throw ValidationError("--max-steps must be positive.") }
