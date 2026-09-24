@@ -52,7 +52,7 @@ extension AgentAction {
     var risk: ActionRisk {
         switch self {
         case .tap: .reversible
-        case let .gesture(gesture, _, _, _): gesture.risk
+        case let .gesture(gesture, _, role, _): gesture.risk(on: role)
         case let .device(action): action.risk
         case .paste: .irreversible
         case .noneApplies: .harmless

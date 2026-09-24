@@ -21,4 +21,12 @@ struct ActionPolicyTests {
     func leavingTheApp(action: AgentAction) {
         #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.irreversibleMinimum)
     }
+
+    @Test("treats a sideways swipe as irreversible only on list rows, which it can delete", arguments: [
+        ("Cell", ActionPolicy.irreversibleMinimum), ("Slider", 0.3), ("Image", 0.3),
+    ])
+    func sidewaysSwipe(role: String, required: Double) {
+        let swipe = AgentAction.gesture(.swipeLeft, alias: 1, role: role, label: "x")
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: swipe) == required)
+    }
 }
