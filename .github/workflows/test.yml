@@ -9,7 +9,7 @@ on:
       - 'Package.swift'
       - 'Package.resolved'
       - '.swiftformat'
-      - '.swift-ast-lint.yml'
+      - '.my-swift-linter.yml'
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
@@ -21,7 +21,7 @@ on:
       - 'Package.swift'
       - 'Package.resolved'
       - '.swiftformat'
-      - '.swift-ast-lint.yml'
+      - '.my-swift-linter.yml'
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
@@ -52,7 +52,7 @@ jobs:
         run: mise exec -- swiftlint lint --config .swiftlint.yml --strict --no-cache
 
       - name: my-swift-linter
-        run: mise exec -- my-swift-linter lint --config .swift-ast-lint.yml --no-cache Sources Tests Package.swift
+        run: mise exec -- my-swift-linter lint --config .my-swift-linter.yml --no-cache Sources Tests Package.swift
 
   build-and-test:
     name: Build and Test

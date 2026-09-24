@@ -35,10 +35,10 @@ else
     LINT_ARGS=(Sources Tests Package.swift)
 fi
 
-# Include globs in .swift-ast-lint.yml are relative to the package root.
+# Include globs in .my-swift-linter.yml are relative to the package root.
 cd "$SOURCE_ROOT"
 if [ -n "$FIX_FLAG" ]; then
-    exec "$BINARY" --config "$SOURCE_ROOT/.swift-ast-lint.yml" --no-cache "$FIX_FLAG" "${LINT_ARGS[@]}"
+    exec "$BINARY" --config "$SOURCE_ROOT/.my-swift-linter.yml" --no-cache "$FIX_FLAG" "${LINT_ARGS[@]}"
 else
-    exec "$BINARY" --config "$SOURCE_ROOT/.swift-ast-lint.yml" --no-cache "${LINT_ARGS[@]}"
+    exec "$BINARY" --config "$SOURCE_ROOT/.my-swift-linter.yml" --no-cache "${LINT_ARGS[@]}"
 fi

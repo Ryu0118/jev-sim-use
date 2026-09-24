@@ -19,7 +19,7 @@ MY_SWIFT_LINTER=$("$SOURCE_ROOT/scripts/mise.sh" which my-swift-linter 2>/dev/nu
 [ -x "$MY_SWIFT_LINTER" ] || exit 0
 
 set +e
-LINT_OUTPUT=$(cd "$SOURCE_ROOT" && "$MY_SWIFT_LINTER" --config "$SOURCE_ROOT/.swift-ast-lint.yml" --no-cache "$TARGET_FILE" 2>&1)
+LINT_OUTPUT=$(cd "$SOURCE_ROOT" && "$MY_SWIFT_LINTER" --config "$SOURCE_ROOT/.my-swift-linter.yml" --no-cache "$TARGET_FILE" 2>&1)
 LINT_EXIT=$?
 set -e
 

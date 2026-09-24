@@ -19,7 +19,7 @@ Install with `mise run setup` (or `mise run setup-hooks`), which sets `core.hook
 1. **gitleaks** `protect --staged` scans the staged diff for secrets (skipped with a notice if gitleaks is not installed).
 2. **SwiftFormat** formats the staged Swift files and re-stages them.
 3. **SwiftLint** `--strict` lints the staged Swift files.
-4. **my-swift-linter** lints `Sources` and `Tests` with `.swift-ast-lint.yml`.
+4. **my-swift-linter** lints `Sources` and `Tests` with `.my-swift-linter.yml`.
 5. **docsync** `check` verifies that tracked docs are in sync with their sources.
 
 Steps 2-4 run only when Swift files are staged; gitleaks and docsync always run.

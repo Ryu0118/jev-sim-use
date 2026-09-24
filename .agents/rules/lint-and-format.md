@@ -6,7 +6,7 @@ Every rule below is enforced by a config file in the repository root. Keep this 
 |------|--------|-----|
 | SwiftFormat | `.swiftformat` | `mise run format` |
 | SwiftLint | `.swiftlint.yml` | `mise run lint` (`--strict`, so warnings fail) |
-| my-swift-linter (AST lint) | `.swift-ast-lint.yml` | `mise run ast-lint` / `mise run ast-fix` |
+| my-swift-linter (AST lint) | `.my-swift-linter.yml` | `mise run ast-lint` / `mise run ast-fix` |
 
 The tool versions in `.mise.toml` track the latest releases (`mise run setup` bumps them), so the effective rule set is intentionally stricter than a project that pins older tools: rules that newer versions enable by default are followed, not disabled. When a bump turns on a new default rule, fix the code and document the rule here.
 
@@ -42,7 +42,9 @@ Configured thresholds:
 
 Every other SwiftLint default rule is active, including `legacy_swiftui_aspect_ratio` (on by default since SwiftLint 0.65.1): prefer `scaledToFit()` / `scaledToFill()` over `aspectRatio(contentMode:)` with a constant content mode.
 
-## AST Lint (`.swift-ast-lint.yml`, my-swift-linter)
+## AST Lint (`.my-swift-linter.yml`, my-swift-linter)
+
+`.my-swift-linter.yml` is the file my-swift-linter 0.14.0 reads by default. Scripts still pass `--config` explicitly.
 
 Linted paths: `Sources/**/*.swift`, `Tests/**/*.swift`. Excluded: `.build/**`, `.swiftpm/**`, `**/.build/**`, `**/.swiftpm/**`, `**/Generated/**`, `**/Fixtures/**`. All rules are errors.
 

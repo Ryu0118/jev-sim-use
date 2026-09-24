@@ -21,11 +21,11 @@ rules:
   sources:
   - .swiftformat
   - .swiftlint.yml
-  - .swift-ast-lint.yml
+  - .my-swift-linter.yml
   doc: .agents/rules/lint-and-format.md
   message: A lint or format config changed; update .agents/rules/lint-and-format.md
     to match.
-  checksum: 58dc5fb1f3d5ffaf8b75b81528b7e41b67d35ab9416a9405398624efd17c07d2
+  checksum: 5ed16b8daa37d4158e7d4315afe9516e8d54df92652bdbe80cb332aed8f71f51
 - name: rules-workflow
   sources:
   - .gitnagg.yml
