@@ -38,6 +38,8 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 
 ## Jev constraints
 
+- Use the TypeSafe skill (`typesafe@typesafe-ai`, enabled in `.claude/settings.json`) when designing or
+  changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
 - Choice options are built at runtime, so typed `ChoiceQuestion` / `RoutingPolicy.decide` for choices do not
   apply. Read `answers[name]`, validate the chosen name against the offered options, and threshold with the
   policy's public fields.
