@@ -1,5 +1,5 @@
 import ArgumentParser
-import SimJevUseKit
+import JevSimUseKit
 
 extension ConfigCommand {
     struct Get: ContextualCommand {

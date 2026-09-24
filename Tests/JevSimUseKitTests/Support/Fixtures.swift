@@ -1,5 +1,5 @@
 import Foundation
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 
 /// Envelopes shaped after sim-use v0.14.0's own test fixtures.
 enum Fixtures {

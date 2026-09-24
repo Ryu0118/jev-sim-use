@@ -1,5 +1,5 @@
 import ArgumentParser
-import SimJevUseKit
+import JevSimUseKit
 
 struct DoctorCommand: ContextualCommand {
     static let configuration = CommandConfiguration(

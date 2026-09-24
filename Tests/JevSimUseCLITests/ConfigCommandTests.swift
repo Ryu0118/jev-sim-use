@@ -1,5 +1,5 @@
 import Foundation
-@testable import SimJevUseCLI
+@testable import JevSimUseCLI
 import Testing
 
 struct ConfigCommandTests {

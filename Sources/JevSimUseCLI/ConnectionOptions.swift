@@ -1,5 +1,5 @@
 import ArgumentParser
-import SimJevUseKit
+import JevSimUseKit
 
 /// Options shared by `run` and `doctor`.
 struct ConnectionOptions: ParsableArguments {

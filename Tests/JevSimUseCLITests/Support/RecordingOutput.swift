@@ -1,4 +1,4 @@
-@testable import SimJevUseCLI
+@testable import JevSimUseCLI
 import Synchronization
 
 /// Captures everything a command writes.

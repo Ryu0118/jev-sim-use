@@ -1,4 +1,4 @@
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 import Testing
 
 struct AgentLoopTests {

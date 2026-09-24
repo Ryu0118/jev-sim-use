@@ -3,12 +3,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "SimJevUse",
+    name: "JevSimUse",
     platforms: [
         .macOS(.v15),
     ],
     products: [
-        .executable(name: "sim-jev-use", targets: ["SimJevUse"]),
+        .executable(name: "jev-sim-use", targets: ["JevSimUse"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.8.2"),
@@ -17,30 +17,30 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "SimJevUse",
-            dependencies: ["SimJevUseCLI"],
+            name: "JevSimUse",
+            dependencies: ["JevSimUseCLI"],
         ),
         .target(
-            name: "SimJevUseCLI",
+            name: "JevSimUseCLI",
             dependencies: [
-                "SimJevUseKit",
+                "JevSimUseKit",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
         ),
         .target(
-            name: "SimJevUseKit",
+            name: "JevSimUseKit",
             dependencies: [
                 .product(name: "Jev", package: "swift-jev"),
                 .product(name: "FileManagerProtocol", package: "FileManagerProtocol"),
             ],
         ),
         .testTarget(
-            name: "SimJevUseCLITests",
-            dependencies: ["SimJevUseCLI"],
+            name: "JevSimUseCLITests",
+            dependencies: ["JevSimUseCLI"],
         ),
         .testTarget(
-            name: "SimJevUseKitTests",
-            dependencies: ["SimJevUseKit"],
+            name: "JevSimUseKitTests",
+            dependencies: ["JevSimUseKit"],
         ),
     ],
 )

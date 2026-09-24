@@ -1,4 +1,4 @@
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 import Synchronization
 
 /// Serves observations in order (repeating the last) and records actions.

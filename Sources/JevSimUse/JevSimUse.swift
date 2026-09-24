@@ -1,8 +1,8 @@
-import SimJevUseCLI
+import JevSimUseCLI
 
 @main
-enum SimJevUse {
+enum JevSimUse {
     static func main() async {
-        await SimJevUseCommand.main()
+        await JevSimUseCommand.main()
     }
 }

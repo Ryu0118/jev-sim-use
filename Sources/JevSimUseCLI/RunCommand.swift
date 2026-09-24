@@ -1,6 +1,6 @@
 import ArgumentParser
 import Jev
-import SimJevUseKit
+import JevSimUseKit
 
 struct RunCommand: ContextualCommand {
     static let configuration = CommandConfiguration(

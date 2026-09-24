@@ -1,4 +1,4 @@
-import SimJevUseKit
+import JevSimUseKit
 
 /// Exit statuses beyond 0 (goal reached) and 1 (goal not reached).
 enum ExitStatus {

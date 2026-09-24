@@ -1,11 +1,11 @@
 import ArgumentParser
 import Foundation
-import SimJevUseKit
+import JevSimUseKit
 
 struct ExecCommand: ContextualCommand {
     static let configuration = CommandConfiguration(
         commandName: "exec",
-        abstract: "Run a sim-use command as-is (e.g. `sim-jev-use exec ui`).",
+        abstract: "Run a sim-use command as-is (e.g. `jev-sim-use exec ui`).",
         discussion: "Replaces this process with sim-use, so output, TTY, signals, and exit status are sim-use's own.",
     )
 

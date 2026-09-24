@@ -1,10 +1,10 @@
-@testable import SimJevUseCLI
+@testable import JevSimUseCLI
 import Testing
 
-struct SimJevUseCommandTests {
+struct JevSimUseCommandTests {
     @Test("routes a bare goal to the run command")
     func defaultSubcommand() throws {
-        let command = try SimJevUseCommand.parseAsRoot(["Open the Settings app"])
+        let command = try JevSimUseCommand.parseAsRoot(["Open the Settings app"])
         #expect((command as? RunCommand)?.goal == "Open the Settings app")
     }
 }

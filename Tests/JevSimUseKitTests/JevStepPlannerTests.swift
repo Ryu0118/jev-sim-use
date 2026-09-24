@@ -1,6 +1,6 @@
 import Foundation
 import Jev
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 import Testing
 
 struct JevStepPlannerTests {

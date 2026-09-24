@@ -1,5 +1,5 @@
 import Jev
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 import Synchronization
 
 /// Returns plans in order, repeating the last one.

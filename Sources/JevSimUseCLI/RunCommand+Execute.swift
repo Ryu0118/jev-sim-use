@@ -1,5 +1,5 @@
 import Jev
-import SimJevUseKit
+import JevSimUseKit
 
 extension RunCommand {
     func execute(context: CLIContext) async throws -> AgentOutcome {

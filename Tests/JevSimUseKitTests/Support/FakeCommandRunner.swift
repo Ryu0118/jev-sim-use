@@ -1,5 +1,5 @@
 import Foundation
-@testable import SimJevUseKit
+@testable import JevSimUseKit
 import Synchronization
 
 /// Replays canned outputs by subcommand and records every invocation.

@@ -1,6 +1,6 @@
 /// Persistent settings kept in the user's config file. Never holds secrets.
 package struct UserConfig: Codable, Sendable, Hashable {
-    /// Keys accepted by `sim-jev-use config`.
+    /// Keys accepted by `jev-sim-use config`.
     package enum Key: String, CaseIterable, Sendable {
         case baseURL = "base-url"
         case model
