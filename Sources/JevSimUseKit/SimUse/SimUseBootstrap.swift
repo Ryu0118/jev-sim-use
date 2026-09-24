@@ -21,10 +21,10 @@ package struct SimUseBootstrap: Sendable {
 
     /// Locates sim-use and verifies it is new enough. Returns its path and version.
     package func verifyInstallation() async throws -> (executable: URL, version: SemanticVersion) {
-        guard let executable = locator.locate("sim-use") else {
+        guard let executable = locator.locate(SimUseContract.executable) else {
             throw SimUseError.notInstalled(searchedPath: locator.searchedPath)
         }
-        let output = try await runner.run(executable, arguments: ["--version"])
+        let output = try await runner.run(executable, arguments: [SimUseContract.versionFlag])
         let text = (String(bytes: output.stdout, encoding: .utf8) ?? "") + output.stderr
         guard let version = SemanticVersion(parsing: text) else {
             throw SimUseError.unreadableVersion(output: text.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -39,7 +39,7 @@ package struct SimUseBootstrap: Sendable {
     package func connect(deviceID: String?) async throws -> SimUseConnection {
         let (executable, version) = try await verifyInstallation()
         let invoker = SimUseInvoker(executable: executable, runner: runner)
-        let devices = try await invoker.invoke(["devices"], as: DeviceListPayload.self).data?.devices ?? []
+        let devices = try await invoker.invoke([SimUseContract.Command.devices], as: DeviceListPayload.self).data?.devices ?? []
         let device = try DeviceSelection.select(deviceID, from: devices)
         return SimUseConnection(client: SimUseClient(device: device, invoker: invoker), version: version)
     }

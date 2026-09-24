@@ -11,9 +11,12 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     func arguments(platform: String) -> [String] {
         switch self {
         // sim-use names presets by finger direction: `scroll-up` pages down.
-        case .revealContentBelow: ["gesture", "scroll-up"]
-        case .revealContentAbove: ["gesture", "scroll-down"]
-        case .goBack: platform == "android" ? ["button", "back"] : ["gesture", "swipe-from-left-edge"]
+        case .revealContentBelow: [SimUseContract.Command.gesture, SimUseContract.Gesture.scrollUp]
+        case .revealContentAbove: [SimUseContract.Command.gesture, SimUseContract.Gesture.scrollDown]
+        case .goBack:
+            platform == "android"
+                ? [SimUseContract.Command.button, SimUseContract.Button.back]
+                : [SimUseContract.Command.gesture, SimUseContract.Gesture.swipeFromLeftEdge]
         }
     }
 }

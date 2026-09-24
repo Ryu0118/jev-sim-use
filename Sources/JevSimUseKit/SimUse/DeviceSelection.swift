@@ -5,14 +5,14 @@ enum DeviceSelection {
         if let requestedID {
             guard let device = devices.first(where: { $0.deviceId == requestedID }) else {
                 throw SimUseError.commandFailed(
-                    arguments: ["devices"],
+                    arguments: [SimUseContract.Command.devices],
                     message: "device \(requestedID) is not booted or connected",
                     hint: "List candidates with `sim-use devices --all`.",
                 )
             }
             guard !device.isPhysicalIOS else {
                 throw SimUseError.commandFailed(
-                    arguments: ["devices"],
+                    arguments: [SimUseContract.Command.devices],
                     message: "physical iOS devices are not supported",
                     hint: "sim-use offers only ui, tap by id/label, and screenshot on physical iOS.",
                 )

@@ -14,7 +14,8 @@ struct SimUseInvoker: Sendable {
         operands: [String] = [],
         as _: Payload.Type = Payload.self,
     ) async throws -> SimUseEnvelope<Payload> {
-        let fullArguments = arguments + ["--json"] + (operands.isEmpty ? [] : ["--"] + operands)
+        let fullArguments = arguments + [SimUseContract.jsonFlag]
+            + (operands.isEmpty ? [] : [SimUseContract.operandTerminator] + operands)
         let output = try await runner.run(executable, arguments: fullArguments)
         let envelope = try? JSONDecoder().decode(SimUseEnvelope<Payload>.self, from: output.stdout)
         guard let envelope else {

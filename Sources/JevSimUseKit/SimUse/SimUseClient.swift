@@ -14,16 +14,16 @@ package struct SimUseClient: DeviceDriving {
 
     /// Runs `sim-use ui --no-raw`, which also refreshes the alias cache `tap` uses.
     package func observe() async throws -> ScreenObservation {
-        let envelope = try await invoker.invoke(["ui", "--no-raw"] + deviceArguments, as: UISnapshot.self)
+        let envelope = try await invoker.invoke([SimUseContract.Command.ui, SimUseContract.noRawFlag] + deviceArguments, as: UISnapshot.self)
         guard let snapshot = envelope.data else {
-            throw SimUseError.malformedOutput(arguments: ["ui"], detail: "the envelope has no data")
+            throw SimUseError.malformedOutput(arguments: [SimUseContract.Command.ui], detail: "the envelope has no data")
         }
         return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }
 
     /// Runs `sim-use tap @alias`.
     package func tap(alias: Int) async throws -> [String] {
-        try await run(["tap", "@\(alias)"])
+        try await run([SimUseContract.Command.tap, "@\(alias)"])
     }
 
     /// Runs the sim-use gesture or button for `action`.
@@ -33,11 +33,11 @@ package struct SimUseClient: DeviceDriving {
 
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
     package func paste(_ text: String) async throws -> [String] {
-        try await run(["paste"], operands: [text])
+        try await run([SimUseContract.Command.paste], operands: [text])
     }
 
     private var deviceArguments: [String] {
-        ["--device", device.deviceId]
+        [SimUseContract.deviceFlag, device.deviceId]
     }
 
     private func run(_ arguments: [String], operands: [String] = []) async throws -> [String] {

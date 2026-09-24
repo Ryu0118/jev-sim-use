@@ -1,6 +1,9 @@
 extension SimUseError: CustomStringConvertible {
     static let installCommand = "brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use"
     static let upgradeCommand = "brew update && brew upgrade lycorp-jp/tap/sim-use"
+    /// Unparseable output usually means sim-use's CLI changed under this tool.
+    static let contractHint = "sim-use's CLI may have changed. Check `jev-sim-use exec --version` "
+        + "(tested with \(SimUseBootstrap.testedVersion)) and run `mise run contract-test`."
 
     /// A message that says what went wrong and how to fix it.
     package var description: String {
@@ -25,7 +28,7 @@ extension SimUseError: CustomStringConvertible {
         case let .commandFailed(arguments, message, hint):
             "`sim-use \(arguments.joined(separator: " "))` failed: \(message)" + (hint.map { "\nHint: \($0)" } ?? "")
         case let .malformedOutput(arguments, detail):
-            "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)"
+            "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
         }
     }
 }
