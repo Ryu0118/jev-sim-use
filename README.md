@@ -1,78 +1,90 @@
 # jev-sim-use
 
-Drives an iOS Simulator or Android emulator toward a goal written in plain language.
-[sim-use](https://github.com/lycorp-jp/sim-use) reads the screen and performs actions;
-[Jev](https://docs.typesafe.ai/) (via [swift-jev](https://github.com/d-date/swift-jev))
-picks the next action.
+**Tell a simulator what you want done, in plain language.**
 
-Jev does not write text, it answers typed questions. On each step jev-sim-use asks it two
-things in one request: *is the goal reached?* (a probability) and *which of these actions
-comes next?* (a choice over the elements sim-use found on screen, plus scroll, back, and
-any texts you allowed it to paste).
+jev-sim-use is a CLI that drives an iOS Simulator or Android device toward a goal like "Turn on Dark Mode in Settings".
+[sim-use](https://github.com/lycorp-jp/sim-use) reads the screen and acts on it, and
+[Jev](https://docs.typesafe.ai/) (via [swift-jev](https://github.com/d-date/swift-jev)) picks the next action.
+It is for UI checks and demos you would otherwise tap through by hand.
 
-```
-observe (sim-use ui) → ask Jev → act (sim-use tap / gesture / button / paste) → repeat
-```
+## Features
 
-## Requirements
+- 🗣️ **Goals, not scripts**: describe the outcome, and it taps, scrolls, and goes back until it gets there
+- 🎯 **Jev chooses, never invents**: every action comes from what is on screen, and it only types text you pass with `-t`
+- 🔌 **All of sim-use underneath**: `exec` runs any sim-use command unchanged
 
-- macOS 15+, Swift 6.2+
-- sim-use 0.14.0 or newer on `PATH`:
-  ```sh
-  brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use
-  ```
-- A booted simulator or connected Android device (run `sim-use android init --device <serial>` once for Android)
-- A TypeSafe API key (bring your own key)
+## Installation
 
-## Usage
+Requires macOS 15+, Swift 6.2+, and sim-use 0.14.0+:
 
 ```sh
-export TYPESAFE_API_KEY=...                       # read from the environment only
-jev-sim-use doctor                                # checks sim-use, the device, and Jev settings
-jev-sim-use "Turn on Dark Mode in Settings"
-jev-sim-use "Search for ramen" -t ramen -d <sim-use device id>
-jev-sim-use exec ui                               # any sim-use command, run as-is
-jev-sim-use config set base-url https://proxy.example   # persist settings
+brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use
 ```
 
-From a checkout, use `swift run jev-sim-use ...`. The app must already be open, because
-sim-use cannot launch apps. Progress goes to stderr and the final outcome to stdout.
+```sh
+git clone https://github.com/Ryu0118/jev-sim-use.git
+cd jev-sim-use
+swift build -c release
+cp .build/release/jev-sim-use /usr/local/bin/
+```
+
+---
+
+## Quick start
+
+1. Boot a simulator, or connect an Android device and run `sim-use android init --device <serial>` once.
+2. Open the app you want to drive. sim-use cannot launch apps.
+3. Run:
+
+```sh
+export TYPESAFE_API_KEY=...
+jev-sim-use doctor
+jev-sim-use "Turn on Dark Mode in Settings"
+jev-sim-use "Search for ramen" -t ramen
+```
+
+---
+
+## What leaves your machine
+
+Each step sends the screen outline (visible labels and values), your goal, the action history, and every `-t` value
+to the Jev endpoint. Do not run it on screens with data you may not share.
+
+## Other providers
+
+Put a proxy that speaks TypeSafe's `POST /v1/systemone` format in front of the provider, then point jev-sim-use at it:
+
+```sh
+jev-sim-use config set base-url https://proxy.example
+```
+
+---
+
+## Command reference
+
+```
+jev-sim-use [run] <goal> [options]   work toward a goal (default command)
+jev-sim-use doctor                   check sim-use, the device, and Jev settings
+jev-sim-use exec <sim-use args...>   run a sim-use command as-is
+jev-sim-use config get|set|unset|list  base-url, model
+```
 
 | Option | Default | |
 |---|---|---|
-| `<goal>` | required | What to accomplish. Use `jev-sim-use run "doctor"` for a goal that collides with a subcommand |
 | `-d, --device` | `$SIM_USE_DEVICE`, then the only usable device | A `deviceId` from `sim-use devices` |
-| `-t, --text` | none | Text the agent may paste. Repeatable. Jev can only choose it, not write it |
-| `--max-steps` | 15 | Upper bound on actions |
-| `--min-confidence` | 0.6 | Stop and hand over when Jev is less sure than this |
-| `--base-url` | `$TYPESAFE_BASE_URL`, then `config` `base-url`, then `https://api.typesafe.ai` | `/v1/systemone` is appended. HTTPS, or HTTP on localhost only |
-| `--model` | `$TYPESAFE_MODEL`, then `config` `model`, then `jev-latest` | |
+| `-t, --text` | none | Text it may paste. Repeatable |
+| `--max-steps` | 15 | |
+| `--min-confidence` | 0.6 | Stops and hands over when Jev is less sure |
+| `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
+| `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-latest` | |
 
-`config` stores `base-url` and `model` in `$XDG_CONFIG_HOME/jev-sim-use/config.json`
-(default `~/.config`). The API key is never stored.
+The API key is read only from `TYPESAFE_API_KEY` and never stored. Settings live in
+`$XDG_CONFIG_HOME/jev-sim-use/config.json` (default `~/.config`).
 
-To use Jev through another provider (e.g. Cloudflare Workers AI), put a proxy that speaks
-TypeSafe's `POST /v1/systemone` format in front of it and point `base-url` at the proxy.
+Exit status: 0 goal reached, 1 not reached, 2 setup error, 3 sim-use or Jev failure. `exec` passes sim-use's status through.
 
-Exit status: 0 goal reached, 1 goal not reached, 2 setup error (sim-use, device, key, URL),
-3 sim-use or Jev failure, 64 invalid arguments. `exec` exits with sim-use's own status.
-
-Each step sends the screen outline (visible labels and values), your goal, the action history,
-and every `--text` value to the Jev endpoint. Do not run it on screens with data you may not share.
-
-A run also stops when three actions in a row leave the screen unchanged, when the app
-disappears, or when an Android crash dialog appears.
-
-## When sim-use changes
-
-jev-sim-use talks to sim-use only through its CLI and `--json` output; every name it passes lives in
-`SimUseContract`. It was verified against sim-use 0.14.0, warns (without stopping) on newer versions, and
-`jev-sim-use doctor` reads the screen once to catch output changes early. After upgrading sim-use, run
-`mise run contract-test` with a booted device: it checks each subcommand's `--help` and decodes real
-`devices` / `ui` output.
+---
 
 ## License
 
-This repository does not declare a license yet. Third-party notices are in
-[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES). sim-use (Apache-2.0) is invoked as a separate
-process and is not bundled.
+No license yet. Third-party notices are in [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES).
