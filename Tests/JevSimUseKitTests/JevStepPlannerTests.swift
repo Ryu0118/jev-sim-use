@@ -57,3 +57,14 @@ struct JevStepPlannerTests {
         #expect(abs(support - 0.85) < 0.0001)
     }
 }
+
+struct PlanningStateTests {
+    @Test("presents toggle values as on and off", arguments: [("1", "on"), ("0", "off"), ("2", "2")])
+    func toggleValues(raw: String, expected: String) {
+        let entry = UIEntry(
+            aliases: ElementAliases(alias: 9), role: "CheckBox", label: "Dark", states: [], value: raw,
+            uniqueId: nil, region: nil,
+        )
+        #expect(PlanningState.Element.readableValue(entry) == expected)
+    }
+}

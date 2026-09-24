@@ -15,6 +15,7 @@ extension PlanningState {
         let id: String
         let role: String
         let label: String?
+        let identifier: String?
         let value: String?
         let states: [String]?
         let region: String?
@@ -23,9 +24,24 @@ extension PlanningState {
             id = PlanningState.elementID(entry.aliases.alias)
             role = entry.role
             label = entry.label.isEmpty ? nil : entry.label
-            value = entry.value
+            identifier = entry.uniqueId
+            value = Self.readableValue(entry)
             states = entry.states.isEmpty ? nil : entry.states
             region = entry.region.map { region in region.label.map { "\(region.kind): \($0)" } ?? region.kind }
+        }
+    }
+}
+
+extension PlanningState.Element {
+    /// Toggle roles report `"1"` / `"0"`; Jev reads `"on"` / `"off"` as a state far more reliably.
+    static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]
+
+    static func readableValue(_ entry: UIEntry) -> String? {
+        guard toggleRoles.contains(entry.role) else { return entry.value }
+        return switch entry.value {
+        case "1": "on"
+        case "0": "off"
+        default: entry.value
         }
     }
 }

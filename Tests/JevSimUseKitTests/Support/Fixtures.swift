@@ -24,6 +24,6 @@ enum Fixtures {
     }
 
     static func entry(_ alias: Int, _ label: String, role: String = "Button", states: [String] = []) -> UIEntry {
-        UIEntry(aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, region: nil)
+        UIEntry(aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, uniqueId: nil, region: nil)
     }
 }

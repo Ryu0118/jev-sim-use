@@ -10,6 +10,8 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     package let states: [String]
     /// Current value, when the element has one.
     package let value: String?
+    /// The accessibility identifier (e.g. `BackButton`), which often names an element's purpose better than its label.
+    package let uniqueId: String?
     /// Where on screen sim-use placed the element; absent in older fixtures.
     package let region: ElementRegion?
 
