@@ -23,7 +23,8 @@ package struct JevStepPlanner: StepPlanning {
     already in the requested state (switch values are on or off). DONE needs visible evidence on `screen` that every \
     part of `goal` is satisfied; when `goal` asks for something to read or show a value, an element in \
     `screen.elements` whose label or value shows it is that evidence; for a goal relative to the start (the next item, one more), the evidence is in \
-    `history`; a goal that adds or creates something is not done while its form is still being edited, so finish \
+    `history`; when `goal` says to act until something shows, it is DONE as soon as `screen` shows it, so do not \
+    act again; a goal that adds or creates something is not done while its form is still being edited, so finish \
     the edit first (Done, Save, or the app's equivalent). BLOCKED means no offered operation can make progress.
     """
 
