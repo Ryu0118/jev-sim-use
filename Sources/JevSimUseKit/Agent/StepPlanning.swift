@@ -30,6 +30,16 @@ package struct StepPlan: Sendable, Hashable {
     package var support: Double
     /// Probability that this action, if it works, completes the goal.
     package var finishes: Probability
+    /// A runner-up operation and its probability.
+    package struct Alternative: Sendable, Hashable {
+        /// The operation's option name.
+        package let name: String
+        /// Its probability in the operation answer.
+        package let probability: Double
+    }
+
+    /// The runner-up operations, most likely first: what Jev hesitated between.
+    package var alternatives: [Alternative] = []
     /// Estimated request cost, for logging.
     package var costUSD: Double
     /// The model version that answered, for logs.
@@ -40,6 +50,7 @@ package struct StepPlan: Sendable, Hashable {
         confidence: Double,
         support: Double? = nil,
         finishes: Probability = Probability(clamping: 0),
+        alternatives: [Alternative] = [],
         costUSD: Double,
         model: String = "",
     ) {
@@ -47,6 +58,7 @@ package struct StepPlan: Sendable, Hashable {
         self.confidence = confidence
         self.support = support ?? confidence
         self.finishes = finishes
+        self.alternatives = alternatives
         self.costUSD = costUSD
         self.model = model
     }

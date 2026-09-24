@@ -22,11 +22,17 @@ extension JevStepPlanner {
             operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (operationAnswer.probabilities[$1.optionName] ?? 0) }
         }
         let (action, targetSupport) = try compose(operation, response: response, menu: menu)
+        let alternatives = operationAnswer.probabilities
+            .filter { $0.key != operation.optionName && $0.value >= 0.05 }
+            .sorted { $0.value > $1.value }
+            .prefix(2)
+            .map { StepPlan.Alternative(name: $0.key, probability: $0.value) }
         return try StepPlan(
             action: action,
             confidence: operationAnswer.confidence,
             support: min(operationSupport, targetSupport),
             finishes: response.answers.noul(named: finishesQuestion),
+            alternatives: Array(alternatives),
             costUSD: response.usage.estimatedCostUSD,
             model: response.model,
         )

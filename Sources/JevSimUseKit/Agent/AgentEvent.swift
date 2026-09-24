@@ -11,7 +11,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
         case let .planned(step, plan):
             "[\(step)] \(plan.action) (support \(Self.format(plan.support)), "
                 + "finishes p=\(Self.format(plan.finishes.value)), ~$\(plan.costUSD.formatted())"
-                + (plan.model.isEmpty ? ")" : ", \(plan.model))")
+                + (plan.model.isEmpty ? "" : ", \(plan.model)")
+                + plan.alternatives.map { "; also \($0.name) \(Self.format($0.probability))" }.joined() + ")"
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
         }
