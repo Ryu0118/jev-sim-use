@@ -42,7 +42,10 @@ package enum Operation: Sendable, Hashable {
     /// The criteria Jev reads for this option.
     var optionDescription: String {
         switch self {
-        case .tap: "Tap one element in `screen.elements` to open, select, press, or toggle it; not for typing into a field, which enter_text does"
+        case .tap:
+            "Tap one element in `screen.elements` to open, select, press, or toggle it; not for typing into a field, "
+                + "which enter_text does, and not for hunting an item `goal` names when no visible element is named in "
+                + "`goal`, which scrolling does"
         case let .gesture(gesture): gesture.optionDescription
         case .enterText: "Type one of the named texts into a text field; it taps the field first, so the field needs no separate tap"
         case let .device(action): action.optionDescription

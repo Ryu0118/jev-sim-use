@@ -16,14 +16,16 @@ extension SimUseDeviceAction {
     var optionDescription: String {
         switch self {
         case .revealContentBelow:
-            "Scroll down: nothing in `screen.elements` is or leads to what `goal` needs, and this list may continue below"
+            "Scroll down: what `goal` names is not in `screen.elements` and no visible element is named in `goal`, and this list may continue below"
         case .revealContentAbove:
-            "Scroll up: nothing in `screen.elements` is or leads to what `goal` needs, and this list may continue above"
+            "Scroll up: what `goal` names is not in `screen.elements` and no visible element is named in `goal`, and this list may continue above"
         case .revealContentRight:
             "Scroll sideways to the right: show the next page, photo, or items to the right of `screen.elements`"
         case .revealContentLeft:
             "Scroll sideways to the left: show the previous page, photo, or items to the left of `screen.elements`"
-        case .goBack: "Go back to the previous screen, the one `screen.back` names"
+        case .goBack:
+            "Go back to the previous screen, the one `screen.back` names; also when `screen.title` is a section `goal` "
+                + "does not lead through"
         case .swipeFromRightEdge: "Swipe in from the right edge of the screen"
         case .press(.home): "Press the Home button, which leaves the app for the Home Screen"
         case .press(.lock): "Press the lock button, which locks the device"
