@@ -19,8 +19,8 @@ Jev through [swift-jev](https://github.com/d-date/swift-jev) (MIT) which action 
 - `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.
 - `JevSimUseCLI` (+ `JevSimUseCLITests`): ArgumentParser commands `run` (default, positional goal), `exec`
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, validate, call one Kit Runner, present.
-- `JevSimUseKit/Process`: `CommandRunning` seam; `ProcessCommandRunner` drains stdout and stderr
-  concurrently, because `ui --json` output can exceed the pipe buffer.
+- `JevSimUseKit/Process`: `CommandRunning` seam; `SubprocessCommandRunner` runs commands through swift-subprocess 1.0
+  via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` (not via `/usr/bin/env`, so "not installed" is
   distinct from exit 127), version gate (`SimUseBootstrap.minimumVersion`), device pinning, and
   `--json` envelope decoding.
