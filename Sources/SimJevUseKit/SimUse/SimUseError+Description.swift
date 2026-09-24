@@ -1,0 +1,31 @@
+extension SimUseError: CustomStringConvertible {
+    static let installCommand = "brew tap lycorp-jp/tap && brew install lycorp-jp/tap/sim-use"
+    static let upgradeCommand = "brew update && brew upgrade lycorp-jp/tap/sim-use"
+
+    /// A message that says what went wrong and how to fix it.
+    public var description: String {
+        switch self {
+        case let .notInstalled(searchedPath):
+            """
+            sim-use was not found on PATH. Install it first:
+              \(Self.installCommand)
+            (On Homebrew 6.0.5+ run `brew trust lycorp-jp/tap` first if the tap is reported as untrusted.)
+            If it is installed, make sure its directory (e.g. /opt/homebrew/bin) is on the PATH of this process.
+            Searched PATH: \(searchedPath.isEmpty ? "(empty)" : searchedPath)
+            """
+        case let .unreadableVersion(output):
+            "Could not read the sim-use version from `sim-use --version`: \(output)"
+        case let .outdated(found, minimum):
+            "sim-use \(found) is too old; \(minimum) or newer is required. Upgrade with:\n  \(Self.upgradeCommand)"
+        case .noDevice:
+            "No booted simulator or connected device was found. Boot one, or list them with `sim-use devices --all`."
+        case let .multipleDevices(devices):
+            "Multiple devices are available; pass --device with one of:\n"
+                + devices.map { "  \($0.deviceId)  \($0.name) (\($0.platform))" }.joined(separator: "\n")
+        case let .commandFailed(arguments, message, hint):
+            "`sim-use \(arguments.joined(separator: " "))` failed: \(message)" + (hint.map { "\nHint: \($0)" } ?? "")
+        case let .malformedOutput(arguments, detail):
+            "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)"
+        }
+    }
+}

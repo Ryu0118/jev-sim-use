@@ -1,0 +1,29 @@
+import Foundation
+
+/// Runs one `sim-use` command in `--json` mode and decodes its envelope.
+struct SimUseInvoker: Sendable {
+    let executable: URL
+    let runner: any CommandRunning
+
+    /// Handles both failure shapes: an error envelope on stdout (exit 1), and plain
+    /// text on stderr with an empty stdout (argument validation, exit 64).
+    func invoke<Payload: Decodable & Sendable>(
+        _ arguments: [String],
+        as _: Payload.Type = Payload.self,
+    ) async throws -> SimUseEnvelope<Payload> {
+        let fullArguments = arguments + ["--json"]
+        let output = try await runner.run(executable, arguments: fullArguments)
+        let envelope = try? JSONDecoder().decode(SimUseEnvelope<Payload>.self, from: output.stdout)
+        guard let envelope else {
+            let stderr = output.stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+            let detail = stderr.isEmpty ? "exit status \(output.exitCode) with no JSON output" : stderr
+            throw SimUseError.malformedOutput(arguments: arguments, detail: detail)
+        }
+        guard envelope.succeeded else {
+            throw SimUseError.commandFailed(
+                arguments: arguments, message: envelope.error ?? "unknown error", hint: envelope.hint,
+            )
+        }
+        return envelope
+    }
+}
