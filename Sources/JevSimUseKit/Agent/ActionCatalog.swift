@@ -7,6 +7,8 @@ enum ActionCatalog {
     /// The accessibility identifier of UIKit's navigation back button. Tapping it does what `go_back` does, and
     /// offering both split Jev's probability (the back button is labelled with the previous screen, such as 一般).
     static let iOSBackButtonIdentifier = "BackButton"
+    /// Screen and section titles: tapping one does nothing, and offering them pulled Jev toward the current title.
+    static let titleRoles: Set = ["Heading"]
     /// Roles of list rows, where a long sideways swipe can delete the row.
     static let rowRoles: Set = ["Cell", "Row"]
     /// Roles that accept typed text.
@@ -14,12 +16,13 @@ enum ActionCatalog {
 
     /// The menu for `snapshot`, minus screen-level actions in `excluded` that already did nothing on this screen.
     ///
-    /// Every enabled element is a target, whatever its role: some apps expose tappable rows only as `StaticText`
+    /// Every enabled element but a title is a target: some apps expose tappable rows only as `StaticText`
     /// (Reminders), and a tap that does nothing is reported back through `history` rather than guessed away here.
     static func menu(for snapshot: UISnapshot, texts: [InputText], excluding excluded: Set<String> = []) -> ActionMenu {
         let entries = (snapshot.entries ?? []).filter { !$0.isDisabled }
         let elements = entries
             .filter { snapshot.platform != SimUseContract.Platform.ios || $0.uniqueId != iOSBackButtonIdentifier }
+            .filter { !titleRoles.contains($0.role) }
             .filter { !label(for: $0).isEmpty || $0.frame != nil }
             .prefix(maximumOptions)
             .map { ElementTarget(alias: $0.aliases.alias, role: $0.role, label: label(for: $0)) }
