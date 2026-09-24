@@ -36,6 +36,10 @@ final class FakeDriver: DeviceDriving {
         record("tap @\(alias)")
     }
 
+    func perform(_ gesture: ElementGesture, alias: Int, on _: UISnapshot) async throws -> [String] {
+        record("\(gesture.rawValue) @\(alias)")
+    }
+
     func perform(_ action: SimUseDeviceAction, platform _: String) async throws -> [String] {
         record("\(action)")
     }

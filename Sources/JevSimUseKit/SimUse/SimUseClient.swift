@@ -36,6 +36,16 @@ package struct SimUseClient: DeviceDriving {
         ])
     }
 
+    /// Runs `long-press`, `swipe`, or a two-finger preset on the element's frame.
+    package func perform(_ gesture: ElementGesture, alias: Int, on snapshot: UISnapshot) async throws -> [String] {
+        guard let frame = snapshot.entries?.first(where: { $0.aliases.alias == alias })?.frame else {
+            throw SimUseError.malformedOutput(
+                arguments: [SimUseContract.Command.ui], detail: "element @\(alias) has no frame to aim \(gesture.rawValue) at",
+            )
+        }
+        return try await run(gesture.arguments(alias: alias, frame: frame))
+    }
+
     /// Runs the sim-use gesture or button for `action`.
     package func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
         try await run(action.arguments(platform: platform))

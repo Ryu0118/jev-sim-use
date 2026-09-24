@@ -67,4 +67,17 @@ struct SimUseClientTests {
             ["tap", "@4"] + device + ["--json"],
         ])
     }
+
+    @Test("aims long-press at the alias, swipes across the frame, and pinches at its centre", arguments: [
+        (ElementGesture.longPress, ["long-press", "@9"]),
+        (.swipeLeft, ["swipe", "--from", "336.0,200.0", "--to", "64.0,200.0"]),
+        (.pinchOut, ["gesture", "pinch-out", "--center-x", "200.0", "--center-y", "200.0"]),
+    ])
+    func elementGestures(gesture: ElementGesture, expected: [String]) async throws {
+        let runner = FakeCommandRunner(["long-press": .json(#"{"ok":true,"data":{}}"#), "swipe": .json(#"{"ok":true,"data":{}}"#),
+                                        "gesture": .json(#"{"ok":true,"data":{}}"#)])
+        let entry = Fixtures.entry(9, "Row", frame: ElementFrame(x: 30, y: 150, width: 340, height: 100))
+        _ = try await client(runner).perform(gesture, alias: 9, on: Fixtures.snapshot(entries: [entry]))
+        #expect(runner.recordedCalls == [expected + device + ["--json"]])
+    }
 }
