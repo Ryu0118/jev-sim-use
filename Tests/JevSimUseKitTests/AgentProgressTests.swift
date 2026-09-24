@@ -61,3 +61,28 @@ struct AgentProgressResumeTests {
         #expect(progress.ineffectiveActions.isEmpty)
     }
 }
+
+@Suite("A scroll that only moves frames at the end of a list is not a new screen")
+struct AgentProgressScreenKeyTests {
+    @Test("ignores frames and band headings")
+    func bounce() {
+        let before = """
+        App: Settings  402x874
+
+        [Top  y<120]
+          @1  Button  "Camera"  (16,0 370x52)
+
+        [Content  y=120..754]
+          @2  Button  "StandBy"  (16,105 370x52)
+        """
+        let after = """
+        App: Settings  402x874
+
+        [Top  y<120]
+          @1  Button  "Camera"  (16,-35 370x52)
+          @2  Button  "StandBy"  (16,70 370x52)
+        """
+        #expect(AgentProgress.screenKey(before) == AgentProgress.screenKey(after))
+        #expect(AgentProgress.screenKey(before) != AgentProgress.screenKey(after.replacing("StandBy", with: "Search")))
+    }
+}
