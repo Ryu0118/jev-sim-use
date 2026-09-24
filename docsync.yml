@@ -4,13 +4,13 @@ rules:
   - Package.swift
   doc: README.md
   message: Package.swift changed; review the user-facing package commands in README.md.
-  checksum: 54a563cec07d75100b7c9ac623301d71f1f838a64a1f27b01b12451956841956
+  checksum: 984acc8b48f70fc3519581ac8c92cf04964badd1648f734cda6dabff378367a3
 - name: claude-package
   sources:
   - Package.swift
   doc: CLAUDE.md
   message: Package.swift changed; review the package architecture in CLAUDE.md.
-  checksum: 54a563cec07d75100b7c9ac623301d71f1f838a64a1f27b01b12451956841956
+  checksum: 984acc8b48f70fc3519581ac8c92cf04964badd1648f734cda6dabff378367a3
 - name: claude-mise-tasks
   sources:
   - .mise.toml

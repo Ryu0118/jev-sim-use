@@ -1,5 +1,5 @@
 # SwiftFormat configuration for SimJevUse.
---swiftversion 6.0
+--swiftversion 6.2
 --indent 4
 --indentcase false
 --stripunusedargs closure-only
