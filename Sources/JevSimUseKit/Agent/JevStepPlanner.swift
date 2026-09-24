@@ -21,7 +21,8 @@ package struct JevStepPlanner: StepPlanning {
     section `goal` does not lead through and `screen.back` exists, go back; otherwise scroll this list to look for \
     it before opening a section they do not name. Do not toggle a switch \
     already in the requested state (switch values are on or off). DONE needs visible evidence on `screen` that every \
-    part of `goal` is satisfied; for a goal relative to the start (the next item, one more), the evidence is in \
+    part of `goal` is satisfied; when `goal` asks for something to read or show a value, an element in \
+    `screen.elements` whose label or value shows it is that evidence; for a goal relative to the start (the next item, one more), the evidence is in \
     `history`. BLOCKED means no offered operation can make progress.
     """
 

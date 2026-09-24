@@ -87,7 +87,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   is the whole goal satisfied?"). Code reads only the target that matches the chosen operation. Asking operation and
   target apart keeps a scroll or DONE from competing with every element for probability. Every question carries the
   same `JevStepPlanner.rules`, since target questions cannot see the operation answer. Do not add a second round trip.
-- Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.6) exits 0, below it stops as
+- Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
   `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
   jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability.
