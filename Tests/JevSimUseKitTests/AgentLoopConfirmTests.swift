@@ -83,6 +83,20 @@ struct AgentLoopConfirmTests {
         #expect(outcome == .goalReached(steps: 0))
     }
 
+    @Test("keeps reading for a moment before handing over, as a saved item reaches its list late")
+    func lateItem() async throws {
+        let planner = DoneWhenShownPlanner("Saved item")
+        let driver = ScriptedDriver(readings: ["List", "List", "List", "List", "List with Saved item"].map { outline in
+            Fixtures.snapshot(outline: outline, entries: [Fixtures.entry(1, outline, role: "StaticText")])
+        })
+        let outcome = try await AgentLoop(
+            driver: driver, planner: planner,
+            configuration: AgentConfiguration(goal: "g", unchangedWait: .milliseconds(1200)),
+        ).run().outcome
+        #expect(planner.outlines == ["List", "List with Saved item"])
+        #expect(outcome == .goalReached(steps: 0))
+    }
+
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()
@@ -124,5 +138,24 @@ private final class RecordingDonePlanner: StepPlanning {
     func plan(_ request: PlanRequest) async throws -> StepPlan {
         seen.withLock { $0.append(request.snapshot.outline) }
         return .done()
+    }
+}
+
+/// Judges the goal reached once an element's label contains `text`, and hands over before; records each planned screen.
+private final class DoneWhenShownPlanner: StepPlanning {
+    private let text: String
+    private let seen = Mutex<[String]>([])
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var outlines: [String] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        seen.withLock { $0.append(request.snapshot.outline) }
+        return request.snapshot.entries?.contains { $0.label.contains(text) } == true ? .done() : .blocked()
     }
 }

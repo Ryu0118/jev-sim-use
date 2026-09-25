@@ -104,8 +104,8 @@ package struct AgentLoop: Sendable {
                     continue
                 }
                 // A saved item can reach a list a second after the screen changed: Jev, planning on the list without
-                // it, scrolled at 0.40 and stopped. Before handing over, read once more and plan again if the screen
-                // moved on (jev-ultrafast checks freshness the same way), a bounded number of times per step.
+                // it, scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the
+                // screen moved on (jev-ultrafast checks freshness the same way), a bounded number of times per step.
                 if staleReplans < Self.staleReplanLimit, outcome.isHandOver,
                    let again = try await reading(changedFrom: fresh.snapshot)
                 {

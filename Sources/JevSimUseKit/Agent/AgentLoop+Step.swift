@@ -100,10 +100,18 @@ extension AgentLoop {
         return observation
     }
 
-    /// A new reading, when it differs from `snapshot`.
+    /// A reading whose layout differs from `snapshot`'s, taken within `unchangedWait`, or `nil` if none came. A saved
+    /// memo reached its list over a second after the editor closed, after the step had already been planned twice.
     func reading(changedFrom snapshot: UISnapshot) async throws -> ScreenObservation? {
-        let reading = try await driver.observe()
-        return reading.snapshot.identity == snapshot.identity ? nil : reading
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: configuration.unchangedWait)
+        repeat {
+            let reading = try await driver.observe()
+            if reading.snapshot.layout != snapshot.layout {
+                return reading
+            }
+        } while clock.now < deadline
+        return nil
     }
 
     /// How many times one step is planned again because the confirming reading disagreed with the planned one, before
