@@ -1,6 +1,6 @@
 extension AgentLoop {
-    func plan(for snapshot: UISnapshot, progress: AgentProgress) async throws -> StepPlan {
-        let request = PlanRequest(
+    func plan(for snapshot: UISnapshot, progress: AgentProgress, withHints: Bool = false) async throws -> StepPlan {
+        var request = PlanRequest(
             goal: configuration.goal,
             snapshot: snapshot,
             menu: ActionCatalog.menu(
@@ -10,9 +10,23 @@ extension AgentLoop {
             history: progress.history,
             notes: configuration.notes,
         )
+        request.includesHints = withHints
         let plan = try await planner.plan(request)
         report(.planned(step: progress.nextStep, plan: plan))
         return plan
+    }
+
+    /// Whether a step that is about to hand over should be asked once more with the screen's accessibility hints.
+    /// Hints are left out of the first request to keep it small; they help most when labels look alike and Jev is
+    /// torn, which is exactly when it would stop (TypeSafe's escalate-on-uncertainty pattern).
+    func shouldRetryWithHints(_ decision: StepDecision, on snapshot: UISnapshot) -> Bool {
+        guard case let .stop(outcome) = decision, (snapshot.entries ?? []).contains(where: { $0.hint != nil }) else {
+            return false
+        }
+        return switch outcome {
+        case .escalated, .noActionFits: true
+        default: false
+        }
     }
 
     /// DONE is Jev's claim, not proof, so exit 0 needs it to clear a bar; below it the run stops as probably done.

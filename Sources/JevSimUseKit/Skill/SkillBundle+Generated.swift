@@ -87,6 +87,9 @@ extension SkillBundle {
       `.accessibilityValue`.
     - **Something visible that `exec ui` does not list**: a system prompt from another process (a password-save alert),
       most cells of a colour grid, a popover's close button. Use `exec screenshot` and `exec tap -x … -y …`.
+    - **Two controls whose labels look alike** (an AI rewrite and a plain Edit): give each an `accessibilityHint` saying
+      what it does. When Jev is unsure, jev-sim-use asks once more with the screen's hints ("asking again with the
+      screen's accessibility hints" in the step lines).
     - **Words that name a place in the app or on the device** ("home", "settings", "search", "back"): Jev reads them as
       the app's own first (a tab, screen, or button by that name) and as the device's only when the app has none.
       Say "the device's Home Screen" if you do mean to leave the app; sim-use cannot open it again.

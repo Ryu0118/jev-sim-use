@@ -8,13 +8,13 @@ extension PlanningState {
         let back: String?
         let elements: [Element]
 
-        init(_ snapshot: UISnapshot, texts: [InputText] = []) {
+        init(_ snapshot: UISnapshot, texts: [InputText] = [], hints: Bool = false) {
             app = snapshot.appLabel
             let entries = snapshot.entries ?? []
             title = snapshot.title
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
             elements = (snapshot.entries ?? []).map {
-                Element($0, coveredBy: snapshot.cover(of: $0), slider: snapshot.caption(ofSlider: $0))
+                Element($0, coveredBy: snapshot.cover(of: $0), slider: snapshot.caption(ofSlider: $0), hint: hints)
                     .showing(texts)
             }
         }
@@ -41,7 +41,7 @@ extension PlanningState {
             case showsText = "shows_text"
         }
 
-        init(_ entry: UIEntry, coveredBy cover: UIEntry? = nil, slider caption: SliderCaption? = nil) {
+        init(_ entry: UIEntry, coveredBy cover: UIEntry? = nil, slider caption: SliderCaption? = nil, hint: Bool = false) {
             id = PlanningState.elementID(entry.aliases.alias)
             role = entry.role
             label = caption?.label ?? (entry.label.isEmpty ? nil : entry.label)
@@ -53,7 +53,7 @@ extension PlanningState {
             states = allStates.isEmpty ? nil : allStates
             region = entry.region.map { region in region.label.map { "\(region.kind): \($0)" } ?? region.kind }
             coveredBy = cover.map { $0.label.isEmpty ? $0.role : $0.label }
-            hint = entry.hint
+            self.hint = hint ? entry.hint : nil
         }
     }
 }

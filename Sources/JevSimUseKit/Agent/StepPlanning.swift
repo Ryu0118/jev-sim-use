@@ -18,6 +18,9 @@ package struct PlanRequest: Sendable, Hashable {
     package var history: [HistoryEntry]
     /// Facts about the app from a supervisor, oldest first.
     package var notes: [String] = []
+    /// Whether elements carry their accessibility hints. Off by default, so an app that hints every control does not
+    /// grow every request; on for the one retry of a step that would otherwise hand over.
+    package var includesHints = false
 }
 
 /// A planner's judgement for one step.

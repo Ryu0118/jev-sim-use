@@ -17,7 +17,7 @@ struct PlanningState: Encodable, Sendable {
         goal = request.goal
         notes = Array(request.notes.suffix(Self.notesLimit))
         platform = request.snapshot.platform
-        screen = Screen(request.snapshot, texts: request.menu.texts)
+        screen = Screen(request.snapshot, texts: request.menu.texts, hints: request.includesHints)
         history = request.history.suffix(Self.historyLimit).map(Step.init)
     }
 

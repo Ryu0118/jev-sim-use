@@ -54,7 +54,14 @@ package struct AgentLoop: Sendable {
                 actedOn = observation.snapshot
                 continue
             }
-            switch decide(on: plan, progress: progress) {
+            var decision = decide(on: plan, progress: progress)
+            if shouldRetryWithHints(decision, on: observation.snapshot) {
+                report(.retryingWithHints(step: progress.nextStep))
+                let hinted = try await self.plan(for: observation.snapshot, progress: progress, withHints: true)
+                expectedToFinish = hinted.finishes.value >= ActionPolicy.finishMinimum
+                decision = decide(on: hinted, progress: progress)
+            }
+            switch decision {
             case let .stop(outcome):
                 return AgentRunResult(outcome: outcome, history: progress.history)
             case let .act(action):

@@ -122,8 +122,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   stops there until sim-use can hold then move.
 - Hints: iOS sim-use leaves `entries[].hint` empty but keeps `accessibilityHint` as the raw tree's `help`, so `ui` runs
   without `--no-raw` (5 to 16 KB, no slower) and `UISnapshot` copies each `help` to the entry at the same frame with
-  a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Elements
-  carry it as `hint`, which tells apart controls whose labels look alike (an AI rewrite and a plain edit).
+  a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Hints stay
+  out of the first request (`PlanRequest.includesHints`), so an app that hints every control does not grow every
+  step. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
+  elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
