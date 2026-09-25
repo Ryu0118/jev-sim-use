@@ -57,7 +57,7 @@ package enum Operation: Sendable, Hashable {
         case let .gesture(gesture): gesture.optionDescription
         case .enterText: "Type one of the named texts into a text field; it taps the field first, so the field needs no separate tap"
         case let .device(action): action.optionDescription
-        // A new memo's title was typed and Jev chose DONE (0.52) over the 保存 button (0.37): typing is not saving.
+        // A new memo's title was typed and Jev chose DONE (0.52) over the Save button (0.37): typing is not saving.
         case .done:
             "Every part of `goal` is visibly satisfied; stop. Not while text typed into a form still waits for that "
                 + "form's save, create, add, or submit button: typing is not saving"

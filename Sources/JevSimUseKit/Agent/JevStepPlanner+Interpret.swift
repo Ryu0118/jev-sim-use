@@ -56,7 +56,7 @@ extension JevStepPlanner {
 
     /// The probability of every element whose label holds the goal's quoted term that the chosen one holds.
     ///
-    /// A goal that names a kind of item (a レッドピンク colour) is met by any element of that kind, so choosing among
+    /// A goal that names a kind of item (any red-pink colour) is met by any element of that kind, so choosing among
     /// them spread Jev's target across seven swatches (0.50 at most) without making the choice any less right.
     static func goalTermSupport(of action: AgentAction, in response: JevResponse, menu: ActionMenu, goal: String) throws -> Double? {
         let chosenLabel: String

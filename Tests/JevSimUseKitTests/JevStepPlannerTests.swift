@@ -107,33 +107,33 @@ struct JevStepPlannerTests {
 
     @Test("gates a reversible element action on the element, since how to touch it splits between gestures")
     func elementGesturesPool() throws {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(17, "牛乳を買う", role: "StaticText")])
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(17, "Buy milk", role: "StaticText")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
         let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22,"blocked":0.04},"confidence":0.3},"element_target":{"type":"choice","choice":"e17","probabilities":{"e17":0.65},"confidence":0.6}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
-        #expect(plan.action == .tap(alias: 17, role: "StaticText", label: "牛乳を買う"))
+        #expect(plan.action == .tap(alias: 17, role: "StaticText", label: "Buy milk"))
         #expect(abs(plan.support - 0.65) < 0.0001)
     }
 
     @Test("adds up targets that all hold the item the goal names, since any of them meets the goal")
     func goalTermTargetsPool() throws {
         let snapshot = Fixtures.snapshot(entries: [
-            Fixtures.entry(7, "暗いレッドピンク 13", role: "GenericElement"),
-            Fixtures.entry(9, "レッドピンク 39", role: "GenericElement"),
-            Fixtures.entry(8, "イエロー 49", role: "GenericElement"),
+            Fixtures.entry(7, "Тёмно-Красный 13", role: "GenericElement"),
+            Fixtures.entry(9, "Красный 39", role: "GenericElement"),
+            Fixtures.entry(8, "Жёлтый 49", role: "GenericElement"),
         ])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
         let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.97},"confidence":0.95},"element_target":{"type":"choice","choice":"e7","probabilities":{"e7":0.5,"e9":0.3,"e8":0.2},"confidence":0.3}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let response = try JSONDecoder().decode(JevResponse.self, from: Data(body.utf8))
-        let plan = try JevStepPlanner.interpret(response, menu: menu, goal: "Set the ルートの色 to a レッドピンク color")
-        #expect(plan.action == .tap(alias: 7, role: "GenericElement", label: "暗いレッドピンク 13"))
+        let plan = try JevStepPlanner.interpret(response, menu: menu, goal: "Set the route color to a Красный color")
+        #expect(plan.action == .tap(alias: 7, role: "GenericElement", label: "Тёмно-Красный 13"))
         #expect(abs(plan.support - 0.8) < 0.0001)
         #expect(try abs(JevStepPlanner.interpret(response, menu: menu).support - 0.5) < 0.0001)
     }
 
     @Test("keeps a destructive tap's own probability, so a split does not carry it over the irreversible bar")
     func destructiveTapDoesNotPool() throws {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "削除")])
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "Delete")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
         let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22},"confidence":0.3},"element_target":{"type":"choice","choice":"e19","probabilities":{"e19":0.95},"confidence":0.9}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
@@ -142,7 +142,7 @@ struct JevStepPlannerTests {
 
     @Test("a typing step logs each answer its support depends on, so the lowest one is visible")
     func supportBreakdown() throws {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(10, "パスワード", role: "TextField")])
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(10, "Password", role: "TextField")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [InputText(name: "password", value: "x")])
         let body = StubTransport.answer(
             operation: "enter_text", confidence: 0.97,

@@ -97,7 +97,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
   so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the
-  goal's quoted item (`ScanFirst.namedTerms`, such as レッドピンク across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
+  goal's quoted item (`ScanFirst.namedTerms`, such as one colour name across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
   four directions, go back (on iOS only when a `BackButton` shows a navigation stack: the left-edge swipe does
@@ -108,14 +108,14 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
   irreversible (tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as jev-use gates
-  destructive picks; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a notone goal
-  "go back to the home screen" pressed Home at 0.66 and finished in Reminders). Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
+  destructive picks; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
+  to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
   the full swipe that deletes a Reminders row without asking. Sideways scrolls pass
   `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
   iOS 26, and Control Center blinds `sim-use ui`).
 - Sliders: SwiftUI often labels a slider with its raw position (`0.1206…`), so `UISnapshot.caption(ofSlider:)` names
-  it after the text just above and shows that row's displayed value (`記録間隔` / `25 m`), and its state says a swipe,
+  it after the text just above and shows that row's displayed value (`Recording Interval` / `25 m`), and its state says a swipe,
   not a tap, moves it. On the iOS 26.5 simulator no sim-use drag moved a SwiftUI slider (swipes from the thumb or the
   track, slow drags, split `touch --down` / `--up`; `--pre-delay` waits before touching down), so a slider goal
   stops there until sim-use can hold then move.
@@ -124,7 +124,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
   agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen
   as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
-  `AgentLoop.unchangedWait` (2 s) passes: a notone memo's save kept the form up for over a second. If Jev planned on
+  `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. If Jev planned on
   a screen whose last action had not shown its effect, the screen is read once more right before acting and a stale
   plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped.
 - `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes

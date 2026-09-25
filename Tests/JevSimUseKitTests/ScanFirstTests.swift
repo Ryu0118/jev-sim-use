@@ -43,9 +43,9 @@ struct ScanFirstTests {
 
     @Test("follows a tap Jev is confident in, even while the goal's item is off screen")
     func confidentTap() {
-        let close = StepPlan(action: .tap(alias: 1, role: "Button", label: "閉じる"), confidence: 0.95, costUSD: 0)
+        let close = StepPlan(action: .tap(alias: 1, role: "Button", label: "Close"), confidence: 0.95, costUSD: 0)
         let action = ScanFirst.override(
-            close, on: settings(["閉じる", "グラフ", "速度データ", "標高"]), goal: "Close it so the 設定 screen shows",
+            close, on: settings(["Close", "Charts", "Speed", "Elevation"]), goal: "Close it so the Настройки screen shows",
             notes: [], alreadyScanned: false, tried: [],
         )
         #expect(action == nil)
@@ -53,12 +53,12 @@ struct ScanFirstTests {
 
     @Test("leaves a list of text rows alone, which has no section to scan past")
     func textRows() {
-        let rows = ["グラフ（距離・時間）", "速度データ", "標高のデータ", "ルート線の色"].enumerated().map { index, label in
+        let rows = ["Charts (distance, time)", "Speed data", "Elevation data", "Route line color"].enumerated().map { index, label in
             Fixtures.entry(index + 1, label, role: "StaticText", frame: ElementFrame(x: 16, y: Double(182 + index * 46), width: 370, height: 46))
         }
-        let sheet = UISnapshot(platform: "ios", outline: "o", appLabel: "ドライブ記録", entries: rows, crashDialog: nil)
-        let tapRow = StepPlan(action: .tap(alias: 4, role: "StaticText", label: "ルート線の色"), confidence: 0.44, costUSD: 0)
-        #expect(ScanFirst.override(tapRow, on: sheet, goal: "Set the ルートの色 to a レッドピンク color", notes: [],
+        let sheet = UISnapshot(platform: "ios", outline: "o", appLabel: "Tracker", entries: rows, crashDialog: nil)
+        let tapRow = StepPlan(action: .tap(alias: 4, role: "StaticText", label: "Route line color"), confidence: 0.44, costUSD: 0)
+        #expect(ScanFirst.override(tapRow, on: sheet, goal: "Set the Цвет маршрута to a Красный color", notes: [],
                                    alreadyScanned: false, tried: []) == nil)
     }
 

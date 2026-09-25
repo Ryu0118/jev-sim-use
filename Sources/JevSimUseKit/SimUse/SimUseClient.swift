@@ -22,8 +22,8 @@ package struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
-    /// on the switch itself, at the row's trailing edge, with a short hold. A value row's control (DriveTracker's
-    /// ルートの色 colour well) is tapped the same way: the row's centre did nothing there, its trailing edge opened it.
+    /// on the switch itself, at the row's trailing edge, with a short hold. A value row's control (a SwiftUI
+    /// ColorPicker's colour well) is tapped the same way: the row's centre did nothing there, its trailing edge opened it.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
             return try await revealThenTap(entry, under: cover, in: snapshot)

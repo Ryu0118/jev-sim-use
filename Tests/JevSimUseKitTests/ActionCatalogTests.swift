@@ -56,7 +56,7 @@ struct ActionCatalogTests {
 
     @Test("offers go_back on iOS only where a back button shows a stack to go back through, and always on Android")
     func goBackNeedsAStack() {
-        let root = [Fixtures.entry(1, "閉じる"), Fixtures.entry(2, "ルートの色")]
+        let root = [Fixtures.entry(1, "Close"), Fixtures.entry(2, "Route Color")]
         #expect(!ActionCatalog.menu(for: Fixtures.snapshot(entries: root), texts: []).operations.contains(.device(.goBack)))
         let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: root, crashDialog: nil)
         #expect(ActionCatalog.menu(for: android, texts: []).operations.contains(.device(.goBack)))

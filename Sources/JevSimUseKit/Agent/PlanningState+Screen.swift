@@ -45,7 +45,7 @@ extension PlanningState {
             label = caption?.label ?? (entry.label.isEmpty ? nil : entry.label)
             identifier = entry.uniqueId
             value = caption?.value ?? Self.readableValue(entry)
-            // A tap leaves a slider where it is; D2 tapped 記録間隔 twice at 0.87 without moving it.
+            // A tap leaves a slider where it is; Jev tapped a recording-interval slider twice at 0.87 without moving it.
             let adjusting = entry.isSlider ? [Self.sliderUsage] : []
             let allStates = entry.states + adjusting
             states = allStates.isEmpty ? nil : allStates

@@ -18,7 +18,7 @@ enum ScanFirst {
         case .tap, .noneApplies: break
         default: return nil
         }
-        // The wrong dives this guards against scored 0.51-0.77; a confident tap (DriveTracker's 閉じる at 0.95, whose
+        // The wrong dives this guards against scored 0.51-0.77; a confident tap (a sheet's Close at 0.95, whose
         // goal named a screen it leads to) is Jev knowing the way, not guessing.
         guard plan.support < ActionPolicy.confidentSupport else { return nil }
         let scroll = AgentAction.device(.revealContentBelow)

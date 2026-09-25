@@ -55,7 +55,7 @@ extension AgentLoop {
     /// How long a live run keeps reading after an action that left the screen as it was.
     static let unchangedWait: Duration = .seconds(2)
 
-    /// Reads the settled screen after acting on `previous`. Saving a notone memo kept its form on screen for over a
+    /// Reads the settled screen after acting on `previous`. Saving a memo kept its form on screen for over a
     /// second while the save went through: two agreeing readings called that settled, Jev acted on the form, and the
     /// tap landed on the screen that replaced it. So an unchanged screen is read again, back to back (one `ui` read
     /// takes about 0.6 s, so no sleep is needed between them), until it changes or `unchangedWait` passes.

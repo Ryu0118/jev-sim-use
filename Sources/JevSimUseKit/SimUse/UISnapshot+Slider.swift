@@ -16,7 +16,7 @@ extension UIEntry {
 extension UISnapshot {
     /// The name and displayed value of `slider`, when its own label is just a number.
     ///
-    /// SwiftUI sliders often expose `0.1206…` as their label (DriveTracker's 記録間隔), so Jev could not tell which
+    /// SwiftUI sliders often expose `0.1206…` as their label (a recording-interval setting), so Jev could not tell which
     /// setting it was or what it showed. The name is the nearest text above the slider; the displayed value is the
     /// other text on that name's row.
     func caption(ofSlider slider: UIEntry) -> SliderCaption? {

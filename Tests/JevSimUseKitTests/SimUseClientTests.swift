@@ -85,11 +85,11 @@ struct SimUseClientTests {
     func valueRowTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
         let color = UIEntry(
-            aliases: ElementAliases(alias: 12), role: "Button", label: "ルートの色", states: [], value: "アジュール",
+            aliases: ElementAliases(alias: 12), role: "Button", label: "Route Color", states: [], value: "Azure",
             uniqueId: nil, region: nil, frame: ElementFrame(x: 32, y: 406, width: 338, height: 28),
         )
         let date = UIEntry(
-            aliases: ElementAliases(alias: 15), role: "Button", label: "日付ピッカー", states: [], value: "2026/09/25",
+            aliases: ElementAliases(alias: 15), role: "Button", label: "Date Picker", states: [], value: "2026/09/25",
             uniqueId: nil, region: nil, frame: ElementFrame(x: 253, y: 692, width: 110, height: 33),
         )
         let snapshot = Fixtures.snapshot(entries: [color, date])
