@@ -53,9 +53,8 @@ package enum SimUseContract {
         static let x = "-x"
         static let y = "-y"
         static let duration = "--duration"
-        /// How long every iOS tap rests. sim-use's help says a UISwitch (`CheckBox`) ignores zero-duration taps, and a
-        /// memo editor's SwiftUI Save button ignored them too while a 0.1 s tap saved; a finger rests about that long.
-        static let holdSeconds = "0.1"
+        /// sim-use's help: UISwitch (`CheckBox`) ignores zero-duration taps; hold for 0.05 s.
+        static let switchHoldSeconds = "0.05"
     }
 
     /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.

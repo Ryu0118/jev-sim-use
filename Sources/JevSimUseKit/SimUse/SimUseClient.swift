@@ -22,8 +22,8 @@ package struct SimUseClient: DeviceDriving {
         return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }
 
-    /// Runs `sim-use tap @alias`, held briefly on iOS (see `SimUseContract.Tap.holdSeconds`). A toggle is tapped on
-    /// the switch itself, at the row's trailing edge: the row's centre did not flip it. A value row's control (a
+    /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped on
+    /// the switch itself, at the row's trailing edge, with a short hold. A value row's control (a
     /// SwiftUI ColorPicker's colour well) is tapped the same way: the row's centre did nothing there, its trailing edge
     /// opened it.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
@@ -68,6 +68,7 @@ package struct SimUseClient: DeviceDriving {
         let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
         return try await tap([
             SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
+            SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
         ], on: snapshot.platform)
     }
 
@@ -101,13 +102,9 @@ package struct SimUseClient: DeviceDriving {
     /// Extra readings allowed while a revealing scroll still moves the screen.
     static let revealSettleReads = 3
 
-    /// Runs a `tap` command, on iOS held briefly and outside the daemon (see `SimUseContract.noDaemonEnvironment`).
+    /// Runs a `tap` command, on iOS outside the daemon (see `SimUseContract.noDaemonEnvironment`).
     private func tap(_ arguments: [String], on platform: String) async throws -> [String] {
-        guard platform == SimUseContract.Platform.ios else { return try await run(arguments) }
-        return try await run(
-            arguments + [SimUseContract.Tap.duration, SimUseContract.Tap.holdSeconds],
-            environment: SimUseContract.noDaemonEnvironment,
-        )
+        try await run(arguments, environment: platform == SimUseContract.Platform.ios ? SimUseContract.noDaemonEnvironment : [:])
     }
 
     private func softKeyboardIsVisible() async throws -> Bool {
