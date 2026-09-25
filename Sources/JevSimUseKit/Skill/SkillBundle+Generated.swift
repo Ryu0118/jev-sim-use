@@ -91,7 +91,11 @@ extension SkillBundle {
             - Say which screen each step happens on ("On the Home tab", "In the editor"). That keeps Jev from acting on a
               look-alike control on the wrong screen.
             - Refer to controls by their labels, never by coordinates or positions; Jev only sees labels.
-            - Make an explicit save or submit tap its own step when the app has one.
+            - Make an explicit save or submit tap its own step when the app has one. Controls can appear only after a change
+              (a sheet shows Save once a field is edited), so scout a step with its change made, not just by opening the screen.
+            - When the app is slow to show a result (a saved item reaching its list), write the wait into the step: "wait until
+              the memo titled with the title text appears, then tap it". Jev can wait, but only chooses to when the goal says so
+              or the screen is visibly loading.
             - End with the finished state as a sentence Jev can check on screen. Exit 0 is still a claim; read the screen.
             - Give the run room: allow about two actions per numbered step with `--max-steps` (the default is 15).
 
