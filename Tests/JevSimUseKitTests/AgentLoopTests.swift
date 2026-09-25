@@ -205,7 +205,7 @@ struct AgentLoopSettleTests {
         #expect(planner.outlines == ["Form", "Form", "Home"])
     }
 
-    @Test("reads again until two readings agree")
+    @Test("plans a hand-over again on the confirming reading when that reading shows a newer screen")
     func settles() async throws {
         let planner = RecordingPlanner()
         _ = try await AgentLoop(
@@ -213,6 +213,6 @@ struct AgentLoopSettleTests {
             planner: planner,
             configuration: AgentConfiguration(goal: "g"),
         ).run()
-        #expect(planner.outlines.first == "New")
+        #expect(planner.outlines == ["Old", "New"])
     }
 }

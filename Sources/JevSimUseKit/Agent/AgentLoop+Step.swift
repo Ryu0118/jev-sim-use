@@ -80,17 +80,19 @@ extension AgentLoop {
     /// How long a live run keeps reading after an action that left the screen as it was.
     static let unchangedWait: Duration = .seconds(2)
 
-    /// Reads the settled screen after acting on `previous`. Saving a memo kept its form on screen for over a
-    /// second while the save went through: two agreeing readings called that settled, Jev acted on the form, and the
-    /// tap landed on the screen that replaced it. So an unchanged screen is read again, back to back (one `ui` read
-    /// takes about 0.6 s, so no sleep is needed between them), until it changes or `unchangedWait` passes.
-    func observeAfterAction(on previous: UISnapshot?) async throws -> ScreenObservation {
-        var observation = try await observeSettled()
+    /// Reads the screen after acting on `previous`. Saving a memo kept its form on screen for over a second while the
+    /// save went through, and Jev, planning on the form, tapped the screen that replaced it. So an unchanged screen is
+    /// read again, back to back (one `ui` read takes about 0.4 s, so no sleep is needed between them), until it
+    /// changes or `unchangedWait` passes. `settled` reads until two readings agree each time, for when overlapped
+    /// confirmation keeps disagreeing.
+    func observeAfterAction(on previous: UISnapshot?, settled: Bool) async throws -> ScreenObservation {
+        let read = { settled ? try await observeSettled() : try await driver.observe() }
+        var observation = try await read()
         guard let previous else { return observation }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.unchangedWait)
         while clock.now < deadline, observation.snapshot.identity == previous.identity {
-            let next = try await observeSettled()
+            let next = try await read()
             observation = ScreenObservation(
                 snapshot: next.snapshot, disappearedApps: observation.disappearedApps + next.disappearedApps,
             )
@@ -98,9 +100,33 @@ extension AgentLoop {
         return observation
     }
 
-    /// Whether `planned` is still the screen, read just before acting on it (jev-ultrafast checks freshness the same
-    /// way). Only an action whose effect has not shown yet can change the screen while Jev decides, so the check runs
-    /// only then and costs no read otherwise.
+    /// A new reading, when it differs from `snapshot`.
+    func reading(changedFrom snapshot: UISnapshot) async throws -> ScreenObservation? {
+        let reading = try await driver.observe()
+        return reading.snapshot.identity == snapshot.identity ? nil : reading
+    }
+
+    /// How many times one step is planned again because the confirming reading disagreed with the planned one, before
+    /// the loop falls back to reading until two readings agree and planning without a confirming reading.
+    static let disagreementLimit = 2
+
+    /// The action to take on `fresh`, the reading taken while Jev planned on `planned`, or `nil` to plan again on
+    /// `fresh`. A reading taken mid-transition showed the old screen, and one taken while a scroll still coasted had
+    /// stale frames; either way sim-use's cached alias would hit whatever had moved under it. An identical reading
+    /// keeps the plan. Otherwise an action on an element still goes ahead, re-aliased, when that element sits unchanged
+    /// where it was planned (a clock or spinner elsewhere does not matter), unless the last action had not shown its
+    /// effect yet: then any change may be that effect arriving, and the plan is for a screen that is gone.
+    func confirmed(_ action: AgentAction, planned: UISnapshot, fresh: UISnapshot, progress: AgentProgress) -> AgentAction? {
+        if fresh.outline == planned.outline {
+            return action
+        }
+        guard progress.history.last?.screenChanged != false else { return nil }
+        return action.retargeted(from: planned, to: fresh)
+    }
+
+    /// Whether `planned` is still the screen, read just before acting on it, when planning without a confirming
+    /// reading. Only an action whose effect has not shown yet can change the screen while Jev decides, so the check
+    /// runs only then and costs no read otherwise.
     func isStillCurrent(_ planned: UISnapshot, progress: AgentProgress) async throws -> Bool {
         guard progress.history.last?.screenChanged == false else { return true }
         return try await driver.observe().snapshot.identity == planned.identity

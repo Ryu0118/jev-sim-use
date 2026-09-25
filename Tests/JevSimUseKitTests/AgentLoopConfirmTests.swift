@@ -1,0 +1,110 @@
+@testable import JevSimUseKit
+import Synchronization
+import Testing
+
+@Suite("A plan is checked against a reading taken while Jev planned")
+struct AgentLoopConfirmTests {
+    private func button(_ alias: Int, _ label: String, y: Double) -> UIEntry {
+        Fixtures.entry(alias, label, frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
+    }
+
+    private func loop(_ readings: [UISnapshot], _ planner: some StepPlanning) -> (AgentLoop, ScriptedDriver) {
+        let driver = ScriptedDriver(readings: readings)
+        return (AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")), driver)
+    }
+
+    @Test("does not tap a stale alias when the confirming reading shows the next screen")
+    func staleAlias() async throws {
+        let planner = TapLabelPlanner("Save")
+        let (loop, driver) = loop([
+            Fixtures.snapshot(outline: "Form", entries: [button(3, "Save", y: 700)]),
+            Fixtures.snapshot(outline: "List", entries: [button(3, "Delete", y: 700)]),
+        ], planner)
+        _ = try await loop.run()
+        #expect(driver.performedActions.isEmpty)
+        #expect(planner.outlines == ["Form", "List"])
+    }
+
+    @Test("plans again when the target moved between the readings, as in a scroll still coasting")
+    func movedTarget() async throws {
+        let planner = TapLabelPlanner("Row")
+        let (loop, driver) = loop([
+            Fixtures.snapshot(outline: "List at 300", entries: [button(5, "Row", y: 300)]),
+            Fixtures.snapshot(outline: "List at 260", entries: [button(5, "Row", y: 260)]),
+        ], planner)
+        _ = try await loop.run()
+        #expect(driver.performedActions == ["tap @5"])
+        #expect(planner.outlines.prefix(2) == ["List at 300", "List at 260"])
+    }
+
+    @Test("taps the unchanged target by its new alias when only something else changed")
+    func unrelatedChange() async throws {
+        let planner = TapLabelPlanner("Next")
+        let clock = Fixtures.entry(1, "10:00", role: "StaticText")
+        let (loop, driver) = loop([
+            Fixtures.snapshot(outline: "Home 10:00", entries: [clock, button(2, "Next", y: 500)]),
+            Fixtures.snapshot(outline: "Home 10:01 banner", entries: [
+                Fixtures.entry(1, "10:01", role: "StaticText"), Fixtures.entry(2, "Banner", role: "StaticText"),
+                button(3, "Next", y: 500),
+            ]),
+        ], planner)
+        _ = try await loop.run()
+        #expect(driver.performedActions == ["tap @3"])
+        #expect(planner.outlines.first == "Home 10:00")
+        #expect(planner.outlines.dropFirst().allSatisfy { $0 != "Home 10:00" })
+    }
+
+    @Test("does not report the goal reached from a reading the confirming one contradicts")
+    func doneOnChangingScreen() async throws {
+        let planner = RecordingDonePlanner()
+        let (loop, _) = loop([
+            Fixtures.snapshot(outline: "Mid"), Fixtures.snapshot(outline: "Final"),
+        ], planner)
+        let outcome = try await loop.run().outcome
+        #expect(planner.outlines == ["Mid", "Final"])
+        #expect(outcome == .goalReached(steps: 0))
+    }
+
+    @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
+    func fallback() async throws {
+        let planner = RecordingDonePlanner()
+        let (loop, _) = loop((1 ... 9).map { Fixtures.snapshot(outline: "Frame \($0)") }, planner)
+        _ = try await loop.run()
+        #expect(planner.outlines == ["Frame 1", "Frame 2", "Frame 6"])
+    }
+}
+
+/// Taps the element labelled `label` whenever it is on screen, else hands over; records each planned screen. The loop
+/// refuses to repeat a tap that changed nothing, which ends the run.
+private final class TapLabelPlanner: StepPlanning {
+    private let label: String
+    private let seen = Mutex<[String]>([])
+
+    init(_ label: String) {
+        self.label = label
+    }
+
+    var outlines: [String] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        seen.withLock { $0.append(request.snapshot.outline) }
+        guard let target = request.snapshot.entries?.first(where: { $0.label == label }) else { return .blocked() }
+        return StepPlan(action: .tap(alias: target.aliases.alias, role: target.role, label: label), confidence: 0.9, costUSD: 0)
+    }
+}
+
+/// Always judges the goal reached; records each planned screen.
+private final class RecordingDonePlanner: StepPlanning {
+    private let seen = Mutex<[String]>([])
+
+    var outlines: [String] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        seen.withLock { $0.append(request.snapshot.outline) }
+        return .done()
+    }
+}
