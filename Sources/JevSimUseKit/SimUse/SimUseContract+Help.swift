@@ -2,7 +2,7 @@ package extension SimUseContract {
     /// What each subcommand's `--help` must mention for this tool to work: the drift check behind the contract test.
     static let helpExpectations: [(command: String, mentions: [String])] = [
         (Command.ui, [noRawFlag, jsonFlag, deviceFlag]),
-        (Command.devices, [jsonFlag]),
+        (Command.devices, [jsonFlag, noPhysicalIOSFlag]),
         (Command.tap, [deviceFlag, jsonFlag, Tap.x, Tap.y, Tap.duration, Tap.id, Tap.label, "UISwitch"]),
         (Command.gesture, [
             Gesture.scrollUp, Gesture.scrollDown, Gesture.scrollLeft, Gesture.scrollRight,

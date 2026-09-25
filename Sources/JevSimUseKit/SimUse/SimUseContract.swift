@@ -9,6 +9,8 @@ package enum SimUseContract {
     static let jsonFlag = "--json"
     static let deviceFlag = "--device"
     static let noRawFlag = "--no-raw"
+    /// Skips discovering physical iPhones for `devices`, which this tool never drives; the discovery took about a second.
+    static let noPhysicalIOSFlag = "--no-physical-ios"
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 

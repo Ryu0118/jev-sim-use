@@ -39,8 +39,16 @@ package struct SimUseBootstrap: Sendable {
     package func connect(deviceID: String?) async throws -> SimUseConnection {
         let (executable, version) = try await verifyInstallation()
         let invoker = SimUseInvoker(executable: executable, runner: runner)
-        let devices = try await invoker.invoke([SimUseContract.Command.devices], as: DeviceListPayload.self).data?.devices ?? []
+        var devices = try await listDevices(invoker, [SimUseContract.noPhysicalIOSFlag])
+        // A requested id missing from the quick list may be a physical iPhone; the full list lets selection say so.
+        if let deviceID, !devices.contains(where: { $0.deviceId == deviceID }) {
+            devices = try await listDevices(invoker, [])
+        }
         let device = try DeviceSelection.select(deviceID, from: devices)
         return SimUseConnection(client: SimUseClient(device: device, invoker: invoker), version: version)
+    }
+
+    private func listDevices(_ invoker: SimUseInvoker, _ flags: [String]) async throws -> [SimUseDevice] {
+        try await invoker.invoke([SimUseContract.Command.devices] + flags, as: DeviceListPayload.self).data?.devices ?? []
     }
 }

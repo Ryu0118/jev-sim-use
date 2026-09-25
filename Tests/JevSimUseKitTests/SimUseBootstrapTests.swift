@@ -38,7 +38,7 @@ struct SimUseBootstrapTests {
         ])
         let client = try await SimUseBootstrap(locator: installed, runner: runner).connect(deviceID: nil).client
         #expect(client.device.name == "iPhone 17 Pro")
-        #expect(runner.recordedCalls.last == ["devices", "--json"])
+        #expect(runner.recordedCalls.last == ["devices", "--no-physical-ios", "--json"])
     }
 
     @Test("refuses to guess between several devices")
@@ -50,5 +50,17 @@ struct SimUseBootstrapTests {
         await #expect(throws: SimUseError.self) {
             try await SimUseBootstrap(locator: installed, runner: runner).connect(deviceID: nil)
         }
+    }
+
+    @Test("reads the full device list only when the requested device is missing from the quick one")
+    func fullListForMissingDevice() async {
+        let runner = FakeCommandRunner([
+            "--version": .text("v0.14.0"),
+            "devices": .json(Fixtures.devices(Fixtures.simulator)),
+        ])
+        await #expect(throws: SimUseError.self) {
+            try await SimUseBootstrap(locator: installed, runner: runner).connect(deviceID: "missing")
+        }
+        #expect(runner.recordedCalls.suffix(2) == [["devices", "--no-physical-ios", "--json"], ["devices", "--json"]])
     }
 }
