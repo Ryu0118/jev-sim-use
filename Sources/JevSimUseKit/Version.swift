@@ -1,5 +1,5 @@
 /// Version information for the JevSimUse executable.
 package enum JevSimUseVersion {
     /// The current released version. Bumped by the release workflow at build time.
-    package static let current = "0.1.0"
+    package static let current = "0.1.1"
 }
