@@ -51,6 +51,17 @@ struct ScanFirstTests {
         #expect(action == nil)
     }
 
+    @Test("leaves a list of text rows alone, which has no section to scan past")
+    func textRows() {
+        let rows = ["グラフ（距離・時間）", "速度データ", "標高のデータ", "ルート線の色"].enumerated().map { index, label in
+            Fixtures.entry(index + 1, label, role: "StaticText", frame: ElementFrame(x: 16, y: Double(182 + index * 46), width: 370, height: 46))
+        }
+        let sheet = UISnapshot(platform: "ios", outline: "o", appLabel: "ドライブ記録", entries: rows, crashDialog: nil)
+        let tapRow = StepPlan(action: .tap(alias: 4, role: "StaticText", label: "ルート線の色"), confidence: 0.44, costUSD: 0)
+        #expect(ScanFirst.override(tapRow, on: sheet, goal: "Set the ルートの色 to a レッドピンク color", notes: [],
+                                   alreadyScanned: false, tried: []) == nil)
+    }
+
     @Test("leaves screens that are not lists to Jev")
     func notAList() {
         let map = UISnapshot(platform: "ios", outline: "o", appLabel: "マップ", entries: [
