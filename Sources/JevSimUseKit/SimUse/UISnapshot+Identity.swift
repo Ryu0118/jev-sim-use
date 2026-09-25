@@ -12,3 +12,17 @@ extension UISnapshot {
         return ([appLabel ?? ""] + elements).joined(separator: "\n")
     }
 }
+
+extension UISnapshot {
+    /// Which elements are where, without their values: two readings with the same layout show the same controls in
+    /// the same places. Values are left out because some change on their own (a row reading "12 seconds ago"), and
+    /// requiring them to match kept a list of recent items from ever reading the same twice.
+    var layout: String {
+        guard let entries, !entries.isEmpty else { return outline }
+        let elements = entries.map { entry in
+            let frame = entry.frame.map { "\($0.x),\($0.y),\($0.width),\($0.height)" } ?? ""
+            return [entry.role, entry.label, entry.uniqueId ?? "", frame].joined(separator: "|")
+        }
+        return ([appLabel ?? ""] + elements).joined(separator: "\n")
+    }
+}

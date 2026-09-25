@@ -65,6 +65,24 @@ struct AgentLoopConfirmTests {
         #expect(outcome == .goalReached(steps: 0))
     }
 
+    @Test("accepts DONE when only a value changed between the readings, such as a relative time")
+    func tickingValue() async throws {
+        let planner = RecordingDonePlanner()
+        func row(_ age: String) -> UIEntry {
+            UIEntry(
+                aliases: ElementAliases(alias: 1), role: "Button", label: "Groceries", states: ["value=\"\(age)\""],
+                value: age, uniqueId: nil, region: nil, frame: ElementFrame(x: 16, y: 300, width: 370, height: 44),
+            )
+        }
+        let (loop, _) = loop([
+            Fixtures.snapshot(outline: "List 3 s", entries: [row("3 s ago")]),
+            Fixtures.snapshot(outline: "List 4 s", entries: [row("4 s ago")]),
+        ], planner)
+        let outcome = try await loop.run().outcome
+        #expect(planner.outlines == ["List 3 s"])
+        #expect(outcome == .goalReached(steps: 0))
+    }
+
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()

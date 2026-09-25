@@ -67,7 +67,7 @@ package struct AgentLoop: Sendable {
             {
                 return AgentRunResult(outcome: outcome, history: progress.history)
             }
-            let settled = fresh.snapshot.outline == observation.snapshot.outline
+            let settled = fresh.snapshot.layout == observation.snapshot.layout
             // Set only when an action is taken: a plan dropped for a newer reading must not end the run as reached.
             var finishes = plan.finishes.value >= ActionPolicy.finishMinimum
             if configuration.allowedOperations.allows(.device(.revealContentBelow)), let scan = ScanFirst.override(

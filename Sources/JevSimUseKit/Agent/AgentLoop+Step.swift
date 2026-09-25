@@ -113,15 +113,16 @@ extension AgentLoop {
     /// The action to take on `fresh`, the reading taken while Jev planned on `planned`, or `nil` to plan again on
     /// `fresh`. A reading taken mid-transition showed the old screen, and one taken while a scroll still coasted had
     /// stale frames; either way sim-use's cached alias would hit whatever had moved under it. An identical reading
-    /// keeps the plan. Otherwise an action on an element still goes ahead, re-aliased, when that element sits unchanged
-    /// where it was planned (a clock or spinner elsewhere does not matter), unless the last action had not shown its
-    /// effect yet: then any change may be that effect arriving, and the plan is for a screen that is gone.
+    /// keeps the plan. When the last action had not shown its effect yet, any change may be that effect arriving, so
+    /// the plan is for a screen that is gone. Otherwise the same layout keeps the plan too, and an action on an element
+    /// still goes ahead, re-aliased, when that element sits unchanged where it was planned (a clock or spinner
+    /// elsewhere does not matter).
     func confirmed(_ action: AgentAction, planned: UISnapshot, fresh: UISnapshot, progress: AgentProgress) -> AgentAction? {
         if fresh.outline == planned.outline {
             return action
         }
         guard progress.history.last?.screenChanged != false else { return nil }
-        return action.retargeted(from: planned, to: fresh)
+        return fresh.layout == planned.layout ? action : action.retargeted(from: planned, to: fresh)
     }
 
     /// Whether `planned` is still the screen, read just before acting on it, when planning without a confirming
