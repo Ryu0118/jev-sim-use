@@ -6,7 +6,7 @@ extension JevStepPlanner {
     ///
     /// Support is the weakest of the answers the action depends on, so a confident operation with an unsure target
     /// does not act.
-    static func interpret(_ response: JevResponse, menu: ActionMenu) throws -> StepPlan {
+    static func interpret(_ response: JevResponse, menu: ActionMenu, goal: String = "") throws -> StepPlan {
         let operationAnswer = try choice(operationQuestion, in: response)
         guard menu.operations.contains(where: { $0.optionName == operationAnswer.value }) else {
             throw PlanningError.unknownChoice(operationAnswer.value)
@@ -22,7 +22,7 @@ extension JevStepPlanner {
             operation = .enterText
             operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
-        let (action, targetFactors) = try compose(operation, response: response, menu: menu)
+        var (action, targetFactors) = try compose(operation, response: response, menu: menu)
         // Opening a memo split Jev between tap 0.46, long_press 0.28, and swipe_left 0.22 on a row it picked at 0.65:
         // sure what to act on, unsure how. Every element gesture shares that target, and a reversible one is undone by
         // going back, so the element is what the gate checks (jev-use gates only the target); the most probable
@@ -30,6 +30,11 @@ extension JevStepPlanner {
         if operation.actsOnElement, action.risk != .irreversible {
             let onElement = menu.operations.filter(\.actsOnElement).reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
             operationSupport = max(operationSupport, onElement)
+            if let pooled = try goalTermSupport(of: action, in: response, menu: menu, goal: goal),
+               let index = targetFactors.firstIndex(where: { $0.name == "element" })
+            {
+                targetFactors[index] = StepPlan.Factor(name: "element", value: max(targetFactors[index].value, pooled))
+            }
         }
         let factors = [StepPlan.Factor(name: "operation", value: operationSupport)] + targetFactors
         let alternatives = probabilities
@@ -47,6 +52,24 @@ extension JevStepPlanner {
             costUSD: response.usage.estimatedCostUSD,
             model: response.model,
         )
+    }
+
+    /// The probability of every element whose label holds the goal's quoted term that the chosen one holds.
+    ///
+    /// A goal that names a kind of item (a レッドピンク colour) is met by any element of that kind, so choosing among
+    /// them spread Jev's target across seven swatches (0.50 at most) without making the choice any less right.
+    static func goalTermSupport(of action: AgentAction, in response: JevResponse, menu: ActionMenu, goal: String) throws -> Double? {
+        let chosenLabel: String
+        switch action {
+        case let .tap(_, _, label), let .gesture(_, _, _, label): chosenLabel = label
+        default: return nil
+        }
+        let terms = ScanFirst.namedTerms(in: goal).filter { chosenLabel.contains($0) }
+        guard !terms.isEmpty else { return nil }
+        let probabilities = try choice(elementQuestion, in: response).probabilities
+        return menu.elements
+            .filter { target in terms.contains { target.label.contains($0) } }
+            .reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
     }
 
     /// The operation to run: the most probable group of equivalent operations wins (two rotation directions can

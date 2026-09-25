@@ -96,7 +96,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
-  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. `StepPlan.factors`
+  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the
+  goal's quoted item (`ScanFirst.namedTerms`, such as レッドピンク across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
   four directions, go back (on iOS only when a `BackButton` shows a navigation stack: the left-edge swipe does

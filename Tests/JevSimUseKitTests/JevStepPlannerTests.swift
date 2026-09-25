@@ -115,6 +115,22 @@ struct JevStepPlannerTests {
         #expect(abs(plan.support - 0.65) < 0.0001)
     }
 
+    @Test("adds up targets that all hold the item the goal names, since any of them meets the goal")
+    func goalTermTargetsPool() throws {
+        let snapshot = Fixtures.snapshot(entries: [
+            Fixtures.entry(7, "暗いレッドピンク 13", role: "GenericElement"),
+            Fixtures.entry(9, "レッドピンク 39", role: "GenericElement"),
+            Fixtures.entry(8, "イエロー 49", role: "GenericElement"),
+        ])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [])
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.97},"confidence":0.95},"element_target":{"type":"choice","choice":"e7","probabilities":{"e7":0.5,"e9":0.3,"e8":0.2},"confidence":0.3}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let response = try JSONDecoder().decode(JevResponse.self, from: Data(body.utf8))
+        let plan = try JevStepPlanner.interpret(response, menu: menu, goal: "Set the ルートの色 to a レッドピンク color")
+        #expect(plan.action == .tap(alias: 7, role: "GenericElement", label: "暗いレッドピンク 13"))
+        #expect(abs(plan.support - 0.8) < 0.0001)
+        #expect(try abs(JevStepPlanner.interpret(response, menu: menu).support - 0.5) < 0.0001)
+    }
+
     @Test("keeps a destructive tap's own probability, so a split does not carry it over the irreversible bar")
     func destructiveTapDoesNotPool() throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "削除")])
