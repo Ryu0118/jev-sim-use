@@ -42,6 +42,13 @@ struct OcclusionTests {
         #expect(Fixtures.snapshot(entries: [above, row]).cover(of: row) == nil)
     }
 
+    @Test("a deeper list row does not cover a floating button whose centre it holds")
+    func floatingButton() {
+        let fab = entry(24, "Create", ElementFrame(x: 326, y: 704, width: 56, height: 56), depth: 1)
+        let row = entry(22, "Groceries", ElementFrame(x: 0, y: 726, width: 402, height: 69), depth: 2)
+        #expect(Fixtures.snapshot(entries: [row, fab]).cover(of: fab) == nil)
+    }
+
     @Test("a row's own children do not cover it")
     func children() {
         let label = entry(2, "Wi-Fi", ElementFrame(x: 150, y: 800, width: 100, height: 20), role: "StaticText", depth: 3)
@@ -73,23 +80,25 @@ struct OcclusionTests {
         #expect(snapshot.revealingScroll(for: toggle) == .revealContentBelow)
         _ = try await client(runner).tap(alias: 29, on: snapshot)
         #expect(runner.recordedCalls.map { Array($0.prefix(5)) } == [
-            ["gesture", "scroll-up", "--device", "D", "--json"], ["ui", "--device", "D", "--json"],
+            ["gesture", "scroll-up", "--duration", "1.5", "--device"], ["ui", "--device", "D", "--json"],
             ["ui", "--device", "D", "--json"], ["tap", "-x", "360.0", "-y", "622.0"],
         ])
     }
 
-    @Test("a scroll stands alone when the element is gone from the screen it revealed")
+    @Test("reports the scroll alone when the element is gone from the screen it revealed")
     func revealedElementGone() async throws {
         let runner = FakeCommandRunner([
             "gesture": .json(#"{"ok":true,"data":{}}"#), "ui": reading(role: "Button", label: "Other", y: 500),
         ])
         let developer = entry(15, "Developer", ElementFrame(x: 16, y: 789, width: 370, height: 52))
-        _ = try await client(runner).tap(alias: 15, on: Fixtures.snapshot(entries: [developer, search]))
+        await #expect(throws: SimUseError.targetNotRevealed(scroll: .revealContentBelow, disappearedApps: [])) {
+            try await client(runner).tap(alias: 15, on: Fixtures.snapshot(entries: [developer, search]))
+        }
         #expect(runner.recordedCalls.map(\.first) == ["gesture", "ui", "ui"])
     }
 
     @Test("reveals content below for a bottom overlay even when the row's centre sits below the overlay's")
-    func directionFromScreenHalf() async throws {
+    func directionFromScreenHalf() async {
         let runner = FakeCommandRunner([
             "gesture": .json(#"{"ok":true,"data":{}}"#), "ui": reading(role: "Button", label: "Other", y: 500),
         ])
@@ -99,7 +108,7 @@ struct OcclusionTests {
             frame: ElementFrame(x: 16, y: 800, width: 370, height: 52), depth: 2,
         )
         let screen = entry(9, "", ElementFrame(x: 0, y: 0, width: 402, height: 874), role: "Group", depth: 0)
-        _ = try await client(runner).tap(alias: 15, on: Fixtures.snapshot(entries: [screen, low, search]))
+        _ = try? await client(runner).tap(alias: 15, on: Fixtures.snapshot(entries: [screen, low, search]))
         #expect(runner.recordedCalls.first?.prefix(2) == ["gesture", "scroll-up"])
     }
 

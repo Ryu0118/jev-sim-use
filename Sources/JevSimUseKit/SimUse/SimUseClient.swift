@@ -74,8 +74,8 @@ package struct SimUseClient: DeviceDriving {
     /// Scrolls `entry` into reach, reads the screen until the scroll has stopped (a tap on a list still coasting
     /// only stopped it, and a switch stayed as it was), and taps the same element there the usual way, so a switch is
     /// still tapped on its trailing edge. The new reading also refreshes the cached aliases the scroll made stale.
-    /// When the element is not found, or is still out of reach, the scroll stands alone and the next step plans on
-    /// the moved screen.
+    /// When the element is not found, or is still out of reach, it throws `targetNotRevealed` so the run records the
+    /// scroll alone (a floating button that hid itself as the list moved had been recorded as tapped).
     private func reveal(_ entry: UIEntry, by scroll: SimUseDeviceAction, in snapshot: UISnapshot) async throws -> [String] {
         var disappeared = try await perform(scroll, platform: snapshot.platform)
         var fresh = try await observe()
@@ -94,7 +94,7 @@ package struct SimUseClient: DeviceDriving {
             .filter { $0.role == entry.role && $0.label == entry.label && $0.uniqueId == entry.uniqueId }
             .filter { fresh.snapshot.revealingScroll(for: $0) == nil }
             .min { abs(($0.frame?.center.y ?? 0) - origin) < abs(($1.frame?.center.y ?? 0) - origin) }
-        guard let match else { return disappeared }
+        guard let match else { throw SimUseError.targetNotRevealed(scroll: scroll, disappearedApps: disappeared) }
         return try await disappeared + tapInPlace(alias: match.aliases.alias, on: fresh.snapshot)
     }
 

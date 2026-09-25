@@ -20,9 +20,6 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Jev's DONE needs this much before the run claims success; below it the run stops as probably done.
     /// Set from real runs: correct DONEs scored 0.58-0.99, the one wrong DONE 0.49.
     package static let doneMinimum = 0.55
-    /// A `finishes` answer at or above this, followed by a screen that changed, ends the run without another request.
-    /// Set from real runs: actions that did finish scored 0.78-0.95, actions that did not at most 0.48.
-    package static let finishMinimum = 0.75
 
     /// The default bar for reversible actions, set from real runs: correct taps scored 0.59 and up, wrong ones at most
     /// 0.52. A wrong reversible tap costs a step and shows up in `history` as leading nowhere.

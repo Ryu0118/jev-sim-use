@@ -26,9 +26,7 @@ package struct AgentLoop: Sendable {
     /// start fresh, so a run that stopped at the step limit or stalled can make progress when resumed.
     package func run(continuing history: [HistoryEntry] = []) async throws -> AgentRunResult {
         var progress = AgentProgress(history: history)
-        var expectedToFinish = false
         var actedOn: UISnapshot?
-        var actedTarget: UIEntry?
         var pending: ScreenObservation?
         var staleReplans = 0
         var disagreements = 0
@@ -44,15 +42,6 @@ package struct AgentLoop: Sendable {
             pending = nil
             if let outcome = progress.record(observation, stallLimit: configuration.stallLimit) {
                 return AgentRunResult(outcome: outcome, history: progress.history)
-            }
-            // Jev said the last action would finish the goal and the screen did change: stop without asking again
-            // (as jev-use does). This also settles relative goals ("the next photo") that the final screen alone
-            // cannot prove. Not when the targeted element is still there exactly as it was: the change came from
-            // elsewhere (a scroll that revealed a switch whose tap did not land), so Jev judges the screen instead.
-            if expectedToFinish, progress.history.last?.screenChanged == true,
-               !(actedTarget.map(observation.snapshot.showsUnchanged) ?? false)
-            {
-                return AgentRunResult(outcome: .goalReached(steps: progress.steps), history: progress.history)
             }
             // The first reading after an action may be mid-transition, so a second one runs while Jev plans and
             // decides whether the plan still applies (see `confirmed`). It replaced reading until two readings agreed
@@ -72,8 +61,6 @@ package struct AgentLoop: Sendable {
                 return AgentRunResult(outcome: outcome, history: progress.history)
             }
             let settled = fresh.snapshot.layout == observation.snapshot.layout
-            // Set only when an action is taken: a plan dropped for a newer reading must not end the run as reached.
-            var finishes = plan.finishes.value >= ActionPolicy.finishMinimum
             if configuration.allowedOperations.allows(.device(.revealContentBelow)), let scan = ScanFirst.override(
                 plan, on: observation.snapshot, goal: configuration.goal, notes: configuration.notes,
                 alreadyScanned: progress.hasScannedCurrentTitle, tried: progress.ineffectiveActions,
@@ -85,7 +72,6 @@ package struct AgentLoop: Sendable {
                 }
                 report(.scanning(step: progress.nextStep))
                 progress.markScanned()
-                expectedToFinish = false
                 let disappeared = try await execute(scan, on: fresh.snapshot)
                 progress.recordAction(scan, disappeared: disappeared)
                 actedOn = fresh.snapshot
@@ -96,7 +82,6 @@ package struct AgentLoop: Sendable {
             if shouldRetryWithHints(decision, on: observation.snapshot) {
                 report(.retryingWithHints(step: progress.nextStep))
                 let hinted = try await self.plan(for: observation.snapshot, progress: progress, withHints: true)
-                finishes = hinted.finishes.value >= ActionPolicy.finishMinimum
                 decision = decide(on: hinted, progress: progress)
             }
             switch decision {
@@ -135,10 +120,8 @@ package struct AgentLoop: Sendable {
                 {
                     return AgentRunResult(outcome: outcome, history: progress.history)
                 }
-                let disappeared = try await execute(target, on: fresh.snapshot)
-                progress.recordAction(target, disappeared: disappeared)
-                expectedToFinish = finishes
-                actedTarget = target.targetAlias.flatMap(fresh.snapshot.entry(alias:))
+                let (performed, disappeared) = try await perform(target, on: fresh.snapshot)
+                progress.recordAction(performed, disappeared: disappeared)
                 actedOn = fresh.snapshot
                 staleReplans = 0
                 disagreements = 0

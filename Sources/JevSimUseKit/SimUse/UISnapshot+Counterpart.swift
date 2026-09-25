@@ -26,14 +26,3 @@ extension UISnapshot {
         !state.hasPrefix("value=")
     }
 }
-
-extension UISnapshot {
-    /// Whether an element identical to `entry` in role, label, identifier, value, and states is on screen, wherever
-    /// it sits: the element an action targeted, still exactly as it was.
-    func showsUnchanged(_ entry: UIEntry) -> Bool {
-        (entries ?? []).contains { other in
-            other.role == entry.role && other.label == entry.label && other.uniqueId == entry.uniqueId
-                && other.value == entry.value && other.states == entry.states
-        }
-    }
-}

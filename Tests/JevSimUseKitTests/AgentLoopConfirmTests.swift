@@ -169,3 +169,38 @@ private final class DoneWhenShownPlanner: StepPlanning {
         return request.snapshot.entries?.contains { $0.label.contains(text) } == true ? .done() : .blocked()
     }
 }
+
+@Suite("A tap whose element a revealing scroll lost")
+struct AgentLoopRevealTests {
+    @Test("is recorded as the scroll, so Jev does not believe the tap landed")
+    func recordsScroll() async throws {
+        let driver = LosingDriver()
+        let result = try await AgentLoop(
+            driver: driver, planner: FakePlanner([.tapNext(), .blocked()]), configuration: AgentConfiguration(goal: "g"),
+        ).run()
+        #expect(result.history.first?.action == SimUseDeviceAction.revealContentBelow.summary)
+    }
+}
+
+/// Shows one screen and loses every tapped element to a revealing scroll.
+private final class LosingDriver: DeviceDriving {
+    func observe() async throws -> ScreenObservation {
+        ScreenObservation(snapshot: Fixtures.snapshot(entries: [Fixtures.entry(1, "Next")]), disappearedApps: [])
+    }
+
+    func tap(alias _: Int, on _: UISnapshot) async throws -> [String] {
+        throw SimUseError.targetNotRevealed(scroll: .revealContentBelow, disappearedApps: [])
+    }
+
+    func perform(_: ElementGesture, alias _: Int, on _: UISnapshot) async throws -> [String] {
+        []
+    }
+
+    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+        []
+    }
+
+    func paste(_: String) async throws -> [String] {
+        []
+    }
+}

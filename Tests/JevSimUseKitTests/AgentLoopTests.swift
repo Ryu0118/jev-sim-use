@@ -68,20 +68,11 @@ struct AgentLoopTests {
         #expect(driver.performedActions.isEmpty)
     }
 
-    @Test("finishes without asking again when Jev expected the action to finish and the screen changed")
-    func earlyFinish() async throws {
-        let form = Fixtures.snapshot(outline: "A", entries: [Fixtures.entry(1, "Next")])
-        let driver = ScriptedDriver(readings: [form, form, Fixtures.snapshot(outline: "B")])
-        let planner = FakePlanner([.tapNext(finishes: 0.9), .blocked()])
-        let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
-        #expect(outcome.outcome == .goalReached(steps: 1))
-    }
-
-    @Test("asks Jev again when the screen changed but the tapped element is still there exactly as it was")
-    func earlyFinishNeedsTheTarget() async throws {
-        let next = Fixtures.entry(1, "Next")
-        let form = Fixtures.snapshot(outline: "A", entries: [next])
-        let scrolled = Fixtures.snapshot(outline: "A scrolled", entries: [Fixtures.entry(2, "Other"), next])
+    @Test("asks Jev to judge the screen after an action it expected to finish the goal")
+    func judgesAfterExpectedFinish() async throws {
+        let title = Fixtures.entry(0, "Home", role: "Heading")
+        let form = Fixtures.snapshot(outline: "A", entries: [title, Fixtures.entry(1, "Next")])
+        let scrolled = Fixtures.snapshot(outline: "A scrolled", entries: [title, Fixtures.entry(2, "Other")])
         let driver = ScriptedDriver(readings: [form, form, scrolled])
         let planner = FakePlanner([.tapNext(finishes: 0.9), .blocked()])
         let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()

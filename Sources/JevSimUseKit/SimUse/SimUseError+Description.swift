@@ -35,6 +35,8 @@ extension SimUseError: CustomStringConvertible {
             """
         case let .malformedOutput(arguments, detail):
             "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
+        case let .targetNotRevealed(scroll, _):
+            "The element to tap was not found after \(scroll.summary.lowercased()) to reveal it."
         }
     }
 }

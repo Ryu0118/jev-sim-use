@@ -22,7 +22,10 @@ extension UISnapshot {
             }
             let isChild = target.contains(frame) && (other.depth ?? 0) > (entry.depth ?? 0)
             let floatsOver = (other.depth ?? 0) < (entry.depth ?? 0) && frame.overlaps(target)
-            return !isChild && (floatsOver || frame.x <= center.x && center.x <= frame.x + frame.width
+            // A deeper element lies beneath: a list row under a floating create button (depth 1 over rows at 2)
+            // held the button's centre, and the button was scrolled away instead of tapped.
+            let beneath = (other.depth ?? 0) > (entry.depth ?? 0)
+            return !isChild && !beneath && (floatsOver || frame.x <= center.x && center.x <= frame.x + frame.width
                 && frame.y <= center.y && center.y <= frame.y + frame.height)
         }
     }

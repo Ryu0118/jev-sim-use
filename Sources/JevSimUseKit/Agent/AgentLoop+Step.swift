@@ -58,6 +58,16 @@ extension AgentLoop {
         return .act(plan.action)
     }
 
+    /// Executes `action` and returns what actually happened with the apps that disappeared: a tap whose element a
+    /// revealing scroll lost is reported as that scroll, so history does not claim a tap that never landed.
+    func perform(_ action: AgentAction, on snapshot: UISnapshot) async throws -> (AgentAction, [String]) {
+        do {
+            return try await (action, execute(action, on: snapshot))
+        } catch let SimUseError.targetNotRevealed(scroll, disappearedApps) {
+            return (.device(scroll), disappearedApps)
+        }
+    }
+
     func execute(_ action: AgentAction, on snapshot: UISnapshot) async throws -> [String] {
         switch action {
         case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
