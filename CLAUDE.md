@@ -128,6 +128,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped.
 - `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes
   the value, which never reaches Jev ("select instead of generate").
+  An element whose label or value contains a text's value carries that text's name as `shows_text` (only the name:
+  the label is already in the state, and a masked password never matches), so "that memo" titled with `title` is
+  findable after it was saved.
 - Targets are named by element id with `null` criteria (the state carries role, label, value). Every enabled element
   is a target, whatever its role: Reminders exposes its rows only as `StaticText`. At most 255 per question.
   `blocked` hands over (`AgentOutcome.noActionFits`).

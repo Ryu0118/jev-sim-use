@@ -8,13 +8,14 @@ extension PlanningState {
         let back: String?
         let elements: [Element]
 
-        init(_ snapshot: UISnapshot) {
+        init(_ snapshot: UISnapshot, texts: [InputText] = []) {
             app = snapshot.appLabel
             let entries = snapshot.entries ?? []
             title = snapshot.title
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
             elements = (snapshot.entries ?? []).map {
                 Element($0, coveredBy: snapshot.cover(of: $0), slider: snapshot.caption(ofSlider: $0))
+                    .showing(texts)
             }
         }
     }
@@ -29,10 +30,13 @@ extension PlanningState {
         let states: [String]?
         let region: String?
         let coveredBy: String?
+        /// Names of `-t` texts this element displays: a memo titled with `title` shows the `title` text.
+        private(set) var showsText: [String]?
 
         private enum CodingKeys: String, CodingKey {
             case id, role, label, identifier, value, states, region
             case coveredBy = "covered_by"
+            case showsText = "shows_text"
         }
 
         init(_ entry: UIEntry, coveredBy cover: UIEntry? = nil, slider caption: SliderCaption? = nil) {
@@ -52,6 +56,19 @@ extension PlanningState {
 }
 
 extension PlanningState.Element {
+    /// Marks the named texts whose value this element displays. Jev sees only a text's name, never its value, so
+    /// after saving a memo titled with `title` it could not tell which row was "that memo" (0.41). The label is
+    /// already in the state; the mark adds only the name. A masked password never matches.
+    func showing(_ texts: [InputText]) -> Self {
+        let shown = texts.filter { text in
+            text.value.count >= 2 && [label, value].contains { $0?.contains(text.value) == true }
+        }
+        guard !shown.isEmpty else { return self }
+        var marked = self
+        marked.showsText = shown.map(\.name)
+        return marked
+    }
+
     /// How a slider moves, since a tap does not move it.
     static let sliderUsage = "adjustable: swipe_right raises it, swipe_left lowers it; a tap does not change it"
 
