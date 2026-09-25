@@ -22,7 +22,8 @@ extension JevStepPlanner {
             operation = .enterText
             operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
-        let (action, targetSupport) = try compose(operation, response: response, menu: menu)
+        let (action, targetFactors) = try compose(operation, response: response, menu: menu)
+        let factors = [StepPlan.Factor(name: "operation", value: operationSupport)] + targetFactors
         let alternatives = probabilities
             .filter { $0.key != operation.optionName && $0.value >= 0.05 }
             .sorted { $0.value > $1.value }
@@ -31,9 +32,10 @@ extension JevStepPlanner {
         return try StepPlan(
             action: action,
             confidence: probabilities[operation.optionName] ?? 0,
-            support: min(operationSupport, targetSupport),
+            support: factors.map(\.value).min() ?? 0,
             finishes: response.answers.noul(named: finishesQuestion),
             alternatives: Array(alternatives),
+            factors: factors,
             costUSD: response.usage.estimatedCostUSD,
             model: response.model,
         )
@@ -74,7 +76,7 @@ extension JevStepPlanner {
         _ operation: Operation,
         response: JevResponse,
         menu: ActionMenu,
-    ) throws -> (AgentAction, Double) {
+    ) throws -> (AgentAction, [StepPlan.Factor]) {
         switch operation {
         case .tap, .gesture:
             let (element, support) = try target(elementQuestion, among: menu.elements, in: response)
@@ -83,20 +85,23 @@ extension JevStepPlanner {
             } else {
                 .tap(alias: element.alias, role: element.role, label: element.label)
             }
-            return (action, support)
+            return (action, [StepPlan.Factor(name: "element", value: support)])
         case .enterText:
             let (field, fieldSupport) = try target(fieldQuestion, among: menu.fields, in: response)
             let textAnswer = try choice(textQuestion, in: response)
             guard let text = menu.texts.first(where: { $0.name == textAnswer.value }) else {
                 throw PlanningError.unknownChoice(textAnswer.value)
             }
-            return (.enterText(field: field.alias, label: field.label, text: text), min(fieldSupport, textAnswer.confidence))
+            return (.enterText(field: field.alias, label: field.label, text: text), [
+                StepPlan.Factor(name: "field", value: fieldSupport),
+                StepPlan.Factor(name: "text", value: textAnswer.confidence),
+            ])
         case let .device(action):
-            return (.device(action), 1)
+            return (.device(action), [])
         case .done:
-            return (.done, 1)
+            return (.done, [])
         case .blocked:
-            return (.noneApplies, 1)
+            return (.noneApplies, [])
         }
     }
 

@@ -105,6 +105,20 @@ struct JevStepPlannerTests {
         #expect(abs(plan.support - 0.87) < 0.0001)
     }
 
+    @Test("a typing step logs each answer its support depends on, so the lowest one is visible")
+    func supportBreakdown() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(10, "パスワード", role: "TextField")])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [InputText(name: "password", value: "x")])
+        let body = StubTransport.answer(
+            operation: "enter_text", confidence: 0.97,
+            extra: [("field_target", "e10", 0.65), ("text_to_enter", "password", 0.9)],
+        )
+        let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        #expect(plan.factors.map(\.name) == ["operation", "field", "text"])
+        #expect(abs(plan.support - 0.65) < 0.0001)
+        #expect(AgentEvent.planned(step: 1, plan: plan).description.contains("[operation 0.97, field 0.65, text 0.90]"))
+    }
+
     @Test("every question carries the shared rules, since target questions cannot see the operation answer")
     func sharedRules() throws {
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: request(texts: []).menu))

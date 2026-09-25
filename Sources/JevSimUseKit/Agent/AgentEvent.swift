@@ -11,7 +11,7 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     package var description: String {
         switch self {
         case let .planned(step, plan):
-            "[\(step)] \(plan.action) (support \(Self.format(plan.support)), "
+            "[\(step)] \(plan.action) (support \(Self.format(plan.support))\(Self.breakdown(plan.factors)), "
                 + "finishes p=\(Self.format(plan.finishes.value)), ~$\(plan.costUSD.formatted())"
                 + (plan.model.isEmpty ? "" : ", \(plan.model)")
                 + plan.alternatives.map { "; also \($0.name) \(Self.format($0.probability))" }.joined() + ")"
@@ -20,6 +20,12 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
         }
+    }
+
+    /// The answers behind a support that depends on more than one, so a log shows which one was lowest.
+    private static func breakdown(_ factors: [StepPlan.Factor]) -> String {
+        guard factors.count > 1 else { return "" }
+        return " [" + factors.map { "\($0.name) \(format($0.value))" }.joined(separator: ", ") + "]"
     }
 
     private static func format(_ value: Double) -> String {

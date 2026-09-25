@@ -40,6 +40,16 @@ package struct StepPlan: Sendable, Hashable {
 
     /// The runner-up operations, most likely first: what Jev hesitated between.
     package var alternatives: [Alternative] = []
+    /// One answer `support` depends on, named by what it chose (operation, element, field, text).
+    package struct Factor: Sendable, Hashable {
+        /// What the answer chose.
+        package let name: String
+        /// Its (pooled) probability.
+        package let value: Double
+    }
+
+    /// The answers `support` is the weakest of, so a log shows which one held the action back.
+    package var factors: [Factor] = []
     /// Estimated request cost, for logging.
     package var costUSD: Double
     /// The model version that answered, for logs.
@@ -51,6 +61,7 @@ package struct StepPlan: Sendable, Hashable {
         support: Double? = nil,
         finishes: Probability = Probability(clamping: 0),
         alternatives: [Alternative] = [],
+        factors: [Factor] = [],
         costUSD: Double,
         model: String = "",
     ) {
@@ -59,6 +70,7 @@ package struct StepPlan: Sendable, Hashable {
         self.support = support ?? confidence
         self.finishes = finishes
         self.alternatives = alternatives
+        self.factors = factors
         self.costUSD = costUSD
         self.model = model
     }
