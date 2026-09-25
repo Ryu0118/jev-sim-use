@@ -52,6 +52,35 @@ extension AgentLoop {
         }
     }
 
+    /// How long a live run keeps reading after an action that left the screen as it was.
+    static let unchangedWait: Duration = .seconds(2)
+
+    /// Reads the settled screen after acting on `previous`. Saving a notone memo kept its form on screen for over a
+    /// second while the save went through: two agreeing readings called that settled, Jev acted on the form, and the
+    /// tap landed on the screen that replaced it. So an unchanged screen is read again, back to back (one `ui` read
+    /// takes about 0.6 s, so no sleep is needed between them), until it changes or `unchangedWait` passes.
+    func observeAfterAction(on previous: UISnapshot?) async throws -> ScreenObservation {
+        var observation = try await observeSettled()
+        guard let previous else { return observation }
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: configuration.unchangedWait)
+        while clock.now < deadline, observation.snapshot.identity == previous.identity {
+            let next = try await observeSettled()
+            observation = ScreenObservation(
+                snapshot: next.snapshot, disappearedApps: observation.disappearedApps + next.disappearedApps,
+            )
+        }
+        return observation
+    }
+
+    /// Whether `planned` is still the screen, read just before acting on it (jev-ultrafast checks freshness the same
+    /// way). Only an action whose effect has not shown yet can change the screen while Jev decides, so the check runs
+    /// only then and costs no read otherwise.
+    func isStillCurrent(_ planned: UISnapshot, progress: AgentProgress) async throws -> Bool {
+        guard progress.history.last?.screenChanged == false else { return true }
+        return try await driver.observe().snapshot.identity == planned.identity
+    }
+
     /// Extra readings allowed while the screen is still changing.
     static let settleReads = 2
 

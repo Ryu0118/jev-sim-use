@@ -121,7 +121,11 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
-  agree): a mid-transition reading made Jev tap again and hit an element of the next screen.
+  agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen
+  as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
+  `AgentLoop.unchangedWait` (2 s) passes: a notone memo's save kept the form up for over a second. If Jev planned on
+  a screen whose last action had not shown its effect, the screen is read once more right before acting and a stale
+  plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped.
 - `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes
   the value, which never reaches Jev ("select instead of generate").
 - Targets are named by element id with `null` criteria (the state carries role, label, value). Every enabled element

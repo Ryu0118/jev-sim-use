@@ -27,9 +27,10 @@ package struct AgentLoop: Sendable {
     package func run(continuing history: [HistoryEntry] = []) async throws -> AgentRunResult {
         var progress = AgentProgress(history: history)
         var expectedToFinish = false
+        var actedOn: UISnapshot?
         while true {
             try Task.checkCancellation()
-            let observation = try await observeSettled()
+            let observation = try await observeAfterAction(on: actedOn)
             if let outcome = progress.record(observation, stallLimit: configuration.stallLimit) {
                 return AgentRunResult(outcome: outcome, history: progress.history)
             }
@@ -50,14 +51,21 @@ package struct AgentLoop: Sendable {
                 expectedToFinish = false
                 let disappeared = try await execute(scan, on: observation.snapshot)
                 progress.recordAction(scan, disappeared: disappeared)
+                actedOn = observation.snapshot
                 continue
             }
             switch decide(on: plan, progress: progress) {
             case let .stop(outcome):
                 return AgentRunResult(outcome: outcome, history: progress.history)
             case let .act(action):
+                // The last action's effect arrived while Jev was deciding: its plan is for a screen that is gone.
+                guard try await isStillCurrent(observation.snapshot, progress: progress) else {
+                    actedOn = nil
+                    continue
+                }
                 let disappeared = try await execute(action, on: observation.snapshot)
                 progress.recordAction(action, disappeared: disappeared)
+                actedOn = observation.snapshot
             }
         }
     }

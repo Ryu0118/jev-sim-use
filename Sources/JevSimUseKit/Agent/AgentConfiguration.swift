@@ -14,6 +14,8 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var stallLimit: Int
     /// Thresholds for acting on Jev's chosen action.
     package var actionPolicy: ActionPolicy
+    /// How long to keep reading after an action that left the screen as it was, before calling it ineffective.
+    package var unchangedWait: Duration
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -23,6 +25,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         maxSteps: Int = 15,
         stallLimit: Int = 3,
         actionPolicy: ActionPolicy = ActionPolicy(),
+        unchangedWait: Duration = .zero,
     ) {
         self.goal = goal
         self.texts = texts
@@ -30,5 +33,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.maxSteps = maxSteps
         self.stallLimit = stallLimit
         self.actionPolicy = actionPolicy
+        self.unchangedWait = unchangedWait
     }
 }
