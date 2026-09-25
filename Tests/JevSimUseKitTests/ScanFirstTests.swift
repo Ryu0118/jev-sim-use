@@ -41,6 +41,16 @@ struct ScanFirstTests {
         #expect(action == nil)
     }
 
+    @Test("follows a tap Jev is confident in, even while the goal's item is off screen")
+    func confidentTap() {
+        let close = StepPlan(action: .tap(alias: 1, role: "Button", label: "閉じる"), confidence: 0.95, costUSD: 0)
+        let action = ScanFirst.override(
+            close, on: settings(["閉じる", "グラフ", "速度データ", "標高"]), goal: "Close it so the 設定 screen shows",
+            notes: [], alreadyScanned: false, tried: [],
+        )
+        #expect(action == nil)
+    }
+
     @Test("leaves screens that are not lists to Jev")
     func notAList() {
         let map = UISnapshot(platform: "ios", outline: "o", appLabel: "マップ", entries: [
