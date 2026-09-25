@@ -82,6 +82,7 @@ package enum SimUseContract {
         static let duration = "--duration"
         /// Duration that makes a sideways scroll turn one page.
         static let sidewaysSeconds = "0.3"
+        static let verticalSeconds = "1.5"
     }
 
     /// Hardware buttons. `back` is how Android goes back; the others are `HardwareButton` raw values.

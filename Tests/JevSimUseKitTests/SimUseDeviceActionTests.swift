@@ -4,8 +4,8 @@ import Testing
 struct SimUseDeviceActionTests {
     @Test("maps intent to sim-use's finger-direction preset names")
     func scrollNaming() {
-        #expect(SimUseDeviceAction.revealContentBelow.arguments(platform: "ios") == ["gesture", "scroll-up"])
-        #expect(SimUseDeviceAction.revealContentAbove.arguments(platform: "ios") == ["gesture", "scroll-down"])
+        #expect(SimUseDeviceAction.revealContentBelow.arguments(platform: "ios") == ["gesture", "scroll-up", "--duration", "1.5"])
+        #expect(SimUseDeviceAction.revealContentAbove.arguments(platform: "ios") == ["gesture", "scroll-down", "--duration", "1.5"])
     }
 
     @Test("goes back with the edge swipe on iOS and the back button on Android")

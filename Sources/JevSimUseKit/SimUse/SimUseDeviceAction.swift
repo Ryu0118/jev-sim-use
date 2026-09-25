@@ -32,8 +32,10 @@ package enum SimUseDeviceAction: Sendable, Hashable {
         let gesture = SimUseContract.Command.gesture
         return switch self {
         // sim-use names presets by finger direction: `scroll-up` pages down, `scroll-left` shows what is right.
-        case .revealContentBelow: [gesture, Gesture.scrollUp]
-        case .revealContentAbove: [gesture, Gesture.scrollDown]
+        // A 0.5 s vertical flick kept a list coasting for over three seconds, and a tap in that time only stopped
+        // it; drawn over 1.5 s the list stops with the finger.
+        case .revealContentBelow: [gesture, Gesture.scrollUp, Gesture.duration, Gesture.verticalSeconds]
+        case .revealContentAbove: [gesture, Gesture.scrollDown, Gesture.duration, Gesture.verticalSeconds]
         // At the default 0.5 s a sideways scroll is too slow to turn a page; 0.3 s turns exactly one.
         case .revealContentRight: [gesture, Gesture.scrollLeft, Gesture.duration, Gesture.sidewaysSeconds]
         case .revealContentLeft: [gesture, Gesture.scrollRight, Gesture.duration, Gesture.sidewaysSeconds]
