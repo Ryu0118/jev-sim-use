@@ -54,8 +54,15 @@ package struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
+    ///
+    /// On iOS the paste is a Cmd+V key event, which the simulator drops without a connected hardware keyboard while
+    /// sim-use still reports success; the software keyboard being up after the field's tap means exactly that. The
+    /// edit-menu path (`--via-menu`) did not help: its Paste item never appeared in Reminders or Safari.
     package func paste(_ text: String) async throws -> [String] {
-        try await run([SimUseContract.Command.paste], operands: [text])
+        if device.platform == SimUseContract.Platform.ios, try await softKeyboardIsVisible() {
+            throw SimUseError.hardwareKeyboardRequired
+        }
+        return try await run([SimUseContract.Command.paste], operands: [text])
     }
 
     /// Scrolls a covered element out from under its overlay, then taps it by a fresh selector: the scroll made the
@@ -77,6 +84,16 @@ package struct SimUseClient: DeviceDriving {
         }
         disappeared += try await run([SimUseContract.Command.tap] + (selector ?? ["@\(entry.aliases.alias)"]))
         return disappeared
+    }
+
+    private func softKeyboardIsVisible() async throws -> Bool {
+        struct KeyboardState: Decodable, Sendable {
+            let visible: Bool?
+        }
+        let envelope = try await invoker.invoke(
+            [SimUseContract.Command.keyboardState] + deviceArguments, as: KeyboardState.self,
+        )
+        return envelope.data?.visible ?? false
     }
 
     private var deviceArguments: [String] {

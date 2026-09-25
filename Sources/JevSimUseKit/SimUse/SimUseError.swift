@@ -12,6 +12,8 @@ package enum SimUseError: Error, Sendable, Equatable {
     case multipleDevices([SimUseDevice])
     /// `sim-use` reported a failure.
     case commandFailed(arguments: [String], message: String, hint: String?)
+    /// Text entry needs a connected hardware keyboard: without one iOS drops sim-use's paste.
+    case hardwareKeyboardRequired
     /// `sim-use` exited without an output this tool understands.
     case malformedOutput(arguments: [String], detail: String)
 }

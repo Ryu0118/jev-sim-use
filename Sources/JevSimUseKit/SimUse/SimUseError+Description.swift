@@ -27,6 +27,12 @@ extension SimUseError: CustomStringConvertible {
                 + devices.map { "  \($0.deviceId)  \($0.name) (\($0.platform))" }.joined(separator: "\n")
         case let .commandFailed(arguments, message, hint):
             "`sim-use \(arguments.joined(separator: " "))` failed: \(message)" + (hint.map { "\nHint: \($0)" } ?? "")
+        case .hardwareKeyboardRequired:
+            """
+            Entering text needs a hardware keyboard: the simulator shows only the software keyboard, and it drops \
+            sim-use's paste. In Simulator, turn on I/O > Keyboard > Connect Hardware Keyboard, then run \
+            `jev-sim-use session resume`.
+            """
         case let .malformedOutput(arguments, detail):
             "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
         }

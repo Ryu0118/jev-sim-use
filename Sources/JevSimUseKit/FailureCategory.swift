@@ -19,7 +19,7 @@ extension SimUseError {
     /// Whether the user must change their environment before retrying.
     var isSetupProblem: Bool {
         switch self {
-        case .notInstalled, .unreadableVersion, .outdated, .noDevice, .multipleDevices: true
+        case .notInstalled, .unreadableVersion, .outdated, .noDevice, .multipleDevices, .hardwareKeyboardRequired: true
         case .commandFailed, .malformedOutput: false
         }
     }

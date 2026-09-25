@@ -76,6 +76,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Decode leniently: optional keys, unknown keys ignored. `udid` was removed in 0.10.0 (`deviceId` is canonical).
 - `gesture scroll-up` pages *down* (finger direction). `AgentAction` names options by intent.
 - No launch verb and no wait verb exist. Text input uses `paste` (Unicode-safe on iOS, unlike `type`).
+- iOS `paste` is a Cmd+V key event: without a connected hardware keyboard the simulator drops it and sim-use still
+  reports `ok`, and `paste --via-menu` found no Paste item in Reminders or Safari. `SimUseClient.paste` reads
+  `keyboard-state` first and throws `SimUseError.hardwareKeyboardRequired` (setup, exit 2) while the software keyboard
+  is up.
 
 ## Jev constraints
 

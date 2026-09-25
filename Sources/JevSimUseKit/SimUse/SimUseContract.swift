@@ -28,6 +28,7 @@ package enum SimUseContract {
         static let paste = "paste"
         static let longPress = "long-press"
         static let swipe = "swipe"
+        static let keyboardState = "keyboard-state"
     }
 
     /// `tap` options for a coordinate tap that is held briefly.

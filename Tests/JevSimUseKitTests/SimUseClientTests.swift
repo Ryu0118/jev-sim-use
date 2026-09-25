@@ -4,6 +4,7 @@ import Testing
 
 struct SimUseClientTests {
     private let device = ["--device", "B34F0000-0000-0000-0000-000000000001"]
+    private let hiddenKeyboard = CommandOutput.json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#)
 
     private func client(_ runner: FakeCommandRunner) throws -> SimUseClient {
         let device = try JSONDecoder().decode(SimUseDevice.self, from: Data(Fixtures.simulator.utf8))
@@ -41,7 +42,7 @@ struct SimUseClientTests {
     @Test("reports stderr when validation fails before any JSON is written")
     func validationFailure() async throws {
         let output = CommandOutput(exitCode: 64, stdout: Data(), stderr: "Error: Missing text\n")
-        let runner = FakeCommandRunner(["paste": output])
+        let runner = FakeCommandRunner(["paste": output, "keyboard-state": hiddenKeyboard])
         let expected = SimUseError.malformedOutput(arguments: ["paste"] + device, detail: "Error: Missing text")
         await #expect(throws: expected) {
             try await client(runner).paste("")
@@ -50,9 +51,21 @@ struct SimUseClientTests {
 
     @Test("passes paste text after a terminator so it is never parsed as an option")
     func pasteTerminator() async throws {
-        let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#)])
+        let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#), "keyboard-state": hiddenKeyboard])
         _ = try await client(runner).paste("-5")
-        #expect(runner.recordedCalls == [["paste"] + device + ["--json", "--", "-5"]])
+        #expect(runner.recordedCalls.last == ["paste"] + device + ["--json", "--", "-5"])
+    }
+
+    @Test("stops before pasting while only the software keyboard is up, since iOS would drop the paste silently")
+    func softKeyboard() async throws {
+        let runner = FakeCommandRunner([
+            "paste": .json(#"{"ok":true,"data":{}}"#),
+            "keyboard-state": .json(#"{"ok":true,"data":{"visible":true,"platform":"ios"}}"#),
+        ])
+        await #expect(throws: SimUseError.hardwareKeyboardRequired) {
+            try await client(runner).paste("牛乳を買う")
+        }
+        #expect(runner.recordedCalls == [["keyboard-state"] + device + ["--json"]])
     }
 
     @Test("taps an iOS switch on its trailing edge with a short hold, which a row-centre instant tap does not flip")

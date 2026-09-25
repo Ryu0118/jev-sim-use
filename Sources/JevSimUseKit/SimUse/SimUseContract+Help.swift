@@ -12,6 +12,7 @@ package extension SimUseContract {
         ]),
         (Command.button, HardwareButton.allCases.map(\.rawValue) + [Button.back, deviceFlag]),
         (Command.paste, [deviceFlag, jsonFlag]),
+        (Command.keyboardState, [deviceFlag, jsonFlag]),
         (Command.longPress, [deviceFlag, jsonFlag]),
         (Command.swipe, [Swipe.from, Swipe.to, deviceFlag, jsonFlag]),
     ]
