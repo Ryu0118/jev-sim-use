@@ -106,7 +106,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   shows results only on Return cannot finish without it. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
   tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
-  through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.3, reversible at `--min-confidence`,
+  through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
   irreversible (hardware buttons, tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as
   jev-use gates destructive picks. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
@@ -148,7 +148,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   `SimUseClient.tap(alias:on:)` taps a toggle's trailing edge with `--duration 0.05`, and a full-width
   value `Button` (`UIEntry.isValueRow`, a SwiftUI ColorPicker row, whose well ignored a centre tap) 18 pt in the same way. Loop detection compares screens
   by `UISnapshot.identity` (elements and state, no frames), so a scroll that bounces counts as no change. Scrolling / going back
-  need at most 0.3 support.
+  need at most 0.5 support.
 - Choice options are built at runtime, so typed `ChoiceQuestion` reads do not apply: read `answers[name]` and validate
   the chosen name against the offered options.
 - Thresholds are split: `goalPolicy` (default `RoutingPolicy`, success only on `.auto`) and `ActionPolicy`

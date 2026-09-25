@@ -8,8 +8,10 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Leaving the app, locking the device, or tapping a destructive control is not undone by going back, so it needs
     /// this much. jev-use gates destructive picks at 0.6 as well; the earlier 0.85 stopped correct steps at 0.65-0.84.
     package static let irreversibleMinimum = 0.6
-    /// Scrolling and going back change nothing in the app and cost one step when wrong, so they need less.
-    package static let harmlessMaximum = 0.3
+    /// Scrolling and going back change nothing in the app and cost one step when wrong, so they need less, but not
+    /// below 0.5: TypeSafe's confidence guide reads less than that as genuinely unsure, and a notone search that
+    /// already showed its result scrolled away at 0.36 instead of handing over.
+    package static let harmlessMaximum = 0.5
 
     /// Jev's DONE needs this much before the run claims success; below it the run stops as probably done.
     /// Set from real runs: correct DONEs scored 0.58-0.99, the one wrong DONE 0.49.
