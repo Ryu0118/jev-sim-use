@@ -28,7 +28,9 @@ extension SimUseDeviceAction {
             "Go back to the previous screen, the one `screen.back` names; also when `screen.title` is a section `goal` "
                 + "does not lead through"
         case .swipeFromRightEdge: "Swipe in from the right edge of the screen"
-        case .press(.home): "Press the Home button, which leaves the app for the Home Screen"
+        case .press(.home):
+            "Press the device's Home button, which leaves the app for the Home Screen; not for a home tab or screen "
+                + "inside the app"
         case .press(.lock): "Press the lock button, which locks the device"
         case .press(.recents): "Press the recent apps button, which lists open apps"
         case .press(.applePay): "Double-press the side button for Apple Pay"

@@ -82,8 +82,9 @@ Read the step lines first: `support 0.49 [operation 0.97, element 0.49]` names t
   `.accessibilityValue`.
 - **Something visible that `exec ui` does not list**: a system prompt from another process (a password-save alert),
   most cells of a colour grid, a popover's close button. Use `exec screenshot` and `exec tap -x … -y …`.
-- **"Home" in a goal**: say "the app's Home tab". A hardware Home press leaves the app, and sim-use cannot open it
-  again.
+- **Words that name a place in the app or on the device** ("home", "settings", "search", "back"): Jev reads them as
+  the app's own first (a tab, screen, or button by that name) and as the device's only when the app has none.
+  Say "the device's Home Screen" if you do mean to leave the app; sim-use cannot open it again.
 - **Creating something**: say "and save it". Typed text is not saved, and Jev does not treat it as done.
 - **Search**: a search field that acts on Return is fine; Jev can press Return. A results screen without a heading
   often ends as "probably reached"; confirm with `exec ui`.

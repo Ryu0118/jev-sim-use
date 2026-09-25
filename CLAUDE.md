@@ -109,7 +109,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
   irreversible (tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as jev-use gates
   destructive picks; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
-  to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
+  to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). The shared rules also say a word that could
+  name a place in the app or on the device (home, settings, search, back) means the app's own first. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
   the full swipe that deletes a Reminders row without asking. Sideways scrolls pass
   `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
