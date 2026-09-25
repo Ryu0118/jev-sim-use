@@ -29,6 +29,9 @@ jev-sim-use doctor     # sim-use installed, one usable device, TYPESAFE_API_KEY 
   request, tracking, notifications, password save). These appear after launch and derail a run midway.
 - When several devices are booted, pass `--device <deviceId>` to every command, including `exec`, so every step
   and every check hits the same device.
+- Give the simulator what the app needs from the device. An app that records location or motion does nothing
+  useful on a simulator with no location set; set one (and a moving route when the task needs movement) with
+  `xcrun simctl location`, as its `--help` describes.
 - Typing pastes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
   (exit 2) instead of silently typing nothing.
 
@@ -48,8 +51,10 @@ jev-sim-use "Go back to the app's Home tab"
 - Pass every string to type as `-t name=value`. Jev never writes text; it sees only the name and picks the field whose
   label fits, so name strings by what they are (`email`, `password`, `query`, `title`). Values never leave the
   machine. After typing, elements that show a text carry its name, so "the memo titled with title" is findable.
-- Say "and save it" (or submit, send) when the goal creates something. Typed text in an open form is not saved, and
-  Jev does not count it as done.
+- When the goal creates something through a form with a save or submit button, say "and save it". Typed text in an
+  open form is not saved, and Jev does not count it as done. When the app saves by itself (stopping a recording,
+  toggling a setting), describe the finished state instead ("the recording is stopped and listed in history"); a
+  "save" step that does not exist leaves Jev looking for one and handing over.
 - Name the feature when two look alike ("edit it yourself" versus "ask the AI assistant"). An AI feature may
   otherwise receive your text as an instruction.
 - Place words such as "home", "settings", "search", and "back" mean the app's own tab, screen, or button first; the
@@ -67,7 +72,7 @@ stdout is the outcome line; stderr shows each step. When the goal was not reache
 | 0 | Goal reached | Read the screen and verify before relying on it |
 | 1 | Stopped before the goal | Read the reason below, then supervise the session |
 | 2 | Setup problem | Run `jev-sim-use doctor` and fix what it reports |
-| 3 | sim-use or Jev failed mid-run | Retry once; if it repeats, read the error |
+| 3 | sim-use or Jev failed mid-run | Read the screen first (the failed step may have scrolled or moved it), then retry once; if it repeats, read the error |
 
 Exit 0 is Jev's judgment, not proof. Read the screen once the app has settled: a saved item can take a second or two
 to show up in a list, so read, wait about two seconds, and judge the second reading.

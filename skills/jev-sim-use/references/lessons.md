@@ -43,10 +43,17 @@ cells of a colour grid, or trust an instant tap on every control. When the same 
 treat it as a limit: do that step by hand or with a coordinate tap, then continue. Retrying variations wastes the
 most time of anything.
 
+## Check whether the data allows what you expect to see
+
+An option or screen that a goal expects can be absent for a reason in the data, not in the tool: a colouring by
+altitude appeared only for records with altitude changes, which a simulated route never has. When the expected UI is
+missing, look at what the app needs to show it before retrying or blaming the agent.
+
 ## Set up the start state deliberately
 
 Runs are only comparable when they start from the same screen with the same data. Launch the app, wait a few
-seconds, clear late prompts, and remove data left by earlier runs. Launching through `simctl` does not pass the
+seconds, clear late prompts, and remove data left by earlier runs. Provide what the app reads from the device, such as
+a simulated location or route for apps that record movement. Launching through `simctl` does not pass the
 environment an Xcode scheme sets (debug tokens, test credentials); pass it with `SIMCTL_CHILD_<NAME>=…`.
 
 ## Keep test data traceable
