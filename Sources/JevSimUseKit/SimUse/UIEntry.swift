@@ -19,6 +19,9 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     /// Nesting depth in the accessibility tree; deeper elements inside a frame are its children, shallower ones float
     /// over it.
     package var depth: Int?
+    /// The accessibility hint: what activating the element does. sim-use fills it on Android; on iOS `UISnapshot`
+    /// copies it from the raw tree's `help`.
+    package var hint: String?
 
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]

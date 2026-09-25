@@ -30,11 +30,13 @@ extension PlanningState {
         let states: [String]?
         let region: String?
         let coveredBy: String?
+        /// What activating the element does, when the app says so: tells apart controls whose labels look alike.
+        let hint: String?
         /// Names of `-t` texts this element displays: a memo titled with `title` shows the `title` text.
         private(set) var showsText: [String]?
 
         private enum CodingKeys: String, CodingKey {
-            case id, role, label, identifier, value, states, region
+            case id, role, label, identifier, value, states, region, hint
             case coveredBy = "covered_by"
             case showsText = "shows_text"
         }
@@ -51,6 +53,7 @@ extension PlanningState {
             states = allStates.isEmpty ? nil : allStates
             region = entry.region.map { region in region.label.map { "\(region.kind): \($0)" } ?? region.kind }
             coveredBy = cover.map { $0.label.isEmpty ? $0.role : $0.label }
+            hint = entry.hint
         }
     }
 }

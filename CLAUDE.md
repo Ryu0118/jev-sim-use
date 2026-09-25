@@ -65,7 +65,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `SimUseBootstrap.minimumVersion` refuses older sim-use; `testedVersion` is the newest verified one. Newer versions run
   with a warning (`SimUseConnection.versionWarning`, shown by `run` and `doctor`), and unparseable output adds a hint
   pointing at `exec --version` and the contract test.
-- `doctor` decodes one real `ui --json --no-raw` response, so output changes surface before a run.
+- `doctor` decodes one real `ui --json` response, so output changes surface before a run.
 - After upgrading sim-use: boot a simulator, run `mise run contract-test` (`JevSimUseContractTests`, skipped in the
   normal test run), then bump `testedVersion`.
 
@@ -120,6 +120,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   not a tap, moves it. On the iOS 26.5 simulator no sim-use drag moved a SwiftUI slider (swipes from the thumb or the
   track, slow drags, split `touch --down` / `--up`; `--pre-delay` waits before touching down), so a slider goal
   stops there until sim-use can hold then move.
+- Hints: iOS sim-use leaves `entries[].hint` empty but keeps `accessibilityHint` as the raw tree's `help`, so `ui` runs
+  without `--no-raw` (5 to 16 KB, no slower) and `UISnapshot` copies each `help` to the entry at the same frame with
+  a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Elements
+  carry it as `hint`, which tells apart controls whose labels look alike (an AI rewrite and a plain edit).
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that

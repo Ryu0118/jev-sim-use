@@ -12,9 +12,10 @@ package struct SimUseClient: DeviceDriving {
         self.invoker = invoker
     }
 
-    /// Runs `sim-use ui --no-raw`, which also refreshes the alias cache `tap` uses.
+    /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. The raw tree is kept because only it carries
+    /// iOS accessibility hints; it tripled the payload (5 to 16 KB) without slowing the read.
     package func observe() async throws -> ScreenObservation {
-        let envelope = try await invoker.invoke([SimUseContract.Command.ui, SimUseContract.noRawFlag] + deviceArguments, as: UISnapshot.self)
+        let envelope = try await invoker.invoke([SimUseContract.Command.ui] + deviceArguments, as: UISnapshot.self)
         guard let snapshot = envelope.data else {
             throw SimUseError.malformedOutput(arguments: [SimUseContract.Command.ui], detail: "the envelope has no data")
         }

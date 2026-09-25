@@ -1,4 +1,4 @@
-/// The `data` payload of `sim-use ui --json --no-raw`.
+/// The `data` payload of `sim-use ui --json`.
 package struct UISnapshot: Decodable, Sendable, Hashable {
     /// Present only when sim-use detected an Android crash dialog.
     package struct CrashDialog: Decodable, Sendable, Hashable {
@@ -16,4 +16,23 @@ package struct UISnapshot: Decodable, Sendable, Hashable {
     package let entries: [UIEntry]?
     /// Set when an Android crash dialog is on screen.
     package let crashDialog: CrashDialog?
+}
+
+extension UISnapshot {
+    private enum CodingKeys: String, CodingKey {
+        case platform, outline, appLabel, entries, crashDialog, raw
+    }
+
+    package init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let entries = try container.decodeIfPresent([UIEntry].self, forKey: .entries)
+        let raw = try container.decodeIfPresent([RawAccessibilityNode].self, forKey: .raw) ?? []
+        try self.init(
+            platform: container.decode(String.self, forKey: .platform),
+            outline: container.decode(String.self, forKey: .outline),
+            appLabel: container.decodeIfPresent(String.self, forKey: .appLabel),
+            entries: entries.map { Self.withHints($0, from: raw) },
+            crashDialog: container.decodeIfPresent(CrashDialog.self, forKey: .crashDialog),
+        )
+    }
 }

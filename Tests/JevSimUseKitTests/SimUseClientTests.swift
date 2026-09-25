@@ -24,7 +24,7 @@ struct SimUseClientTests {
         let observation = try await client(runner).observe()
         #expect(observation.snapshot.entries?.first?.label == "Alice")
         #expect(observation.disappearedApps == ["com.x"])
-        #expect(runner.recordedCalls == [["ui", "--no-raw"] + device + ["--json"]])
+        #expect(runner.recordedCalls == [["ui"] + device + ["--json"]])
     }
 
     @Test("surfaces the error envelope with its hint")
