@@ -102,8 +102,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.3, reversible at `--min-confidence`,
-  irreversible (typing text, hardware buttons, tapping a control labelled 削除 / Delete / Remove / 消去) at
-  least 0.85. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
+  irreversible (hardware buttons, tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as
+  jev-use gates destructive picks. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
+  correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
   the full swipe that deletes a Reminders row without asking. Sideways scrolls pass
   `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
   iOS 26, and Control Center blinds `sim-use ui`).
@@ -134,7 +135,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Choice options are built at runtime, so typed `ChoiceQuestion` reads do not apply: read `answers[name]` and validate
   the chosen name against the offered options.
 - Thresholds are split: `goalPolicy` (default `RoutingPolicy`, success only on `.auto`) and `ActionPolicy`
-  (`--min-confidence` for reversible actions; pasting needs at least 0.85). `StepPlan.support` adds up probability
+  (`--min-confidence` for reversible actions, typing included; irreversible actions need at least 0.6). `StepPlan.support` adds up probability
   split across options that do the same thing.
 - The default model is pinned to `jev-1.13.0`; re-run real-device goals before moving it. Accuracy is lower for CJK
   text, so re-check thresholds on Japanese UIs.

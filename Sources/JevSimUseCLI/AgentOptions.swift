@@ -6,7 +6,7 @@ struct AgentOptions: ParsableArguments {
     @Option(help: "Maximum number of actions in this run.")
     var maxSteps = 15
 
-    @Option(help: "Hand over when Jev's support for a tap or scroll is below this (0...1). Pasting and buttons need at least 0.85.")
+    @Option(help: "Hand over when Jev's support for a tap, scroll, or typing is below this (0...1). Hardware buttons and destructive taps need at least 0.6.")
     var minConfidence = ActionPolicy.defaultMinimumSupport
 
     func validate() throws {

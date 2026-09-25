@@ -5,8 +5,9 @@ import Jev
 package struct ActionPolicy: Sendable, Hashable {
     /// Support at or above which acting needs no note.
     package static let confidentSupport = RoutingPolicy.default.autoAtOrAbove
-    /// Pasting text, leaving the app, or locking the device is not undone by going back, so it needs this much.
-    package static let irreversibleMinimum = RoutingPolicy.default.autoAtOrAbove
+    /// Leaving the app, locking the device, or tapping a destructive control is not undone by going back, so it needs
+    /// this much. jev-use gates destructive picks at 0.6 as well; the earlier 0.85 stopped correct steps at 0.65-0.84.
+    package static let irreversibleMinimum = 0.6
     /// Scrolling and going back change nothing in the app and cost one step when wrong, so they need less.
     package static let harmlessMaximum = 0.3
 

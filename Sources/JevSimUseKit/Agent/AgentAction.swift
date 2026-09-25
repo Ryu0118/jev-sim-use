@@ -34,7 +34,9 @@ extension AgentAction {
         case let .tap(_, _, label): ActionCatalog.isDestructive(label) ? .irreversible : .reversible
         case let .gesture(gesture, _, _, _): gesture.risk
         case let .device(action): action.risk
-        case .enterText: .irreversible
+        // Text in a field is cleared as easily as it is typed, and it submits nothing; jev-browser-use and jev-use
+        // gate typing like any other action.
+        case .enterText: .reversible
         case .done, .noneApplies: .harmless
         }
     }

@@ -9,10 +9,10 @@ struct ActionPolicyTests {
         #expect(policy.requiredSupport(for: .tap(alias: 1, role: "Button", label: "OK")) == minimum)
     }
 
-    @Test("demands more before pasting text, which going back cannot undo")
-    func irreversible() {
-        let policy = ActionPolicy(minimumSupport: 0.3)
-        #expect(policy.requiredSupport(for: .enterText(field: 1, label: "Name", text: InputText(name: "text", value: "hi"))) == ActionPolicy.irreversibleMinimum)
+    @Test("gates typing like a tap, since text in a field can be cleared and submits nothing", arguments: [0.3, 0.55])
+    func typing(minimum: Double) {
+        let policy = ActionPolicy(minimumSupport: minimum)
+        #expect(policy.requiredSupport(for: .enterText(field: 1, label: "Name", text: InputText(name: "text", value: "hi"))) == minimum)
     }
 
     @Test("demands more before leaving the app or locking the device", arguments: [

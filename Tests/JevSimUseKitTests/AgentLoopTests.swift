@@ -70,12 +70,22 @@ struct AgentLoopTests {
         #expect(driver.performedActions.isEmpty)
     }
 
-    @Test("will not enter text on support that would be enough for a tap")
-    func textNeedsMoreSupport() async throws {
+    @Test("enters text on the support a tap needs, since text in a field can be cleared")
+    func textOnTapSupport() async throws {
         let enter = AgentAction.enterText(field: 1, label: "Name", text: InputText(name: "name", value: "hi"))
+        let driver = FakeDriver(outlines: ["A", "B"])
+        #expect(try await run(driver, [StepPlan(action: enter, confidence: 0.7, costUSD: 0), .done()])
+            == .goalReached(steps: 1))
+        #expect(driver.performedActions == ["tap @1", "paste hi"])
+    }
+
+    @Test("hands over leaving the app on support that would be enough for a tap")
+    func leavingNeedsMoreSupport() async throws {
+        let home = AgentAction.device(.press(.home))
         let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [StepPlan(action: enter, confidence: 0.7, costUSD: 0)])
-            == .escalated(step: 1, action: enter, confidence: 0.7))
+        #expect(try await run(driver, [StepPlan(action: home, confidence: 0.58, costUSD: 0)])
+            == .escalated(step: 1, action: home, confidence: 0.58))
+        #expect(driver.performedActions.isEmpty)
     }
 }
 
