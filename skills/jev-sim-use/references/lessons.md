@@ -30,11 +30,13 @@ names, sliders labelled with their raw position, look-alike buttons without hint
 walls. Fixing the app (one element per tappable row, a button trait, real labels, values with units, hints for
 look-alike controls) helped both, and removed failures that no prompt wording could.
 
-## Split long flows and verify between them
+## Spell out long routes; do not make the agent discover them
 
 Uncertainty compounds: ten steps at 90% each succeed about a third of the time. A flow such as create, edit,
-favourite, convert, and complete stalled at a different step on each attempt. Run it as a few goals, check each end
-state, and `resume` or start the next goal from there.
+favourite, convert, and complete, written as an end state, stalled at a different step on each attempt. The same flow
+written as numbered steps with the screens' own labels ran through in about a minute with high support at almost
+every step: each step left one obvious choice instead of a search. When a flow is long, give the route; when it has
+checkpoints worth verifying, also run it as a few goals and check each end state before starting the next.
 
 ## Recognise tool limits quickly
 

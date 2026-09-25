@@ -157,12 +157,14 @@ extension SkillBundle {
             jev-sim-use session resume                # same goal, notes, and history; exits like a run
             ```
 
-            - Write notes as facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
-              finished screen looks like. Jev reads them for every action and for judging the goal.
+            - Write notes as facts about the app: where a setting lives, what a label means, what the finished screen looks
+              like. Jev reads every note for every action, so a tap instruction in a note keeps pulling it back to that tap
+              after it is done. The route belongs in the goal's numbered steps; notes supply the facts the steps rely on.
             - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
             - Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
-            - Fix things by hand between runs when that is quicker, with sim-use through `exec`; `resume` starts from whatever
-              screen is showing.
+            - Prefer `tell` and `resume` to acting by hand, so the session keeps a record of what worked. Act by hand with sim-use
+              through `exec` for what Jev is not offered or what fails the same way twice (see the tool-limits lesson in
+              [references/lessons.md](references/lessons.md)); `resume` starts from whatever screen is showing.
             - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
               success in another one; a hand-over only costs a note.
             - Commands take a session id; without one they use the most recent session. `session list` shows them all.
@@ -237,11 +239,13 @@ extension SkillBundle {
             walls. Fixing the app (one element per tappable row, a button trait, real labels, values with units, hints for
             look-alike controls) helped both, and removed failures that no prompt wording could.
 
-            ## Split long flows and verify between them
+            ## Spell out long routes; do not make the agent discover them
 
             Uncertainty compounds: ten steps at 90% each succeed about a third of the time. A flow such as create, edit,
-            favourite, convert, and complete stalled at a different step on each attempt. Run it as a few goals, check each end
-            state, and `resume` or start the next goal from there.
+            favourite, convert, and complete, written as an end state, stalled at a different step on each attempt. The same flow
+            written as numbered steps with the screens' own labels ran through in about a minute with high support at almost
+            every step: each step left one obvious choice instead of a search. When a flow is long, give the route; when it has
+            checkpoints worth verifying, also run it as a few goals and check each end state before starting the next.
 
             ## Recognise tool limits quickly
 

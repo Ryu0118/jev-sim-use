@@ -149,12 +149,14 @@ jev-sim-use session forget -n 1           # drop note 1 (as `show` numbers them)
 jev-sim-use session resume                # same goal, notes, and history; exits like a run
 ```
 
-- Write notes as facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
-  finished screen looks like. Jev reads them for every action and for judging the goal.
+- Write notes as facts about the app: where a setting lives, what a label means, what the finished screen looks
+  like. Jev reads every note for every action, so a tap instruction in a note keeps pulling it back to that tap
+  after it is done. The route belongs in the goal's numbered steps; notes supply the facts the steps rely on.
 - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
 - Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
-- Fix things by hand between runs when that is quicker, with sim-use through `exec`; `resume` starts from whatever
-  screen is showing.
+- Prefer `tell` and `resume` to acting by hand, so the session keeps a record of what worked. Act by hand with sim-use
+  through `exec` for what Jev is not offered or what fails the same way twice (see the tool-limits lesson in
+  [references/lessons.md](references/lessons.md)); `resume` starts from whatever screen is showing.
 - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
   success in another one; a hand-over only costs a note.
 - Commands take a session id; without one they use the most recent session. `session list` shows them all.
