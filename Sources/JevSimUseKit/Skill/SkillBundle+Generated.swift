@@ -23,11 +23,9 @@ extension SkillBundle {
 
             - `jev-sim-use "<goal>"` to get somewhere in several steps: a screen, a toggle state, a submitted search, a saved
               item.
-            - `jev-sim-use exec <sim-use args>` for single exact steps and for checking results: `exec ui` to read the screen,
-              `exec screenshot` to see it, `exec tap @N` for one tap.
-            - sim-use directly, through its own skill, for what jev-sim-use does not offer (double tap, `type`, key presses,
-              multi-touch, video). See [references/sim-use.md](references/sim-use.md) for installing that skill and choosing
-              between the two.
+            - sim-use itself for reading the screen, checking a result, single exact actions, and anything Jev is not offered.
+              Run it through `jev-sim-use exec <sim-use args>` to target the same device. Learn its commands from sim-use's own
+              skill and `sim-use --help`; [references/sim-use.md](references/sim-use.md) says how to install that skill.
 
             ## Before the first run
 
@@ -37,8 +35,8 @@ extension SkillBundle {
 
             - Open the app yourself; sim-use cannot launch apps. Give it a few seconds, then dismiss any late prompt (rating
               request, tracking, notifications, password save). These appear after launch and derail a run midway.
-            - When several devices are booted, pass `--device <deviceId>` to every command, including `exec`; aliases like `@12`
-              belong to the last screen read of one device.
+            - When several devices are booted, pass `--device <deviceId>` to every command, including `exec`, so every step
+              and every check hits the same device.
             - Typing pastes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
               (exit 2) instead of silently typing nothing.
 
@@ -74,7 +72,7 @@ extension SkillBundle {
 
             | Exit | Meaning | What to do |
             |---|---|---|
-            | 0 | Goal reached | Verify with `exec ui` before relying on it |
+            | 0 | Goal reached | Read the screen and verify before relying on it |
             | 1 | Stopped before the goal | Read the reason below, then supervise the session |
             | 2 | Setup problem | Run `jev-sim-use doctor` and fix what it reports |
             | 3 | sim-use or Jev failed mid-run | Retry once; if it repeats, read the error |
@@ -88,8 +86,8 @@ extension SkillBundle {
               line shows which answer was weak, such as `support 0.49 [operation 0.97, element 0.49]`: here, what to act on.
             - **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is, or get
               closer with `exec`, then `resume`.
-            - **the screen stopped changing**: actions are not landing. Inspect with `exec ui` / `exec screenshot`.
-            - **the goal is probably reached, but not surely**: check with `exec ui`; if it is not done, `tell` what the finished
+            - **the screen stopped changing**: actions are not landing. Read the screen and look at it before resuming.
+            - **the goal is probably reached, but not surely**: read the screen; if it is not done, `tell` what the finished
               screen looks like and `resume`.
             - **step limit reached**: `resume` gives another `--max-steps` actions.
             - **app crashed or disappeared**: relaunch the app before resuming.
@@ -105,7 +103,6 @@ extension SkillBundle {
 
             ```sh
             jev-sim-use session show                  # goal, notes, how each run ended, every action taken
-            jev-sim-use exec ui                       # the screen it stopped on
             jev-sim-use session tell -n "Dark Mode is the Dark Appearance switch under Developer"
             jev-sim-use session tell -n "The goal is reached when the Dark Appearance switch is on"
             jev-sim-use session forget -n 1           # drop note 1 (as `show` numbers them) if it proved wrong
@@ -115,8 +112,9 @@ extension SkillBundle {
             - Write notes as facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
               finished screen looks like. Jev reads them for every action and for judging the goal.
             - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
-            - Fix things by hand between runs when that is quicker (`exec`, or sim-use through its skill); `resume` starts from
-              whatever screen is showing.
+            - Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
+            - Fix things by hand between runs when that is quicker, with sim-use through `exec`; `resume` starts from whatever
+              screen is showing.
             - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
               success in another one; a hand-over only costs a note.
             - Commands take a session id; without one they use the most recent session. `session list` shows them all.
@@ -129,14 +127,14 @@ extension SkillBundle {
             Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
             has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
             buttons. Tapping a Delete control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85,
-            because going back cannot undo them. Double tap, `type`, and raw coordinates are not offered; use `exec` or sim-use.
+            because going back cannot undo them. Anything else sim-use can do is left to you through `exec`.
 
             ## Options
 
             | Option | Default | Use |
             |---|---|---|
             | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name |
-            | `-d, --device` | the only usable device | A `deviceId` from `exec devices` |
+            | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
             | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
             | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
 
@@ -149,7 +147,7 @@ extension SkillBundle {
 
             ## More
 
-            - [references/sim-use.md](references/sim-use.md): install the sim-use skill and when to use sim-use directly.
+            - [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
             - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious.
             - [references/lessons.md](references/lessons.md): what driving real apps taught about goals, verification, and app
               accessibility; read before planning a long or unfamiliar flow.
@@ -168,7 +166,7 @@ extension SkillBundle {
 
             Exit 0 means Jev judged the goal reached. Twice that judgment was wrong: once on a detail screen inside the tab it
             was asked to return to, once after a run wandered into another app and finished a same-named item there. Check the
-            end state with `exec ui` before building on it, and read it after the app settles: a saved item can take a second
+            end state by reading the screen before building on it, and read it after the app settles: a saved item can take a second
             or two to appear in a list, so read, wait about two seconds, and judge the second reading.
 
             ## Ambiguity causes more wrong successes than weak judgment
@@ -220,45 +218,22 @@ extension SkillBundle {
         (
             "references/sim-use.md",
             #####"""
-            # Using the sim-use skill alongside jev-sim-use
+            # Using sim-use alongside jev-sim-use
 
-            jev-sim-use drives the device through [sim-use](https://github.com/lycorp-jp/sim-use). It is good at reaching a
-            screen in one command, but it deliberately offers Jev only a subset of sim-use: no double tap, no `type`, no raw
-            coordinates, no video. For those, and for checking results precisely, work with sim-use itself. sim-use ships its
-            own agent skill, which teaches its commands (aliases, selectors, gestures, screenshots, preflight checks).
+            jev-sim-use drives the device through [sim-use](https://github.com/lycorp-jp/sim-use) and offers Jev only part of
+            what sim-use can do. Reading the screen, checking a result, single exact actions, and anything Jev is not offered
+            are done with sim-use itself, either directly or through `jev-sim-use exec <sim-use args>`, which runs sim-use against
+            the same device.
 
-            ## Install the sim-use skill
+            sim-use's commands change between releases, so this skill does not describe them. Learn them from sim-use:
 
-            ```sh
-            sim-use init                    # detects the AI client and installs the `sim-use` skill
-            sim-use init --client claude    # Claude Code: ~/.claude/skills/sim-use
-            sim-use init --client agents    # AGENTS.md-style clients
-            sim-use init --dest <dir>       # any skills directory
-            sim-use init --force            # update an existing install after upgrading sim-use
-            ```
+            - Install sim-use's own agent skill, which teaches its commands and is kept in step with the installed version. See
+              `sim-use init --help` for how to install it for your client, and reinstall it after upgrading sim-use.
+            - For any command, `sim-use --help` and `sim-use <command> --help` are the reference.
 
-            Once installed, the `sim-use` skill is available next to this one; load it when a step needs sim-use directly.
-            `sim-use init` only writes files on this machine; it does not touch any device.
-
-            ## Which one to use
-
-            | Need | Use |
-            |---|---|
-            | Get to a screen, a setting, or a filled form in several steps | `jev-sim-use "<goal>"` |
-            | Read what is on screen, or verify a result | `jev-sim-use exec ui` (or `sim-use ui`) |
-            | One exact tap, a tap at coordinates, a held tap | `jev-sim-use exec tap @N` / `tap -x … -y … --duration 0.1` |
-            | Double tap, `type`, key presses, multi-touch, screenshots, video | sim-use, guided by its skill |
-            | Something jev-sim-use stopped on and cannot see (another process's prompt) | `exec screenshot`, then a coordinate tap |
-
-            `jev-sim-use exec <args>` runs `sim-use <args>` with the same device resolution, so everything in the sim-use skill
-            also works through `exec`.
-
-            ## Things that matter when mixing them
-
-            - Pass the same `--device` to both when more than one simulator is booted. Aliases like `@12` come from the last
-              `ui` read of that device; read the screen again after anything changes before tapping an alias.
-            - `resume` starts from whatever screen is showing, so it is fine to fix something by hand with sim-use and then
-              continue the session.
+            Once the sim-use skill is installed, load it whenever a step needs sim-use directly, and use jev-sim-use for the
+            multi-step navigation in between. A session's `resume` starts from whatever screen is showing, so fixing something
+            by hand with sim-use and then continuing is fine.
 
             """#####,
         ),
@@ -293,11 +268,12 @@ extension SkillBundle {
             jev-sim-use names it from the text above it, but sim-use drags do not move SwiftUI sliders; set it by hand. App fix:
             `Slider(...) { Text("…") }` plus an `.accessibilityValue` with the displayed value and unit.
 
-            **Something visible that `exec ui` does not list.** A system prompt from another process (a password-save alert),
-            most cells of a colour grid, a popover's close button. Use `exec screenshot` and `exec tap -x … -y …`.
+            **Something visible that the screen reading does not list.** A system prompt from another process (a password-save
+            alert), most cells of a colour grid, a popover's close button. Take a screenshot with sim-use and act on it by
+            coordinates, as its skill describes.
 
-            **A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Hold it
-            briefly: `exec tap -x … -y … --duration 0.1`.
+            **A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Tap it
+            with sim-use using a short hold (see its skill for how).
 
             **Place words** ("home", "settings", "search", "back"). Jev reads them as the app's own first (a tab, screen, or
             button by that name) and as the device's only when the app has none. Say "the device's Home Screen" if you mean to
@@ -306,7 +282,7 @@ extension SkillBundle {
             **Creating something.** Say "and save it". Typed text is not saved, and Jev does not treat it as done.
 
             **Search.** A search field that acts on Return is fine; Jev can press Return. A results screen without a heading
-            often ends as "probably reached"; confirm with `exec ui`.
+            often ends as "probably reached"; read the screen to confirm.
 
             **Slow submits.** After an action that changes nothing, the run keeps reading for up to 2 s. A sign-up or save that
             takes longer can be pressed twice; check the result before resuming.

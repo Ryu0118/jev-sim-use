@@ -15,11 +15,9 @@ it stops.
 
 - `jev-sim-use "<goal>"` to get somewhere in several steps: a screen, a toggle state, a submitted search, a saved
   item.
-- `jev-sim-use exec <sim-use args>` for single exact steps and for checking results: `exec ui` to read the screen,
-  `exec screenshot` to see it, `exec tap @N` for one tap.
-- sim-use directly, through its own skill, for what jev-sim-use does not offer (double tap, `type`, key presses,
-  multi-touch, video). See [references/sim-use.md](references/sim-use.md) for installing that skill and choosing
-  between the two.
+- sim-use itself for reading the screen, checking a result, single exact actions, and anything Jev is not offered.
+  Run it through `jev-sim-use exec <sim-use args>` to target the same device. Learn its commands from sim-use's own
+  skill and `sim-use --help`; [references/sim-use.md](references/sim-use.md) says how to install that skill.
 
 ## Before the first run
 
@@ -29,8 +27,8 @@ jev-sim-use doctor     # sim-use installed, one usable device, TYPESAFE_API_KEY 
 
 - Open the app yourself; sim-use cannot launch apps. Give it a few seconds, then dismiss any late prompt (rating
   request, tracking, notifications, password save). These appear after launch and derail a run midway.
-- When several devices are booted, pass `--device <deviceId>` to every command, including `exec`; aliases like `@12`
-  belong to the last screen read of one device.
+- When several devices are booted, pass `--device <deviceId>` to every command, including `exec`, so every step
+  and every check hits the same device.
 - Typing pastes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
   (exit 2) instead of silently typing nothing.
 
@@ -66,7 +64,7 @@ stdout is the outcome line; stderr shows each step. When the goal was not reache
 
 | Exit | Meaning | What to do |
 |---|---|---|
-| 0 | Goal reached | Verify with `exec ui` before relying on it |
+| 0 | Goal reached | Read the screen and verify before relying on it |
 | 1 | Stopped before the goal | Read the reason below, then supervise the session |
 | 2 | Setup problem | Run `jev-sim-use doctor` and fix what it reports |
 | 3 | sim-use or Jev failed mid-run | Retry once; if it repeats, read the error |
@@ -80,8 +78,8 @@ Stop reasons on exit 1:
   line shows which answer was weak, such as `support 0.49 [operation 0.97, element 0.49]`: here, what to act on.
 - **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is, or get
   closer with `exec`, then `resume`.
-- **the screen stopped changing**: actions are not landing. Inspect with `exec ui` / `exec screenshot`.
-- **the goal is probably reached, but not surely**: check with `exec ui`; if it is not done, `tell` what the finished
+- **the screen stopped changing**: actions are not landing. Read the screen and look at it before resuming.
+- **the goal is probably reached, but not surely**: read the screen; if it is not done, `tell` what the finished
   screen looks like and `resume`.
 - **step limit reached**: `resume` gives another `--max-steps` actions.
 - **app crashed or disappeared**: relaunch the app before resuming.
@@ -97,7 +95,6 @@ cannot know, and continue; a fresh run with a longer goal loses all of that.
 
 ```sh
 jev-sim-use session show                  # goal, notes, how each run ended, every action taken
-jev-sim-use exec ui                       # the screen it stopped on
 jev-sim-use session tell -n "Dark Mode is the Dark Appearance switch under Developer"
 jev-sim-use session tell -n "The goal is reached when the Dark Appearance switch is on"
 jev-sim-use session forget -n 1           # drop note 1 (as `show` numbers them) if it proved wrong
@@ -107,8 +104,9 @@ jev-sim-use session resume                # same goal, notes, and history; exits
 - Write notes as facts about the app, not tap-by-tap instructions: where a setting lives, what a label means, what the
   finished screen looks like. Jev reads them for every action and for judging the goal.
 - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
-- Fix things by hand between runs when that is quicker (`exec`, or sim-use through its skill); `resume` starts from
-  whatever screen is showing.
+- Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
+- Fix things by hand between runs when that is quicker, with sim-use through `exec`; `resume` starts from whatever
+  screen is showing.
 - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
   success in another one; a hand-over only costs a note.
 - Commands take a session id; without one they use the most recent session. `session list` shows them all.
@@ -121,14 +119,14 @@ session; an unfinished one expires a week after it last changed.
 Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
 has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
 buttons. Tapping a Delete control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85,
-because going back cannot undo them. Double tap, `type`, and raw coordinates are not offered; use `exec` or sim-use.
+because going back cannot undo them. Anything else sim-use can do is left to you through `exec`.
 
 ## Options
 
 | Option | Default | Use |
 |---|---|---|
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name |
-| `-d, --device` | the only usable device | A `deviceId` from `exec devices` |
+| `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
 
@@ -141,7 +139,7 @@ screens with data that may not leave the machine.
 
 ## More
 
-- [references/sim-use.md](references/sim-use.md): install the sim-use skill and when to use sim-use directly.
+- [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
 - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious.
 - [references/lessons.md](references/lessons.md): what driving real apps taught about goals, verification, and app
   accessibility; read before planning a long or unfamiliar flow.

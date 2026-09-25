@@ -26,11 +26,12 @@ screen's hints ("asking again with the screen's accessibility hints" in the step
 jev-sim-use names it from the text above it, but sim-use drags do not move SwiftUI sliders; set it by hand. App fix:
 `Slider(...) { Text("…") }` plus an `.accessibilityValue` with the displayed value and unit.
 
-**Something visible that `exec ui` does not list.** A system prompt from another process (a password-save alert),
-most cells of a colour grid, a popover's close button. Use `exec screenshot` and `exec tap -x … -y …`.
+**Something visible that the screen reading does not list.** A system prompt from another process (a password-save
+alert), most cells of a colour grid, a popover's close button. Take a screenshot with sim-use and act on it by
+coordinates, as its skill describes.
 
-**A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Hold it
-briefly: `exec tap -x … -y … --duration 0.1`.
+**A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Tap it
+with sim-use using a short hold (see its skill for how).
 
 **Place words** ("home", "settings", "search", "back"). Jev reads them as the app's own first (a tab, screen, or
 button by that name) and as the device's only when the app has none. Say "the device's Home Screen" if you mean to
@@ -39,7 +40,7 @@ leave the app; sim-use cannot open it again.
 **Creating something.** Say "and save it". Typed text is not saved, and Jev does not treat it as done.
 
 **Search.** A search field that acts on Return is fine; Jev can press Return. A results screen without a heading
-often ends as "probably reached"; confirm with `exec ui`.
+often ends as "probably reached"; read the screen to confirm.
 
 **Slow submits.** After an action that changes nothing, the run keeps reading for up to 2 s. A sign-up or save that
 takes longer can be pressed twice; check the result before resuming.

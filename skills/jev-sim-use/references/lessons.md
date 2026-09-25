@@ -7,7 +7,7 @@ failure. They apply to agent-driven UI work generally, not only to this tool.
 
 Exit 0 means Jev judged the goal reached. Twice that judgment was wrong: once on a detail screen inside the tab it
 was asked to return to, once after a run wandered into another app and finished a same-named item there. Check the
-end state with `exec ui` before building on it, and read it after the app settles: a saved item can take a second
+end state by reading the screen before building on it, and read it after the app settles: a saved item can take a second
 or two to appear in a list, so read, wait about two seconds, and judge the second reading.
 
 ## Ambiguity causes more wrong successes than weak judgment
