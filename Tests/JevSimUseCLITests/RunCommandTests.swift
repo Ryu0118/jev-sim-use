@@ -26,7 +26,15 @@ struct RunCommandTests {
         #expect(recording.standardError.first?.contains("brew install lycorp-jp/tap/sim-use") == true)
     }
 
-    @Test("rejects out-of-range options before running", arguments: [["x", "--max-steps", "0"], ["x", "--min-confidence", "2"]])
+    @Test("parses --actions as comma-separated groups, and offers every group without it")
+    func actions() throws {
+        #expect(try RunCommand.parse(["x", "--actions", "tap, scroll"]).agent.allowedOperations == [.tap, .scroll])
+        #expect(try RunCommand.parse(["x"]).agent.allowedOperations == OperationGroup.all)
+    }
+
+    @Test("rejects out-of-range options before running", arguments: [
+        ["x", "--max-steps", "0"], ["x", "--min-confidence", "2"], ["x", "--actions", "tap,fly"],
+    ])
     func invalidOptions(arguments: [String]) {
         #expect(throws: (any Error).self) { try RunCommand.parse(arguments) }
     }

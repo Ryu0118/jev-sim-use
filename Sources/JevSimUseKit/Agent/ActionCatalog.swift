@@ -20,12 +20,13 @@ enum ActionCatalog {
     /// (Reminders), and a tap that does nothing is reported back through `history` rather than guessed away here.
     ///
     /// `explored` names elements whose branch this run already entered and came back from; offering them again made
-    /// Jev loop (一般 → back → 一般).
+    /// Jev loop (一般 → back → 一般). Only operations in `allowed` are offered, and targets only for allowed ones.
     static func menu(
         for snapshot: UISnapshot,
         texts: [InputText],
         excluding excluded: Set<String> = [],
         explored: Set<String> = [],
+        allowed: Set<OperationGroup> = OperationGroup.all,
     ) -> ActionMenu {
         let entries = (snapshot.entries ?? []).filter { !$0.isDisabled }
         let elements = entries
@@ -54,7 +55,12 @@ enum ActionCatalog {
             .filter { !excluded.contains($0.optionName) && ($0 != .goBack || canGoBack) }
             .map(Operation.device)
         operations += [.done, .blocked]
-        return ActionMenu(operations: operations, elements: Array(elements), fields: Array(fields), texts: texts)
+        operations = operations.filter(allowed.allows)
+        let actsOnElements = operations.contains(where: \.actsOnElement)
+        return ActionMenu(
+            operations: operations, elements: actsOnElements ? Array(elements) : [],
+            fields: operations.contains(.enterText) ? Array(fields) : [], texts: texts,
+        )
     }
 
     static func isDestructive(_ label: String) -> Bool {

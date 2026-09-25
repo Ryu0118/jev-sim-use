@@ -28,6 +28,22 @@ struct ActionCatalogTests {
         #expect(menu.fields == [ElementTarget(alias: 7, role: "TextField", label: "empty input field")])
     }
 
+    @Test("offers only the allowed operation groups, and element targets only when an element operation is allowed")
+    func allowedGroups() {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Settings"), Fixtures.entry(2, "", role: "TextField")])
+        let texts = [InputText(name: "query", value: "milk")]
+        let tapping = ActionCatalog.menu(for: snapshot, texts: texts, allowed: [.tap, .scroll])
+        #expect(tapping.operations.map(\.optionName) == [
+            "tap", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right", "scroll_to_reveal_left",
+            "done", "blocked",
+        ])
+        #expect(tapping.fields.isEmpty)
+        let typing = ActionCatalog.menu(for: snapshot, texts: texts, allowed: [.type])
+        #expect(typing.operations == [.enterText, .done, .blocked])
+        #expect(typing.elements.isEmpty)
+        #expect(typing.fields.map(\.alias) == [2])
+    }
+
     @Test("stays within Jev's option limit")
     func cap() {
         let entries = (1 ... 300).map { Fixtures.entry($0, "Row \($0)") }

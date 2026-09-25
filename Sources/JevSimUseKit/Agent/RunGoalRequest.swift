@@ -6,6 +6,8 @@ package struct RunGoalRequest: Sendable, Equatable {
     package var maxSteps: Int
     /// Stop and hand over below this confidence.
     package var minConfidence: Double
+    /// The operations Jev may choose from in this run (`--actions`).
+    package var allowedOperations: Set<OperationGroup>
     /// `--device`, or `nil` to use the session's device, then `$SIM_USE_DEVICE`, then the only usable device.
     package var deviceID: String?
     /// `--base-url`, if given.
@@ -17,6 +19,7 @@ package struct RunGoalRequest: Sendable, Equatable {
         session: SessionStart,
         maxSteps: Int,
         minConfidence: Double,
+        allowedOperations: Set<OperationGroup> = OperationGroup.all,
         deviceID: String?,
         baseURL: String?,
         model: String?,
@@ -24,6 +27,7 @@ package struct RunGoalRequest: Sendable, Equatable {
         self.session = session
         self.maxSteps = maxSteps
         self.minConfidence = minConfidence
+        self.allowedOperations = allowedOperations
         self.deviceID = deviceID
         self.baseURL = baseURL
         self.model = model

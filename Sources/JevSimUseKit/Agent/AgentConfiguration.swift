@@ -14,6 +14,8 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var stallLimit: Int
     /// Thresholds for acting on Jev's chosen action.
     package var actionPolicy: ActionPolicy
+    /// The operations Jev may choose from (`--actions`).
+    package var allowedOperations: Set<OperationGroup>
     /// How long to keep reading after an action that left the screen as it was, before calling it ineffective.
     package var unchangedWait: Duration
 
@@ -25,6 +27,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         maxSteps: Int = 15,
         stallLimit: Int = 3,
         actionPolicy: ActionPolicy = ActionPolicy(),
+        allowedOperations: Set<OperationGroup> = OperationGroup.all,
         unchangedWait: Duration = .zero,
     ) {
         self.goal = goal
@@ -33,6 +36,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.maxSteps = maxSteps
         self.stallLimit = stallLimit
         self.actionPolicy = actionPolicy
+        self.allowedOperations = allowedOperations
         self.unchangedWait = unchangedWait
     }
 }

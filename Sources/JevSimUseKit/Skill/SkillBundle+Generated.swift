@@ -187,6 +187,7 @@ extension SkillBundle {
             | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
             | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
             | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
+            | `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`). Naming only what the goal needs, such as `tap,type,scroll,back` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
             ## Privacy
 

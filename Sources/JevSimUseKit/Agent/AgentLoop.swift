@@ -43,7 +43,7 @@ package struct AgentLoop: Sendable {
             }
             let plan = try await plan(for: observation.snapshot, progress: progress)
             expectedToFinish = plan.finishes.value >= ActionPolicy.finishMinimum
-            if let scan = ScanFirst.override(
+            if configuration.allowedOperations.allows(.device(.revealContentBelow)), let scan = ScanFirst.override(
                 plan, on: observation.snapshot, goal: configuration.goal, notes: configuration.notes,
                 alreadyScanned: progress.hasScannedCurrentTitle, tried: progress.ineffectiveActions,
             ), progress.steps < configuration.maxSteps {

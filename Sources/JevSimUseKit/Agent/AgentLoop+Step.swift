@@ -5,7 +5,7 @@ extension AgentLoop {
             snapshot: snapshot,
             menu: ActionCatalog.menu(
                 for: snapshot, texts: configuration.texts, excluding: progress.ineffectiveActions,
-                explored: progress.exploredElements,
+                explored: progress.exploredElements, allowed: configuration.allowedOperations,
             ),
             history: progress.history,
             notes: configuration.notes,
