@@ -43,33 +43,76 @@ extension SkillBundle {
             - Typing pastes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
               (exit 2) instead of silently typing nothing.
 
-            ## Write the goal as an unambiguous end state
+            ## Choose the goal's form: an end state or numbered steps
 
-            The goal is the only thing Jev knows about your intent, and wrong successes almost always came from a goal that
-            allowed two readings. Write the finished state in the app's own terms:
+            The goal is the only thing Jev knows about your intent. Jev does not know the app, so every screen it has to find
+            on its own is a place where it can guess wrong or hand over. Choose the form by how much of the route Jev would
+            have to discover:
 
-            ```sh
+            - **An end state** for short goals: one to three actions, where the target is on the current screen or one obvious
+              hop away. Describe the finished state in the app's own terms.
+            - **Numbered steps** for anything longer: several screens, a flow that returns somewhere and continues, or a screen
+              with two features that look alike. Spell out the route, one action per step. In a comparison run, a
+              create-edit-favourite-convert-complete flow written as an end state stalled at its fourth action and once left the
+              app; the same flow written as numbered steps ran 15 actions in about a minute, most of them at 0.8 support or
+              higher.
+
+            <examples>
+            <example>
             jev-sim-use "Turn on Dark Mode in Settings"
+            </example>
+            <example>
             jev-sim-use "Search the memos for the query text and show the results" -t query=milk
-            jev-sim-use "Create a memo whose title is the title text and save it" -t title="Buy milk"
-            jev-sim-use "Sign in with the email and the password" -t email=alice@example.com -t password=hunter2
-            jev-sim-use "Go back to the app's Home tab"
-            ```
+            </example>
+            <example>
+            jev-sim-use --max-steps 30 "1. On the Home tab, tap the New Memo button.
+            2. In the editor, enter the title text into the Title field.
+            3. Tap Save.
+            4. In the memo list, tap the memo titled with the title text.
+            5. On the memo's screen, tap Favorite.
+            6. Tap Type and choose To-do.
+            7. Tap Back until the Home tab shows the memo list.
+            The goal is reached when the memo shows as a favorite to-do in the Home tab's list." -t title="Buy milk"
+            </example>
+            <example>
+            jev-sim-use "1. Tap the Profile tab.
+            2. Tap Account, then Sign In.
+            3. Enter the email into the Email field and the password into the Password field.
+            4. Tap Sign In.
+            The goal is reached when the Profile tab shows the signed-in email." -t email=alice@example.com -t password=hunter2
+            </example>
+            </examples>
+
+            How to write numbered steps so Jev follows them:
+
+            - Read the screens first (with sim-use through `exec`) and use each control's label exactly as the screen shows it.
+              Jev matches steps against those labels, so "tap Favorite" beats "mark it as a favourite" when the button says
+              Favorite.
+            - Say which screen each step happens on ("On the Home tab", "In the editor"). That keeps Jev from acting on a
+              look-alike control on the wrong screen.
+            - Refer to controls by their labels, never by coordinates or positions; Jev only sees labels.
+            - Make an explicit save or submit tap its own step when the app has one.
+            - End with the finished state as a sentence Jev can check on screen. Exit 0 is still a claim; read the screen.
+            - Give the run room: allow about two actions per numbered step with `--max-steps` (the default is 15).
+
+            These apply to both forms:
 
             - Pass every string to type as `-t name=value`. Jev never writes text; it sees only the name and picks the field whose
               label fits, so name strings by what they are (`email`, `password`, `query`, `title`). Values never leave the
-              machine. After typing, elements that show a text carry its name, so "the memo titled with title" is findable.
-            - When the goal creates something through a form with a save or submit button, say "and save it". Typed text in an
-              open form is not saved, and Jev does not count it as done. When the app saves by itself (stopping a recording,
-              toggling a setting), describe the finished state instead ("the recording is stopped and listed in history"); a
-              "save" step that does not exist leaves Jev looking for one and handing over.
+              machine. After typing, elements that show a text carry its name, so "the memo titled with the title text" is
+              findable.
+            - When the goal creates something through a form with a save or submit button, say "and save it" (or give Save its
+              own step). Typed text in an open form is not saved, and Jev does not count it as done. When the app saves by itself
+              (stopping a recording, toggling a setting), describe the finished state instead ("the recording is stopped and
+              listed in history"); a "save" step that does not exist leaves Jev looking for one and handing over.
             - Name the feature when two look alike ("edit it yourself" versus "ask the AI assistant"). An AI feature may
               otherwise receive your text as an instruction.
             - Place words such as "home", "settings", "search", and "back" mean the app's own tab, screen, or button first; the
               device's only when the app has none. Say "the device's Home Screen" if you do mean to leave the app, and expect a
               hand-over: leaving the app needs high confidence because sim-use cannot open it again.
-            - Split long flows into several goals and check each end state. Uncertainty compounds, so a five-part goal fails far
-              more often than five short ones. Continue from where the last one stopped.
+            - When a long flow still stops, verify the screen it stopped on, `tell` what is missing, and `resume`. When the flow
+              has natural checkpoints you want to verify anyway (a record that must exist before it can be analysed), run each
+              part as its own goal.
 
             ## Read the result, then verify it
 
