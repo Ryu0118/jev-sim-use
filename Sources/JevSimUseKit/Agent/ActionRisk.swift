@@ -4,6 +4,8 @@ package enum ActionRisk: Sendable, Hashable {
     case harmless
     /// Changes something going back can undo (a tap, an edge swipe).
     case reversible
-    /// Cannot be undone from inside the app (pasting text, leaving the app, locking the device).
+    /// Cannot be undone from inside the app (tapping a destructive control).
     case irreversible
+    /// Leaves the app or locks the device: sim-use has no launch verb, so the run cannot come back.
+    case leavesApp
 }

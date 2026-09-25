@@ -66,7 +66,7 @@ extension SimUseDeviceAction {
         // Return submits what was typed; jev-use gates it at 0.5, close to a tap.
         case .swipeFromRightEdge, .pressReturn: .reversible
         // Leaving the app cannot be undone: sim-use has no launch verb.
-        case .press: .irreversible
+        case .press: .leavesApp
         }
     }
 }

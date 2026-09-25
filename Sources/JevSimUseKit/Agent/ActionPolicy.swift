@@ -8,6 +8,10 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Leaving the app, locking the device, or tapping a destructive control is not undone by going back, so it needs
     /// this much. jev-use gates destructive picks at 0.6 as well; the earlier 0.85 stopped correct steps at 0.65-0.84.
     package static let irreversibleMinimum = 0.6
+    /// Leaving the app ends the run's reach: sim-use cannot launch it again. A notone goal to "go back to the home
+    /// screen" pressed the Home button at 0.66, then completed a same-named reminder in another app and reported
+    /// success, so this keeps the earlier 0.85.
+    package static let leavesAppMinimum = RoutingPolicy.default.autoAtOrAbove
     /// Scrolling and going back change nothing in the app and cost one step when wrong, so they need less, but not
     /// below 0.5: TypeSafe's confidence guide reads less than that as genuinely unsure, and a notone search that
     /// already showed its result scrolled away at 0.36 instead of handing over.
@@ -37,6 +41,7 @@ package struct ActionPolicy: Sendable, Hashable {
         case .harmless: min(minimumSupport, Self.harmlessMaximum)
         case .reversible: minimumSupport
         case .irreversible: max(minimumSupport, Self.irreversibleMinimum)
+        case .leavesApp: max(minimumSupport, Self.leavesAppMinimum)
         }
     }
 }

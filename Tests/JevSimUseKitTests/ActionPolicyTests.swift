@@ -19,7 +19,7 @@ struct ActionPolicyTests {
         AgentAction.device(.press(.home)), .device(.press(.lock)),
     ])
     func leavingTheApp(action: AgentAction) {
-        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.irreversibleMinimum)
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action) == ActionPolicy.leavesAppMinimum)
     }
 
     @Test("treats tapping a destructive control as irreversible, and a short sideways swipe as reversible")
