@@ -135,7 +135,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
   `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. If Jev planned on
   a screen whose last action had not shown its effect, the screen is read once more right before acting and a stale
-  plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped.
+  plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped. Before handing over (low
+  support, BLOCKED, probably done), the screen is read once more and the step planned again if it moved on, at
+  most `AgentLoop.staleReplanLimit` times per step: a saved item reached its list a second after the screen changed.
 - `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes
   the value, which never reaches Jev ("select instead of generate").
   An element whose label or value contains a text's value carries that text's name as `shows_text` (only the name:

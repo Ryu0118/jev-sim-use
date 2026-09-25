@@ -28,6 +28,7 @@ package struct AgentLoop: Sendable {
         var progress = AgentProgress(history: history)
         var expectedToFinish = false
         var actedOn: UISnapshot?
+        var staleReplans = 0
         while true {
             try Task.checkCancellation()
             let observation = try await observeAfterAction(on: actedOn)
@@ -63,6 +64,16 @@ package struct AgentLoop: Sendable {
             }
             switch decision {
             case let .stop(outcome):
+                // A saved item can reach a list a second after the screen changed: Jev, planning on the list without
+                // it, scrolled at 0.40 and stopped. Before handing over, read once more and plan again if the screen
+                // moved on (jev-ultrafast checks freshness the same way), a bounded number of times per step.
+                if staleReplans < Self.staleReplanLimit, outcome.isHandOver,
+                   try await driver.observe().snapshot.identity != observation.snapshot.identity
+                {
+                    staleReplans += 1
+                    actedOn = nil
+                    continue
+                }
                 return AgentRunResult(outcome: outcome, history: progress.history)
             case let .act(action):
                 // The last action's effect arrived while Jev was deciding: its plan is for a screen that is gone.
@@ -73,6 +84,7 @@ package struct AgentLoop: Sendable {
                 let disappeared = try await execute(action, on: observation.snapshot)
                 progress.recordAction(action, disappeared: disappeared)
                 actedOn = observation.snapshot
+                staleReplans = 0
             }
         }
     }

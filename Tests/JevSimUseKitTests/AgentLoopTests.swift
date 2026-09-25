@@ -131,6 +131,20 @@ struct AgentLoopGestureTests {
     }
 }
 
+/// Unsure on the first screen it sees, done on the next; records the screens it planned on.
+private final class UnsureThenDonePlanner: StepPlanning {
+    private let seen = Mutex<[String]>([])
+
+    var outlines: [String] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        let count = seen.withLock { $0.append(request.snapshot.outline); return $0.count }
+        return count == 1 ? .tapNext(confidence: 0.3) : .done()
+    }
+}
+
 /// Taps `taps` times, then hands over, recording the screen each plan was made on.
 private final class TapOncePlanner: StepPlanning {
     private let seen = Mutex<[String]>([])
@@ -168,6 +182,17 @@ struct AgentLoopSettleTests {
             driver: ScriptedDriver(outlines: outlines), planner: hasty, configuration: AgentConfiguration(goal: "g"),
         ).run()
         #expect(hasty.outlines == ["Form", "Form"])
+    }
+
+    @Test("plans again instead of handing over when the screen moved on while Jev decided to stop")
+    func replansStaleHandOver() async throws {
+        let planner = UnsureThenDonePlanner()
+        let outcome = try await AgentLoop(
+            driver: ScriptedDriver(outlines: ["Saving", "Saving", "Home", "Home", "Home"]), planner: planner,
+            configuration: AgentConfiguration(goal: "g"),
+        ).run().outcome
+        #expect(planner.outlines == ["Saving", "Home"])
+        #expect(outcome == .goalReached(steps: 0))
     }
 
     @Test("drops a plan whose screen changed while Jev decided, after an action that had not shown its effect")

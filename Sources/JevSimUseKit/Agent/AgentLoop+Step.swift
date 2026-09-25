@@ -74,6 +74,9 @@ extension AgentLoop {
         }
     }
 
+    /// How many times one step is planned again because the screen changed while Jev decided to stop.
+    static let staleReplanLimit = 2
+
     /// How long a live run keeps reading after an action that left the screen as it was.
     static let unchangedWait: Duration = .seconds(2)
 

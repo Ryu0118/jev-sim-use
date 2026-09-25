@@ -24,6 +24,14 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
         }
     }
 
+    /// Whether Jev chose to stop on what it saw, rather than a limit, a crash, or success ending the run.
+    var isHandOver: Bool {
+        switch self {
+        case .escalated, .noActionFits, .goalProbablyReached: true
+        default: false
+        }
+    }
+
     /// A one-line summary of how the run ended.
     package var description: String {
         switch self {
