@@ -23,6 +23,14 @@ extension JevStepPlanner {
             operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
         let (action, targetFactors) = try compose(operation, response: response, menu: menu)
+        // Opening a memo split Jev between tap 0.46, long_press 0.28, and swipe_left 0.22 on a row it picked at 0.65:
+        // sure what to act on, unsure how. Every element gesture shares that target, and a reversible one is undone by
+        // going back, so the element is what the gate checks (jev-use gates only the target); the most probable
+        // gesture still runs. A destructive tap keeps its own probability.
+        if operation.actsOnElement, action.risk != .irreversible {
+            let onElement = menu.operations.filter(\.actsOnElement).reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
+            operationSupport = max(operationSupport, onElement)
+        }
         let factors = [StepPlan.Factor(name: "operation", value: operationSupport)] + targetFactors
         let alternatives = probabilities
             .filter { $0.key != operation.optionName && $0.value >= 0.05 }

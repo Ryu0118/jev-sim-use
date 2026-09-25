@@ -70,7 +70,7 @@ struct JevStepPlannerTests {
     func pooledRotation() throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(2, "マップ", role: "Image")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"rotate_clockwise","probabilities":{"rotate_clockwise":0.4,"rotate_counterclockwise":0.35,"pinch_out":0.25},"confidence":0.4},"element_target":{"type":"choice","choice":"e2","probabilities":{"e2":0.95},"confidence":0.95}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"rotate_clockwise","probabilities":{"rotate_clockwise":0.4,"rotate_counterclockwise":0.35,"scroll_to_reveal_below":0.25},"confidence":0.4},"element_target":{"type":"choice","choice":"e2","probabilities":{"e2":0.95},"confidence":0.95}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
         #expect(plan.action == .gesture(.rotateClockwise, alias: 2, role: "Image", label: "マップ"))
         #expect(abs(plan.support - 0.75) < 0.0001)
@@ -103,6 +103,25 @@ struct JevStepPlannerTests {
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
         #expect(plan.action == .enterText(field: 13, label: "タイトル", text: InputText(name: "title", value: "牛乳を買う")))
         #expect(abs(plan.support - 0.87) < 0.0001)
+    }
+
+    @Test("gates a reversible element action on the element, since how to touch it splits between gestures")
+    func elementGesturesPool() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(17, "牛乳を買う", role: "StaticText")])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [])
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22,"blocked":0.04},"confidence":0.3},"element_target":{"type":"choice","choice":"e17","probabilities":{"e17":0.65},"confidence":0.6}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        #expect(plan.action == .tap(alias: 17, role: "StaticText", label: "牛乳を買う"))
+        #expect(abs(plan.support - 0.65) < 0.0001)
+    }
+
+    @Test("keeps a destructive tap's own probability, so a split does not carry it over the irreversible bar")
+    func destructiveTapDoesNotPool() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "削除")])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [])
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22},"confidence":0.3},"element_target":{"type":"choice","choice":"e19","probabilities":{"e19":0.95},"confidence":0.9}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        #expect(abs(plan.support - 0.46) < 0.0001)
     }
 
     @Test("a typing step logs each answer its support depends on, so the lowest one is visible")

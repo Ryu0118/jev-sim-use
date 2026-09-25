@@ -94,7 +94,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
   `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
   jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
-  depends on (operation, target, text); targets with the same role and label pool their probability. `StepPlan.factors`
+  depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
+  tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
+  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
   four directions, go back, a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`

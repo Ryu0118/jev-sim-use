@@ -39,6 +39,14 @@ package enum Operation: Sendable, Hashable {
         }
     }
 
+    /// Whether the operation acts on the element `element_target` names: a tap or another element gesture.
+    var actsOnElement: Bool {
+        switch self {
+        case .tap, .gesture: true
+        default: false
+        }
+    }
+
     /// The criteria Jev reads for this option.
     var optionDescription: String {
         switch self {
