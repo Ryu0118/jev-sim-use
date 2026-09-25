@@ -7,17 +7,30 @@ extension UISnapshot {
     /// it and deeper in the tree, like a row's own label) do not count; the search bar lay inside the row's frame but
     /// shallower in the tree. A shallower element overlapping the row covers it even off its centre: the bar's glass
     /// reaches past its text field's frame and swallowed a tap on a row whose centre sat just above that frame.
+    ///
+    /// Bars (a tab bar, toolbar, navigation bar, or another named group) are drawn over the content that scrolls
+    /// beneath them, so content never covers an element inside one: a history row scrolled under the tab bar had its
+    /// frame over a tab's centre, and the tab was wrongly treated as covered.
     func cover(of entry: UIEntry) -> UIEntry? {
         guard let target = entry.frame else { return nil }
         let center = target.center
+        let bar = entry.region.flatMap { Self.barKinds.contains($0.kind) ? $0 : nil }
         return (entries ?? []).first { other in
             guard let frame = other.frame, frame != target, !frame.contains(target) else { return false }
+            if let bar, other.region != bar {
+                return false
+            }
             let isChild = target.contains(frame) && (other.depth ?? 0) > (entry.depth ?? 0)
             let floatsOver = (other.depth ?? 0) < (entry.depth ?? 0) && frame.overlaps(target)
             return !isChild && (floatsOver || frame.x <= center.x && center.x <= frame.x + frame.width
                 && frame.y <= center.y && center.y <= frame.y + frame.height)
         }
     }
+}
+
+extension UISnapshot {
+    /// sim-use's region kinds for containers drawn over the scrolling content.
+    static let barKinds: Set = ["NavBar", "TabBar", "Toolbar", "Group"]
 }
 
 extension ElementFrame {

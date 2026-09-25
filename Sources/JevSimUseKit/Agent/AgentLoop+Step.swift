@@ -59,6 +59,14 @@ extension AgentLoop {
         switch action {
         case let .tap(alias, _, _): try await driver.tap(alias: alias, on: snapshot)
         case let .gesture(gesture, alias, _, _): try await driver.perform(gesture, alias: alias, on: snapshot)
+        // iOS offers go_back only where a back button shows; tapping it is what the edge swipe stands for, and the
+        // swipe was swallowed on a detail screen whose map took the drag.
+        case .device(.goBack) where snapshot.platform == SimUseContract.Platform.ios:
+            if let back = snapshot.entries?.first(where: { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }) {
+                try await driver.tap(alias: back.aliases.alias, on: snapshot)
+            } else {
+                try await driver.perform(.goBack, platform: snapshot.platform)
+            }
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
         case let .enterText(field, _, text):
             try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value)

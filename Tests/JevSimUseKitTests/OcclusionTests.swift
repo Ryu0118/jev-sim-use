@@ -17,6 +17,16 @@ struct OcclusionTests {
         entry(16, "検索", ElementFrame(x: 33, y: 803, width: 336, height: 38), role: "TextField", depth: 1)
     }
 
+    @Test("content scrolled under the tab bar does not cover a tab, which the bar draws on top of it")
+    func tabOverContent() {
+        let tab = UIEntry(
+            aliases: ElementAliases(alias: 51), role: "RadioButton", label: "History", states: [], value: nil, uniqueId: nil,
+            region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 25, y: 795, width: 98, height: 54),
+        )
+        let time = entry(13, "10:35 - 10:37", ElementFrame(x: 50, y: 806, width: 105, height: 20), role: "StaticText")
+        #expect(Fixtures.snapshot(entries: [time, tab]).cover(of: tab) == nil)
+    }
+
     @Test("a row under the floating search bar is marked covered_by it in the state")
     func underSearchBar() throws {
         let screen = entry(9, "", ElementFrame(x: 0, y: 0, width: 402, height: 874), role: "Group", depth: 0)

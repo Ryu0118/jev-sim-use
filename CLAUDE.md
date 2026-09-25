@@ -101,7 +101,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   goal's quoted item (`ScanFirst.namedTerms`, such as one colour name across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
-  four directions, go back (on iOS only when a `BackButton` shows a navigation stack: the left-edge swipe does
+  four directions, go back (on iOS only when a `BackButton` shows a navigation stack, and done by tapping it, since a
+  map on a detail screen swallowed the left-edge swipe; the swipe does
   nothing on a sheet or a tab's root, where Jev chose it at 0.79-0.88), a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`
   verb), and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`); and pastes. A search field that
   shows results only on Return cannot finish without it. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot

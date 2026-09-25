@@ -20,6 +20,18 @@ struct AgentLoopTests {
         #expect(driver.performedActions == ["tap @1", "tap @1"])
     }
 
+    @Test("goes back on iOS by tapping the back button, which a map on the screen cannot swallow like the edge swipe")
+    func goBackTapsBackButton() async throws {
+        let back = UIEntry(
+            aliases: ElementAliases(alias: 7), role: "Button", label: "History", states: [], value: nil,
+            uniqueId: "BackButton", region: nil, frame: nil,
+        )
+        let driver = FakeDriver(outlines: ["Detail", "History"], entries: [back])
+        let plan = StepPlan(action: .device(.goBack), confidence: 0.9, costUSD: 0)
+        _ = try await run(driver, [plan, .done()])
+        #expect(driver.performedActions == ["tap @7"])
+    }
+
     @Test("hands over an unsure tap without acting or exploring")
     func escalates() async throws {
         let driver = FakeDriver(outlines: ["A"])
