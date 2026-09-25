@@ -29,6 +29,26 @@ extension UISnapshot {
 }
 
 extension UISnapshot {
+    /// The scroll that brings `entry` where a tap at its centre reaches it, or `nil` when it already does: an element
+    /// under an overlay, or one whose centre lies past the screen's edge (a settings switch below the tab bar, whose
+    /// tap landed off screen).
+    func revealingScroll(for entry: UIEntry) -> SimUseDeviceAction? {
+        let bottom = screen.map { $0.y + $0.height }
+            ?? (entries ?? []).compactMap(\.frame).map { $0.y + $0.height }.max() ?? 0
+        if let cover = cover(of: entry) {
+            // An overlay in the lower half (a bottom search bar) needs the row moved up, which reveals content below.
+            // Comparing the overlay with the row itself flipped when the row sat a few points lower.
+            return (cover.frame?.center.y ?? 0) >= bottom / 2 ? .revealContentBelow : .revealContentAbove
+        }
+        guard let center = entry.frame?.center else { return nil }
+        if center.y >= bottom {
+            return .revealContentBelow
+        }
+        return center.y < (screen?.y ?? 0) ? .revealContentAbove : nil
+    }
+}
+
+extension UISnapshot {
     /// sim-use's region kinds for containers drawn over the scrolling content.
     static let barKinds: Set = ["NavBar", "TabBar", "Toolbar", "Group"]
 }

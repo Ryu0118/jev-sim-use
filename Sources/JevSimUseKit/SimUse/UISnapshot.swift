@@ -16,11 +16,13 @@ package struct UISnapshot: Decodable, Sendable, Hashable {
     package let entries: [UIEntry]?
     /// Set when an Android crash dialog is on screen.
     package let crashDialog: CrashDialog?
+    /// The screen's bounds in the same space as element frames, when sim-use reports them.
+    package var screen: ElementFrame?
 }
 
 extension UISnapshot {
     private enum CodingKeys: String, CodingKey {
-        case platform, outline, appLabel, entries, crashDialog, raw
+        case platform, outline, appLabel, entries, crashDialog, raw, screen
     }
 
     package init(from decoder: any Decoder) throws {
@@ -33,6 +35,7 @@ extension UISnapshot {
             appLabel: container.decodeIfPresent(String.self, forKey: .appLabel),
             entries: entries.map { Self.withHints($0, from: raw) },
             crashDialog: container.decodeIfPresent(CrashDialog.self, forKey: .crashDialog),
+            screen: container.decodeIfPresent(ElementFrame.self, forKey: .screen),
         )
     }
 }

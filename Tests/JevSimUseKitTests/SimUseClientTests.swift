@@ -68,7 +68,7 @@ struct SimUseClientTests {
         #expect(runner.recordedCalls == [["keyboard-state"] + device + ["--json"]])
     }
 
-    @Test("taps an iOS switch on its trailing edge, and holds every iOS tap briefly, which instant taps did not do")
+    @Test("taps an iOS switch on its trailing edge; every iOS tap is held briefly and runs outside the daemon")
     func switchTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
         let toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
@@ -79,6 +79,7 @@ struct SimUseClientTests {
             ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.1"] + device + ["--json"],
             ["tap", "@4", "--duration", "0.1"] + device + ["--json"],
         ])
+        #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
     }
 
     @Test("taps a full-width value row on its trailing control, and a narrow value button at its alias")

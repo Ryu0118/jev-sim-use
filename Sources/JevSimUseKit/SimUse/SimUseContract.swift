@@ -11,6 +11,10 @@ package enum SimUseContract {
     static let noRawFlag = "--no-raw"
     /// Skips discovering physical iPhones for `devices`, which this tool never drives; the discovery took about a second.
     static let noPhysicalIOSFlag = "--no-physical-ios"
+    /// Runs a command in-process instead of through sim-use's per-device daemon. An iOS tap took 0.2 s this way and
+    /// 0.4 s through the daemon, which checks for crashed apps on every command. The daemon still reports an app that
+    /// disappeared on its next command, which is always the `ui` read after a tap.
+    static let noDaemonEnvironment = ["SIM_USE_NO_DAEMON": "1"]
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 
@@ -49,9 +53,6 @@ package enum SimUseContract {
         static let x = "-x"
         static let y = "-y"
         static let duration = "--duration"
-        /// Selectors that find the element in a fresh accessibility read, for when the cached alias is stale.
-        static let id = "--id"
-        static let label = "--label"
         /// How long every iOS tap rests. sim-use's help says a UISwitch (`CheckBox`) ignores zero-duration taps, and a
         /// memo editor's SwiftUI Save button ignored them too while a 0.1 s tap saved; a finger rests about that long.
         static let holdSeconds = "0.1"

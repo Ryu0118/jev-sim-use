@@ -18,11 +18,14 @@ package struct SubprocessCommandRunner: CommandRunning {
     }
 
     /// Runs `executable` to completion and returns its exit status and output.
-    package func run(_ executable: URL, arguments: [String]) async throws -> CommandOutput {
+    package func run(_ executable: URL, arguments: [String], environment: [String: String]) async throws -> CommandOutput {
+        let overrides = Dictionary(uniqueKeysWithValues: environment.compactMap { name, value in
+            Environment.Key(rawValue: name).map { ($0, Optional(value)) }
+        })
         let result = try await processRunner.run(
             .path(FilePath(executable.path(percentEncoded: false))),
             arguments: Arguments(arguments),
-            environment: .inherit,
+            environment: overrides.isEmpty ? .inherit : .inherit.updating(overrides),
             workingDirectory: nil,
             platformOptions: PlatformOptions(),
             input: .none,

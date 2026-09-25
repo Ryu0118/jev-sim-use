@@ -27,17 +27,10 @@ package struct SimUseClient: DeviceDriving {
     /// SwiftUI ColorPicker's colour well) is tapped the same way: the row's centre did nothing there, its trailing edge
     /// opened it.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
-        if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
-            return try await revealThenTap(entry, under: cover, in: snapshot)
+        if let entry = snapshot.entry(alias: alias), let scroll = snapshot.revealingScroll(for: entry) {
+            return try await reveal(entry, by: scroll, in: snapshot)
         }
-        guard snapshot.platform == SimUseContract.Platform.ios,
-              let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
-        else { return try await run([SimUseContract.Command.tap, "@\(alias)"] + hold(on: snapshot.platform)) }
-        // A UISwitch is 51 pt wide and a colour well 28 pt, both at the trailing edge of the row.
-        let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
-        return try await run([
-            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
-        ] + hold(on: snapshot.platform))
+        return try await tapInPlace(alias: alias, on: snapshot)
     }
 
     /// Runs `long-press`, `swipe`, or a two-finger preset on the element's frame.
@@ -67,31 +60,54 @@ package struct SimUseClient: DeviceDriving {
         return try await run([SimUseContract.Command.paste], operands: [text])
     }
 
-    /// Scrolls a covered element out from under its overlay, then taps it by a fresh selector: the scroll made the
-    /// cached alias stale. Falls back to the alias when the element has neither an identifier nor a label.
-    private func revealThenTap(_ entry: UIEntry, under cover: UIEntry, in snapshot: UISnapshot) async throws -> [String] {
-        // An overlay in the lower half (a bottom search bar) needs the row moved up, which reveals content below.
-        // Comparing the overlay with the row itself flipped when the row sat a few points lower.
-        let screenHeight = (snapshot.entries ?? []).compactMap(\.frame).map { $0.y + $0.height }.max() ?? 0
-        let overlayIsLower = (cover.frame?.center.y ?? 0) >= screenHeight / 2
-        var disappeared = try await perform(
-            overlayIsLower ? .revealContentBelow : .revealContentAbove, platform: snapshot.platform,
-        )
-        let selector: [String]? = if let id = entry.uniqueId {
-            [SimUseContract.Tap.id, id]
-        } else if !entry.label.isEmpty {
-            [SimUseContract.Tap.label, entry.label]
-        } else {
-            nil
-        }
-        disappeared += try await run(
-            [SimUseContract.Command.tap] + (selector ?? ["@\(entry.aliases.alias)"]) + hold(on: snapshot.platform),
-        )
-        return disappeared
+    private func tapInPlace(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
+        guard snapshot.platform == SimUseContract.Platform.ios,
+              let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
+        else { return try await tap([SimUseContract.Command.tap, "@\(alias)"], on: snapshot.platform) }
+        // A UISwitch is 51 pt wide and a colour well 28 pt, both at the trailing edge of the row.
+        let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
+        return try await tap([
+            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
+        ], on: snapshot.platform)
     }
 
-    private func hold(on platform: String) -> [String] {
-        platform == SimUseContract.Platform.ios ? [SimUseContract.Tap.duration, SimUseContract.Tap.holdSeconds] : []
+    /// Scrolls `entry` into reach, reads the screen until the scroll has stopped (a tap on a list still coasting
+    /// only stopped it, and a switch stayed as it was), and taps the same element there the usual way, so a switch is
+    /// still tapped on its trailing edge. The new reading also refreshes the cached aliases the scroll made stale.
+    /// When the element is not found, or is still out of reach, the scroll stands alone and the next step plans on
+    /// the moved screen.
+    private func reveal(_ entry: UIEntry, by scroll: SimUseDeviceAction, in snapshot: UISnapshot) async throws -> [String] {
+        var disappeared = try await perform(scroll, platform: snapshot.platform)
+        var fresh = try await observe()
+        disappeared += fresh.disappearedApps
+        for _ in 0 ..< Self.revealSettleReads {
+            let next = try await observe()
+            disappeared += next.disappearedApps
+            let stopped = next.snapshot.layout == fresh.snapshot.layout
+            fresh = next
+            if stopped {
+                break
+            }
+        }
+        let origin = entry.frame?.center.y ?? 0
+        let match = (fresh.snapshot.entries ?? [])
+            .filter { $0.role == entry.role && $0.label == entry.label && $0.uniqueId == entry.uniqueId }
+            .filter { fresh.snapshot.revealingScroll(for: $0) == nil }
+            .min { abs(($0.frame?.center.y ?? 0) - origin) < abs(($1.frame?.center.y ?? 0) - origin) }
+        guard let match else { return disappeared }
+        return try await disappeared + tapInPlace(alias: match.aliases.alias, on: fresh.snapshot)
+    }
+
+    /// Extra readings allowed while a revealing scroll still moves the screen.
+    static let revealSettleReads = 3
+
+    /// Runs a `tap` command, on iOS held briefly and outside the daemon (see `SimUseContract.noDaemonEnvironment`).
+    private func tap(_ arguments: [String], on platform: String) async throws -> [String] {
+        guard platform == SimUseContract.Platform.ios else { return try await run(arguments) }
+        return try await run(
+            arguments + [SimUseContract.Tap.duration, SimUseContract.Tap.holdSeconds],
+            environment: SimUseContract.noDaemonEnvironment,
+        )
     }
 
     private func softKeyboardIsVisible() async throws -> Bool {
@@ -108,9 +124,11 @@ package struct SimUseClient: DeviceDriving {
         [SimUseContract.deviceFlag, device.deviceId]
     }
 
-    private func run(_ arguments: [String], operands: [String] = []) async throws -> [String] {
+    private func run(
+        _ arguments: [String], operands: [String] = [], environment: [String: String] = [:],
+    ) async throws -> [String] {
         let envelope = try await invoker.invoke(
-            arguments + deviceArguments, operands: operands, as: EmptyPayload.self,
+            arguments + deviceArguments, operands: operands, environment: environment, as: EmptyPayload.self,
         )
         return envelope.process?.disappearedBundleIDs ?? []
     }
