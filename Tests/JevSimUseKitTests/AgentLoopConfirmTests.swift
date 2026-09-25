@@ -91,7 +91,7 @@ struct AgentLoopConfirmTests {
         })
         let outcome = try await AgentLoop(
             driver: driver, planner: planner,
-            configuration: AgentConfiguration(goal: "g", unchangedWait: .milliseconds(1200)),
+            configuration: AgentConfiguration(goal: "g", handOverWait: .milliseconds(1200)),
         ).run().outcome
         #expect(planner.outlines == ["List", "List with Saved item"])
         #expect(outcome == .goalReached(steps: 0))

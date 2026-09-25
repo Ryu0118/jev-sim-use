@@ -94,6 +94,9 @@ extension AgentLoop {
         return []
     }
 
+    /// How long a live run keeps reading for a screen that moves on before handing over.
+    static let handOverWait: Duration = .seconds(5)
+
     /// How long a live run's `wait` pauses; the reading after it keeps going for up to `unchangedWait` while nothing
     /// changes.
     static let waitDuration: Duration = .seconds(1)
@@ -124,11 +127,11 @@ extension AgentLoop {
         return observation
     }
 
-    /// A reading whose layout differs from `snapshot`'s, taken within `unchangedWait`, or `nil` if none came. A saved
-    /// memo reached its list over a second after the editor closed, after the step had already been planned twice.
+    /// A reading whose layout differs from `snapshot`'s, taken within `handOverWait`, or `nil` if none came. A saved
+    /// memo reached its list one to eight seconds after the editor closed, depending on the app's server.
     func reading(changedFrom snapshot: UISnapshot) async throws -> ScreenObservation? {
         let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: configuration.unchangedWait)
+        let deadline = clock.now.advanced(by: configuration.handOverWait)
         repeat {
             let reading = try await driver.observe()
             if reading.snapshot.layout != snapshot.layout {
