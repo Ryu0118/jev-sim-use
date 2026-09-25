@@ -52,8 +52,9 @@ package enum SimUseContract {
         /// Selectors that find the element in a fresh accessibility read, for when the cached alias is stale.
         static let id = "--id"
         static let label = "--label"
-        /// sim-use's help: UISwitch (`CheckBox`) ignores zero-duration taps; hold for 0.05 s.
-        static let switchHoldSeconds = "0.05"
+        /// How long every iOS tap rests. sim-use's help says a UISwitch (`CheckBox`) ignores zero-duration taps, and a
+        /// memo editor's SwiftUI Save button ignored them too while a 0.1 s tap saved; a finger rests about that long.
+        static let holdSeconds = "0.1"
     }
 
     /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.

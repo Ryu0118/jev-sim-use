@@ -30,8 +30,9 @@ jev-sim-use names it from the text above it, but sim-use drags do not move Swift
 alert), most cells of a colour grid, a popover's close button. Take a screenshot with sim-use and act on it by
 coordinates, as its skill describes.
 
-**A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Tap it
-with sim-use using a short hold (see its skill for how).
+**A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap, so
+jev-sim-use holds every iOS tap for 0.1 s. If one still does nothing, tap it with sim-use using a longer hold (see its
+skill for how).
 
 **Place words** ("home", "settings", "search", "back"). Jev reads them as the app's own first (a tab, screen, or
 button by that name) and as the device's only when the app has none. Say "the device's Home Screen" if you mean to

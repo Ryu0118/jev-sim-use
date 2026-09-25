@@ -32,7 +32,7 @@ struct SimUseClientTests {
         let envelope = #"{"ok":false,"error":"No snapshot","hint":"Run ui"}"#
         let runner = FakeCommandRunner(["tap": .json(envelope, exitCode: 1)])
         let expected = SimUseError.commandFailed(
-            arguments: ["tap", "@3"] + device, message: "No snapshot", hint: "Run ui",
+            arguments: ["tap", "@3", "--duration", "0.1"] + device, message: "No snapshot", hint: "Run ui",
         )
         await #expect(throws: expected) {
             try await client(runner).tap(alias: 3, on: Fixtures.snapshot())
@@ -68,7 +68,7 @@ struct SimUseClientTests {
         #expect(runner.recordedCalls == [["keyboard-state"] + device + ["--json"]])
     }
 
-    @Test("taps an iOS switch on its trailing edge with a short hold, which a row-centre instant tap does not flip")
+    @Test("taps an iOS switch on its trailing edge, and holds every iOS tap briefly, which instant taps did not do")
     func switchTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
         let toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
@@ -76,8 +76,8 @@ struct SimUseClientTests {
         _ = try await client(runner).tap(alias: 9, on: snapshot)
         _ = try await client(runner).tap(alias: 4, on: snapshot)
         #expect(runner.recordedCalls == [
-            ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"],
-            ["tap", "@4"] + device + ["--json"],
+            ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.1"] + device + ["--json"],
+            ["tap", "@4", "--duration", "0.1"] + device + ["--json"],
         ])
     }
 
@@ -96,8 +96,8 @@ struct SimUseClientTests {
         _ = try await client(runner).tap(alias: 12, on: snapshot)
         _ = try await client(runner).tap(alias: 15, on: snapshot)
         #expect(runner.recordedCalls == [
-            ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"] + device + ["--json"],
-            ["tap", "@15"] + device + ["--json"],
+            ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.1"] + device + ["--json"],
+            ["tap", "@15", "--duration", "0.1"] + device + ["--json"],
         ])
     }
 

@@ -22,22 +22,22 @@ package struct SimUseClient: DeviceDriving {
         return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }
 
-    /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
-    /// on the switch itself, at the row's trailing edge, with a short hold. A value row's control (a SwiftUI
-    /// ColorPicker's colour well) is tapped the same way: the row's centre did nothing there, its trailing edge opened it.
+    /// Runs `sim-use tap @alias`, held briefly on iOS (see `SimUseContract.Tap.holdSeconds`). A toggle is tapped on
+    /// the switch itself, at the row's trailing edge: the row's centre did not flip it. A value row's control (a
+    /// SwiftUI ColorPicker's colour well) is tapped the same way: the row's centre did nothing there, its trailing edge
+    /// opened it.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
             return try await revealThenTap(entry, under: cover, in: snapshot)
         }
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
-        else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
+        else { return try await run([SimUseContract.Command.tap, "@\(alias)"] + hold(on: snapshot.platform)) }
         // A UISwitch is 51 pt wide and a colour well 28 pt, both at the trailing edge of the row.
         let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
         return try await run([
             SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
-            SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
-        ])
+        ] + hold(on: snapshot.platform))
     }
 
     /// Runs `long-press`, `swipe`, or a two-finger preset on the element's frame.
@@ -84,8 +84,14 @@ package struct SimUseClient: DeviceDriving {
         } else {
             nil
         }
-        disappeared += try await run([SimUseContract.Command.tap] + (selector ?? ["@\(entry.aliases.alias)"]))
+        disappeared += try await run(
+            [SimUseContract.Command.tap] + (selector ?? ["@\(entry.aliases.alias)"]) + hold(on: snapshot.platform),
+        )
         return disappeared
+    }
+
+    private func hold(on platform: String) -> [String] {
+        platform == SimUseContract.Platform.ios ? [SimUseContract.Tap.duration, SimUseContract.Tap.holdSeconds] : []
     }
 
     private func softKeyboardIsVisible() async throws -> Bool {
