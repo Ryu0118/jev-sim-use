@@ -28,6 +28,7 @@ package struct AgentLoop: Sendable {
         var progress = AgentProgress(history: history)
         var expectedToFinish = false
         var actedOn: UISnapshot?
+        var actedTarget: UIEntry?
         var pending: ScreenObservation?
         var staleReplans = 0
         var disagreements = 0
@@ -46,8 +47,11 @@ package struct AgentLoop: Sendable {
             }
             // Jev said the last action would finish the goal and the screen did change: stop without asking again
             // (as jev-use does). This also settles relative goals ("the next photo") that the final screen alone
-            // cannot prove.
-            if expectedToFinish, progress.history.last?.screenChanged == true {
+            // cannot prove. Not when the targeted element is still there exactly as it was: the change came from
+            // elsewhere (a scroll that revealed a switch whose tap did not land), so Jev judges the screen instead.
+            if expectedToFinish, progress.history.last?.screenChanged == true,
+               !(actedTarget.map(observation.snapshot.showsUnchanged) ?? false)
+            {
                 return AgentRunResult(outcome: .goalReached(steps: progress.steps), history: progress.history)
             }
             // The first reading after an action may be mid-transition, so a second one runs while Jev plans and
@@ -134,6 +138,7 @@ package struct AgentLoop: Sendable {
                 let disappeared = try await execute(target, on: fresh.snapshot)
                 progress.recordAction(target, disappeared: disappeared)
                 expectedToFinish = finishes
+                actedTarget = target.targetAlias.flatMap(fresh.snapshot.entry(alias:))
                 actedOn = fresh.snapshot
                 staleReplans = 0
                 disagreements = 0
