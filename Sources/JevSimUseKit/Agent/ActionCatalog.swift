@@ -45,8 +45,13 @@ enum ActionCatalog {
         if !texts.isEmpty, !fields.isEmpty {
             operations.append(.enterText)
         }
+        // iOS goes back by the left-edge swipe, which only a navigation stack answers; that stack shows a BackButton.
+        // Without one, Jev chose go_back at 0.79-0.88 on a sheet and on a tab's root, and the swipe did nothing or
+        // opened an ad. Android's back button always has somewhere to go.
+        let canGoBack = snapshot.platform != SimUseContract.Platform.ios
+            || entries.contains { $0.uniqueId == iOSBackButtonIdentifier }
         operations += SimUseDeviceAction.available(on: snapshot.platform)
-            .filter { !excluded.contains($0.optionName) }
+            .filter { !excluded.contains($0.optionName) && ($0 != .goBack || canGoBack) }
             .map(Operation.device)
         operations += [.done, .blocked]
         return ActionMenu(operations: operations, elements: Array(elements), fields: Array(fields), texts: texts)

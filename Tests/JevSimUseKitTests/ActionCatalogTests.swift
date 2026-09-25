@@ -38,9 +38,9 @@ struct ActionCatalogTests {
 
     @Test("drops screen-level actions that already did nothing on this screen")
     func exclusion() {
-        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [Fixtures.entry(1, "A")]), texts: [], excluding: ["go_back"])
-        #expect(!menu.operations.contains(.device(.goBack)))
-        #expect(menu.operations.contains(.device(.revealContentBelow)))
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [Fixtures.entry(1, "A")]), texts: [], excluding: ["scroll_to_reveal_below"])
+        #expect(!menu.operations.contains(.device(.revealContentBelow)))
+        #expect(menu.operations.contains(.device(.revealContentAbove)))
     }
 
     @Test("leaves the iOS back button to go_back, so the two do not split Jev's probability")
@@ -52,5 +52,13 @@ struct ActionCatalogTests {
         let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [back, Fixtures.entry(7, "キーボード")]), texts: [])
         #expect(menu.elements.map(\.alias) == [7])
         #expect(menu.operations.contains(.device(.goBack)))
+    }
+
+    @Test("offers go_back on iOS only where a back button shows a stack to go back through, and always on Android")
+    func goBackNeedsAStack() {
+        let root = [Fixtures.entry(1, "閉じる"), Fixtures.entry(2, "ルートの色")]
+        #expect(!ActionCatalog.menu(for: Fixtures.snapshot(entries: root), texts: []).operations.contains(.device(.goBack)))
+        let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: root, crashDialog: nil)
+        #expect(ActionCatalog.menu(for: android, texts: []).operations.contains(.device(.goBack)))
     }
 }
