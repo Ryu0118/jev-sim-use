@@ -81,6 +81,26 @@ struct SimUseClientTests {
         ])
     }
 
+    @Test("taps a full-width value row on its trailing control, and a narrow value button at its alias")
+    func valueRowTap() async throws {
+        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
+        let color = UIEntry(
+            aliases: ElementAliases(alias: 12), role: "Button", label: "ルートの色", states: [], value: "アジュール",
+            uniqueId: nil, region: nil, frame: ElementFrame(x: 32, y: 406, width: 338, height: 28),
+        )
+        let date = UIEntry(
+            aliases: ElementAliases(alias: 15), role: "Button", label: "日付ピッカー", states: [], value: "2026/09/25",
+            uniqueId: nil, region: nil, frame: ElementFrame(x: 253, y: 692, width: 110, height: 33),
+        )
+        let snapshot = Fixtures.snapshot(entries: [color, date])
+        _ = try await client(runner).tap(alias: 12, on: snapshot)
+        _ = try await client(runner).tap(alias: 15, on: snapshot)
+        #expect(runner.recordedCalls == [
+            ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"] + device + ["--json"],
+            ["tap", "@15"] + device + ["--json"],
+        ])
+    }
+
     @Test("aims long-press at the alias, swipes across the frame, and pinches at its centre", arguments: [
         (ElementGesture.longPress, ["long-press", "@9"]),
         (.swipeLeft, ["swipe", "--from", "336.0,200.0", "--to", "200.0,200.0"]),

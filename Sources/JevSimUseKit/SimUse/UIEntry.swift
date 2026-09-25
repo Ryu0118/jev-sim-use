@@ -28,6 +28,12 @@ package struct UIEntry: Decodable, Sendable, Hashable {
         Self.toggleRoles.contains(role)
     }
 
+    /// Whether the element is a full-width row button that shows its setting's value, such as a SwiftUI ColorPicker.
+    /// Its control (the colour well) sits at the trailing edge and ignores a tap on the row's label.
+    package var isValueRow: Bool {
+        role == "Button" && !(value ?? "").isEmpty && (frame?.width ?? 0) >= 200
+    }
+
     /// Whether sim-use reported the element as disabled.
     package var isDisabled: Bool {
         states.contains("disabled")

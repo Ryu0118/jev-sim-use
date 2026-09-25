@@ -22,16 +22,17 @@ package struct SimUseClient: DeviceDriving {
     }
 
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped
-    /// on the switch itself, at the row's trailing edge, with a short hold.
+    /// on the switch itself, at the row's trailing edge, with a short hold. A value row's control (DriveTracker's
+    /// ルートの色 colour well) is tapped the same way: the row's centre did nothing there, its trailing edge opened it.
     package func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         if let entry = snapshot.entry(alias: alias), let cover = snapshot.cover(of: entry) {
             return try await revealThenTap(entry, under: cover, in: snapshot)
         }
         guard snapshot.platform == SimUseContract.Platform.ios,
-              let entry = snapshot.entry(alias: alias), entry.isToggle, let frame = entry.frame
+              let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
         else { return try await run([SimUseContract.Command.tap, "@\(alias)"]) }
-        // A UISwitch is 51 pt wide and sits at the trailing edge of its row.
-        let x = max(frame.center.x, frame.x + frame.width - 26)
+        // A UISwitch is 51 pt wide and a colour well 28 pt, both at the trailing edge of the row.
+        let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
         return try await run([
             SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
             SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
