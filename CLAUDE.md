@@ -109,6 +109,11 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   the full swipe that deletes a Reminders row without asking. Sideways scrolls pass
   `--duration 0.3` (the default 0.5 s does not turn a page); top- and bottom-edge swipes are not offered (no effect on
   iOS 26, and Control Center blinds `sim-use ui`).
+- Sliders: SwiftUI often labels a slider with its raw position (`0.1206…`), so `UISnapshot.caption(ofSlider:)` names
+  it after the text just above and shows that row's displayed value (`記録間隔` / `25 m`), and its state says a swipe,
+  not a tap, moves it. On the iOS 26.5 simulator no sim-use drag moved a SwiftUI slider (swipes from the thumb or the
+  track, slow drags, split `touch --down` / `--up`; `--pre-delay` waits before touching down), so a slider goal
+  stops there until sim-use can hold then move.
 - State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that

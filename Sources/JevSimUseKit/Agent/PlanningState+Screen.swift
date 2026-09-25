@@ -13,7 +13,9 @@ extension PlanningState {
             let entries = snapshot.entries ?? []
             title = snapshot.title
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
-            elements = (snapshot.entries ?? []).map { Element($0, coveredBy: snapshot.cover(of: $0)) }
+            elements = (snapshot.entries ?? []).map {
+                Element($0, coveredBy: snapshot.cover(of: $0), slider: snapshot.caption(ofSlider: $0))
+            }
         }
     }
 
@@ -33,13 +35,16 @@ extension PlanningState {
             case coveredBy = "covered_by"
         }
 
-        init(_ entry: UIEntry, coveredBy cover: UIEntry? = nil) {
+        init(_ entry: UIEntry, coveredBy cover: UIEntry? = nil, slider caption: SliderCaption? = nil) {
             id = PlanningState.elementID(entry.aliases.alias)
             role = entry.role
-            label = entry.label.isEmpty ? nil : entry.label
+            label = caption?.label ?? (entry.label.isEmpty ? nil : entry.label)
             identifier = entry.uniqueId
-            value = Self.readableValue(entry)
-            states = entry.states.isEmpty ? nil : entry.states
+            value = caption?.value ?? Self.readableValue(entry)
+            // A tap leaves a slider where it is; D2 tapped 記録間隔 twice at 0.87 without moving it.
+            let adjusting = entry.isSlider ? [Self.sliderUsage] : []
+            let allStates = entry.states + adjusting
+            states = allStates.isEmpty ? nil : allStates
             region = entry.region.map { region in region.label.map { "\(region.kind): \($0)" } ?? region.kind }
             coveredBy = cover.map { $0.label.isEmpty ? $0.role : $0.label }
         }
@@ -47,6 +52,9 @@ extension PlanningState {
 }
 
 extension PlanningState.Element {
+    /// How a slider moves, since a tap does not move it.
+    static let sliderUsage = "adjustable: swipe_right raises it, swipe_left lowers it; a tap does not change it"
+
     /// Jev reads `"on"` / `"off"` as a state far more reliably than a toggle's `"1"` / `"0"`.
     static func readableValue(_ entry: UIEntry) -> String? {
         guard entry.isToggle else { return entry.value }
