@@ -97,6 +97,16 @@ struct AgentLoopConfirmTests {
         #expect(outcome == .goalReached(steps: 0))
     }
 
+    @Test("waits again on an unchanged screen, as for a slow save, until the stall limit ends it")
+    func repeatedWait() async throws {
+        let driver = FakeDriver(outlines: ["Saving"])
+        let wait = StepPlan(action: .wait, confidence: 0.9, costUSD: 0)
+        let outcome = try await AgentLoop(
+            driver: driver, planner: FakePlanner([wait]), configuration: AgentConfiguration(goal: "g", maxSteps: 10),
+        ).run().outcome
+        #expect(outcome == .stalled(steps: 3))
+    }
+
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()

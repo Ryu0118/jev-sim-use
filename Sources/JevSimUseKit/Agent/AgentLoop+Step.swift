@@ -43,7 +43,10 @@ extension AgentLoop {
         // Code does not explore on Jev's behalf: scrolling or going back when Jev was unsure moved away from the right
         // screen as often as it found anything. Nothing fitting, or a repeat of an action that did nothing on this
         // screen, hands over like low support does.
-        if plan.action == .noneApplies || progress.ineffectiveActions.contains(plan.action.optionName) {
+        // Waiting again on an unchanged screen is how a slow save is waited out; the stall limit still ends it.
+        if plan.action == .noneApplies
+            || plan.action != .wait && progress.ineffectiveActions.contains(plan.action.optionName)
+        {
             return .stop(.noActionFits(step: step))
         }
         if plan.support < configuration.actionPolicy.requiredSupport(for: plan.action) {
@@ -70,9 +73,20 @@ extension AgentLoop {
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
         case let .enterText(field, _, text):
             try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value)
+        case .wait: try await pause()
         case .done, .noneApplies: []
         }
     }
+
+    /// Lets the app catch up; no app can disappear through it, so there is nothing to report.
+    func pause() async throws -> [String] {
+        try await Task.sleep(for: configuration.waitDuration)
+        return []
+    }
+
+    /// How long a live run's `wait` pauses; the reading after it keeps going for up to `unchangedWait` while nothing
+    /// changes.
+    static let waitDuration: Duration = .seconds(1)
 
     /// How many times one step is planned again because the screen changed while Jev decided to stop.
     static let staleReplanLimit = 2

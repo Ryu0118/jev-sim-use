@@ -63,7 +63,7 @@ package struct RunGoalRunner: Sendable {
                 goal: session.goal, texts: session.texts, notes: session.notes, maxSteps: request.maxSteps,
                 actionPolicy: ActionPolicy(minimumSupport: request.minConfidence),
                 allowedOperations: request.allowedOperations,
-                unchangedWait: AgentLoop.unchangedWait,
+                unchangedWait: AgentLoop.unchangedWait, waitDuration: AgentLoop.waitDuration,
             ),
             report: { report(.agent($0)) },
         ).run(continuing: session.history)

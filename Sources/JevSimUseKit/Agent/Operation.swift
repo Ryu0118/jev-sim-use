@@ -11,6 +11,8 @@ package enum Operation: Sendable, Hashable {
     case enterText
     /// A screen-level action.
     case device(SimUseDeviceAction)
+    /// Let the app catch up without touching the screen.
+    case wait
     /// The goal is visibly satisfied.
     case done
     /// Nothing offered can make progress.
@@ -23,6 +25,7 @@ package enum Operation: Sendable, Hashable {
         case let .gesture(gesture): gesture.rawValue
         case .enterText: "enter_text"
         case let .device(action): action.optionName
+        case .wait: "wait"
         case .done: "done"
         case .blocked: "blocked"
         }
@@ -57,6 +60,12 @@ package enum Operation: Sendable, Hashable {
         case let .gesture(gesture): gesture.optionDescription
         case .enterText: "Type one of the named texts into a text field; it taps the field first, so the field needs no separate tap"
         case let .device(action): action.optionDescription
+        // Wording follows jev-ultrafast's WAIT rule. A saved memo reached its list about five seconds after the
+        // editor closed; without a way to wait, Jev tapped the clock on the blank screen in between.
+        case .wait:
+            "Wait a moment without touching the screen: only while the screen is loading or blank, or while "
+                + "something the last step should produce (a saved item in its list, submitted results) has not "
+                + "appeared yet. Prefer a visible element that advances `goal`"
         // A new memo's title was typed and Jev chose DONE (0.52) over the Save button (0.37): typing is not saving.
         case .done:
             "Every part of `goal` is visibly satisfied; stop. Not while text typed into a form still waits for that "

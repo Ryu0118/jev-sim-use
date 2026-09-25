@@ -54,7 +54,7 @@ enum ActionCatalog {
         operations += SimUseDeviceAction.available(on: snapshot.platform)
             .filter { !excluded.contains($0.optionName) && ($0 != .goBack || canGoBack) }
             .map(Operation.device)
-        operations += [.done, .blocked]
+        operations += [.wait, .done, .blocked]
         operations = operations.filter(allowed.allows)
         let actsOnElements = operations.contains(where: \.actsOnElement)
         return ActionMenu(

@@ -129,6 +129,8 @@ extension JevStepPlanner {
             ])
         case let .device(action):
             return (.device(action), [])
+        case .wait:
+            return (.wait, [])
         case .done:
             return (.done, [])
         case .blocked:

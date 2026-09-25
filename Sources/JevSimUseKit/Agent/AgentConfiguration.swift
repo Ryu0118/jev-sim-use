@@ -18,6 +18,8 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var allowedOperations: Set<OperationGroup>
     /// How long to keep reading after an action that left the screen as it was, before calling it ineffective.
     package var unchangedWait: Duration
+    /// How long a `wait` action pauses.
+    package var waitDuration: Duration
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -29,6 +31,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         actionPolicy: ActionPolicy = ActionPolicy(),
         allowedOperations: Set<OperationGroup> = OperationGroup.all,
         unchangedWait: Duration = .zero,
+        waitDuration: Duration = .zero,
     ) {
         self.goal = goal
         self.texts = texts
@@ -38,5 +41,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.actionPolicy = actionPolicy
         self.allowedOperations = allowedOperations
         self.unchangedWait = unchangedWait
+        self.waitDuration = waitDuration
     }
 }

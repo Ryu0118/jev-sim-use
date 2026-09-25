@@ -9,6 +9,8 @@ package enum AgentAction: Sendable, Hashable {
     case device(SimUseDeviceAction)
     /// Tap the field `@field`, then enter one of the texts the user supplied; Jev picks it by name, never writes it.
     case enterText(field: Int, label: String, text: InputText)
+    /// Wait for the app to catch up.
+    case wait
     /// Jev judged the goal visibly satisfied.
     case done
     /// Nothing offered fits; the run hands over instead of guessing.
@@ -21,6 +23,7 @@ package enum AgentAction: Sendable, Hashable {
         case let .gesture(gesture, alias, _, _): "\(gesture.rawValue)_\(PlanningState.elementID(alias))"
         case let .device(action): action.optionName
         case let .enterText(field, _, text): "enter_\(text.name)_\(PlanningState.elementID(field))"
+        case .wait: "wait"
         case .done: "done"
         case .noneApplies: "blocked"
         }
@@ -37,7 +40,7 @@ extension AgentAction {
         // Text in a field is cleared as easily as it is typed, and it submits nothing; jev-browser-use and jev-use
         // gate typing like any other action.
         case .enterText: .reversible
-        case .done, .noneApplies: .harmless
+        case .wait, .done, .noneApplies: .harmless
         }
     }
 }
@@ -50,6 +53,7 @@ extension AgentAction: CustomStringConvertible {
         case let .gesture(gesture, _, role, label): "\(gesture.verb) the \(role) labelled \"\(label)\""
         case let .device(action): action.summary
         case let .enterText(_, label, text): "Enter the \(text.name) into \"\(label)\""
+        case .wait: "Wait"
         case .done: "Done"
         case .noneApplies: "Nothing"
         }
