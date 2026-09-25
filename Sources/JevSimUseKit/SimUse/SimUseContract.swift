@@ -29,6 +29,17 @@ package enum SimUseContract {
         static let longPress = "long-press"
         static let swipe = "swipe"
         static let keyboardState = "keyboard-state"
+        /// `ios key`: press one HID key on an iOS simulator.
+        static let iosKey = ["ios", "key"]
+        static let type = "type"
+    }
+
+    /// Return, which submits a search field or a form.
+    enum Key {
+        /// USB HID usage 0x28, as `sim-use ios key --help` lists it.
+        static let returnKeycode = "40"
+        /// Android has no `key` verb; its `type` help says to embed a newline for Enter.
+        static let newline = "\n"
     }
 
     /// `tap` options for a coordinate tap that is held briefly.

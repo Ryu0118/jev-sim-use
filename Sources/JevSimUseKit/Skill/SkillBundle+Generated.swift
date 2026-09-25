@@ -45,7 +45,7 @@ extension SkillBundle {
       `query`). Pasting needs a
       hardware keyboard connected to the simulator; without one it silently does nothing.
     - Jev chooses among taps, long-press, swipes, pinch and rotate on an element, scrolls in four directions, going back,
-      a right-edge swipe, and hardware buttons. Pressing buttons, leaving the app, and tapping a Delete control need at
+      a right-edge swipe, Return (to submit a search or form), and hardware buttons. Pressing buttons, leaving the app, and tapping a Delete control need at
       least 0.6 confidence, because going back cannot undo them. Double tap is not available; use `exec` for anything else.
     - stdout is the outcome line; when the goal was not reached, `Session: <id>` follows. stderr is step-by-step progress.
     - Every run is a session under `$XDG_STATE_HOME/jev-sim-use/sessions` (default `~/.local/state`). Reaching the goal

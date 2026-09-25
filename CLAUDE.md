@@ -97,8 +97,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   depends on (operation, target, text); targets with the same role and label pool their probability. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
-  four directions, go back, a right-edge swipe, and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`);
-  and pastes. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
+  four directions, go back, a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`
+  verb), and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`); and pastes. A search field that
+  shows results only on Return cannot finish without it. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
   tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.3, reversible at `--min-confidence`,

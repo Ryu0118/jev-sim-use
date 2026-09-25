@@ -20,7 +20,7 @@ struct SimUseContractTests {
     @Test("every subcommand's help mentions the flags and presets we pass", arguments: SimUseContract.helpExpectations)
     func helpMentions(command: String, mentions: [String]) async throws {
         let executable = try await bootstrap.verifyInstallation().executable
-        let output = try await runner.run(executable, arguments: [command, "--help"])
+        let output = try await runner.run(executable, arguments: command.split(separator: " ").map(String.init) + ["--help"])
         let help = (String(bytes: output.stdout, encoding: .utf8) ?? "") + output.stderr
         for mention in mentions {
             #expect(help.contains(mention), "`sim-use \(command) --help` no longer mentions \(mention)")

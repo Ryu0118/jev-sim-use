@@ -9,6 +9,7 @@ extension SimUseDeviceAction {
         case .goBack: "go_back"
         case .swipeFromRightEdge: "swipe_in_from_right_edge"
         case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))"
+        case .pressReturn: "press_return"
         }
     }
 
@@ -33,6 +34,9 @@ extension SimUseDeviceAction {
         case .press(.applePay): "Double-press the side button for Apple Pay"
         case .press(.sideButton): "Press the side button"
         case .press(.siri): "Hold the button that starts Siri"
+        case .pressReturn:
+            "Press Return on the keyboard: submit the text just typed, for a search field or form that shows its "
+                + "result only after Return"
         }
     }
 
@@ -51,6 +55,7 @@ extension SimUseDeviceAction {
         case .press(.applePay): "Double-press the side button for Apple Pay"
         case .press(.sideButton): "Press the side button"
         case .press(.siri): "Hold the button that starts Siri"
+        case .pressReturn: "Press Return"
         }
     }
 
@@ -58,7 +63,8 @@ extension SimUseDeviceAction {
     var risk: ActionRisk {
         switch self {
         case .revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft, .goBack: .harmless
-        case .swipeFromRightEdge: .reversible
+        // Return submits what was typed; jev-use gates it at 0.5, close to a tap.
+        case .swipeFromRightEdge, .pressReturn: .reversible
         // Leaving the app cannot be undone: sim-use has no launch verb.
         case .press: .irreversible
         }

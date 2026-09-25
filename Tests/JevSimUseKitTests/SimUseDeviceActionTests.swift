@@ -21,6 +21,13 @@ struct SimUseDeviceActionTests {
         #expect(SimUseDeviceAction.press(.sideButton).arguments(platform: "ios") == ["button", "side-button"])
     }
 
+    @Test("presses Return with the iOS HID key and with a typed newline on Android, where there is no key verb")
+    func pressReturn() {
+        #expect(SimUseDeviceAction.pressReturn.arguments(platform: "ios") == ["ios", "key", "40"])
+        #expect(SimUseDeviceAction.pressReturn.arguments(platform: "android") == ["type", "\n"])
+        #expect(SimUseDeviceAction.available(on: "ios").contains(.pressReturn))
+    }
+
     @Test("offers only the buttons the platform has")
     func buttonsPerPlatform() {
         #expect(HardwareButton.available(on: "android") == [.home, .lock, .recents])

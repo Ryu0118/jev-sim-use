@@ -15,12 +15,14 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     case swipeFromRightEdge
     /// Press a hardware button.
     case press(HardwareButton)
+    /// Press Return on the keyboard: submits a search field or a form that acts only on Return.
+    case pressReturn
 
     /// Every action sim-use supports on `platform`.
     static func available(on platform: String) -> [SimUseDeviceAction] {
         [
             .revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft, .goBack,
-            .swipeFromRightEdge,
+            .swipeFromRightEdge, .pressReturn,
         ] + HardwareButton.available(on: platform).map(SimUseDeviceAction.press)
     }
 
@@ -41,6 +43,10 @@ package enum SimUseDeviceAction: Sendable, Hashable {
                 : [gesture, Gesture.swipeFromLeftEdge]
         case .swipeFromRightEdge: [gesture, Gesture.swipeFromRightEdge]
         case let .press(button): [SimUseContract.Command.button, button.rawValue]
+        case .pressReturn:
+            platform == SimUseContract.Platform.android
+                ? [SimUseContract.Command.type, SimUseContract.Key.newline]
+                : SimUseContract.Command.iosKey + [SimUseContract.Key.returnKeycode]
         }
     }
 }
