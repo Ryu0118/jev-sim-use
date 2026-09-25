@@ -50,7 +50,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, and whether it would finish the goal.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
-  `skills/jev-sim-use/SKILL.md` (SSoT) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
+  `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
+  alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
   `jev-sim-use skill install|uninstall|print` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
 - Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
   `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are

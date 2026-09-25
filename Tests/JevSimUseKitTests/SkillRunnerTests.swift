@@ -9,13 +9,16 @@ struct SkillRunnerTests {
         SkillRunner(environment: ["HOME": home.path(percentEncoded: false)])
     }
 
-    @Test("writes SKILL.md into each client's skills directory under HOME", arguments: SkillClient.allCases)
+    @Test("writes SKILL.md and its references into each client's skills directory under HOME", arguments: SkillClient.allCases)
     func installForClient(client: SkillClient) throws {
         let outcome = try runner.run(.install(.client(client), force: false))
         let directory = client.skillsDirectory(home: home).appending(path: "jev-sim-use")
         #expect(outcome == .installed(directory))
         let written = try String(contentsOf: directory.appending(path: "SKILL.md"), encoding: .utf8)
         #expect(written == SkillBundle.markdown)
+        for (path, contents) in SkillBundle.files {
+            #expect(try String(contentsOf: directory.appending(path: path), encoding: .utf8) == contents)
+        }
     }
 
     @Test("refuses to overwrite an installed skill unless forced")

@@ -4,4 +4,9 @@ package enum SkillBundle {
     package static let name = "jev-sim-use"
     /// The skill's entry file.
     static let fileName = "SKILL.md"
+
+    /// The contents of SKILL.md, which `skill print` shows.
+    static var markdown: String {
+        files.first { $0.path == fileName }?.contents ?? ""
+    }
 }

@@ -33,10 +33,13 @@ package struct SkillRunner: Sendable {
         guard force || !fileManager.fileExists(atPath: directory.path(percentEncoded: false)) else {
             throw SkillError.alreadyInstalled(directory)
         }
-        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-        let file = directory.appending(path: SkillBundle.fileName)
-        guard fileManager.createFile(atPath: file.path(percentEncoded: false), contents: Data(SkillBundle.markdown.utf8))
-        else { throw SkillError.writeFailed(file) }
+        // SKILL.md points at references/ for detail, so the whole directory is written, not SKILL.md alone.
+        for (path, contents) in SkillBundle.files {
+            let file = directory.appending(path: path)
+            try fileManager.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            guard fileManager.createFile(atPath: file.path(percentEncoded: false), contents: Data(contents.utf8))
+            else { throw SkillError.writeFailed(file) }
+        }
         return .installed(directory)
     }
 
