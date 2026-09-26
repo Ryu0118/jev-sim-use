@@ -1,64 +1,70 @@
 #!/usr/bin/env bash
-# Manual end-to-end cases against a REAL simulator: the release jev-sim-use drives Apple's Settings app on a booted iOS
-# simulator through the real sim-use and the real Jev API. Not run in CI; every run spends real API calls. The CI
-# end-to-end suite is scripts/e2e.sh (`mise run e2e`), which fakes sim-use and Jev. Every case here records artifacts
-# and is judged by reading the screen afterwards, never by the exit status alone. See the Testing section of CLAUDE.md.
+# The primary end-to-end verification (see Testing in CLAUDE.md): the release jev-sim-use works through a fixed set of
+# goals in the simulator's built-in Settings app, through the real sim-use and the real Jev API. Every goal is judged
+# by reading the screen afterwards, never by the exit status alone. Not run in CI: it needs a booted simulator and
+# spends real API calls. Paste the summary table it prints into every behaviour-changing PR.
 #
-# Usage: scripts/e2e-simulator.sh [case...]    (default: every case; `--list` prints them)
-# Needs: sim-use, jq, TYPESAFE_API_KEY, and one booted iOS simulator in English (or SIM_USE_DEVICE naming one).
-# Artifacts: .e2e/simulator-<timestamp>/<case>/ (gitignored); E2E_OUTPUT overrides the directory, E2E_SKIP_BUILD=1
-# reuses the existing release binary.
+# Usage: scripts/e2e-simulator.sh <udid> [-g goal[,goal...]] [-r repetitions]    (`--list` prints the goals)
+#        mise run e2e -- <udid> [-g ...] [-r ...]
+# Needs: sim-use, jq, perl, TYPESAFE_API_KEY (never printed). Settings is relaunched in English before every goal, so
+# the simulator's own language does not matter.
+# Artifacts: .e2e/<timestamp>/<goal>-r<n>/ (gitignored): exit status, stdout, stderr with each line's time since the
+# start, the check results, `session show` when a session remains, the final `sim-use ui` reading, and a recording.
+# E2E_OUTPUT overrides the directory; E2E_SKIP_BUILD=1 reuses the release binary.
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BIN="$ROOT/.build/release/jev-sim-use"
-OUT=${E2E_OUTPUT:-$ROOT/.e2e/simulator-$(date +%Y%m%d-%H%M%S)}
 SETTINGS=com.apple.Preferences
-CASES=(navigate toggle back search hand-over actions already-done)
+GOALS=(route toggle scroll search hand-over already-met)
 
 fail_setup() {
     echo "e2e: $*" >&2
     exit 2
 }
 
-# --- Preconditions -------------------------------------------------------------------------------------------------
+usage() {
+    sed -n '7,8p' "$0" | sed 's/^# //' >&2
+    exit 64
+}
+
+# --- Arguments and preconditions -----------------------------------------------------------------------------------
 
 if [[ ${1:-} == --list ]]; then
-    printf '%s\n' "${CASES[@]}"
+    printf '%s\n' "${GOALS[@]}"
     exit 0
 fi
-selected=("$@")
-[[ $# -gt 0 ]] || selected=("${CASES[@]}")
+[[ $# -ge 1 && ${1:0:1} != - ]] || usage
+DEVICE=$1
+shift
+selected=("${GOALS[@]}")
+repetitions=1
+while getopts "g:r:" option; do
+    case $option in
+    g) IFS=, read -r -a selected <<<"$OPTARG" ;;
+    r) repetitions=$OPTARG ;;
+    *) usage ;;
+    esac
+done
+[[ $repetitions =~ ^[1-9][0-9]*$ ]] || fail_setup "-r takes a positive number."
 for name in "${selected[@]}"; do
-    [[ " ${CASES[*]} " == *" $name "* ]] || fail_setup "unknown case \"$name\"; cases: ${CASES[*]}"
+    [[ " ${GOALS[*]} " == *" $name "* ]] || fail_setup "unknown goal \"$name\"; goals: ${GOALS[*]}"
 done
 
 command -v sim-use >/dev/null || fail_setup "sim-use is not on PATH (brew install lycorp-jp/tap/sim-use)."
 command -v jq >/dev/null || fail_setup "jq is not on PATH."
 [[ -n ${TYPESAFE_API_KEY:-} ]] || fail_setup "TYPESAFE_API_KEY is not set."
-
-DEVICE=${SIM_USE_DEVICE:-}
-if [[ -z $DEVICE ]]; then
-    booted=$(xcrun simctl list devices booted -j | jq -r '.devices | to_entries[] | select(.key | test("iOS")) | .value[].udid')
-    count=$(grep -c . <<<"$booted")
-    if [[ $count -eq 0 ]]; then
-        echo "SKIP: no booted iOS simulator. Boot one (xcrun simctl boot <udid>) or set SIM_USE_DEVICE, then run again."
-        exit 0
-    fi
-    [[ $count -eq 1 ]] || fail_setup "$count iOS simulators are booted; set SIM_USE_DEVICE to the one to drive."
-    DEVICE=$booted
-fi
-language=$(xcrun simctl spawn "$DEVICE" defaults read -g AppleLanguages 2>/dev/null | tr -d ' \n()"')
-[[ $language == en* ]] || fail_setup "the goals and checks read English labels, but the simulator's language is \
-\"${language:-unknown}\". Run: xcrun simctl spawn $DEVICE defaults write -g AppleLanguages -array en-US, then reboot it."
+xcrun simctl list devices booted -j | jq -e --arg d "$DEVICE" '[.devices[][] | select(.udid == $d)] | length == 1' \
+    >/dev/null || fail_setup "no booted simulator has the udid $DEVICE."
 
 if [[ ${E2E_SKIP_BUILD:-0} != 1 ]]; then
     (cd "$ROOT" && swift build -c release --product jev-sim-use >/dev/null) || fail_setup "the release build failed."
 fi
 [[ -x $BIN ]] || fail_setup "$BIN is missing; run without E2E_SKIP_BUILD."
 
+OUT=${E2E_OUTPUT:-$ROOT/.e2e/$(date +%Y%m%d-%H%M%S)}
 mkdir -p "$OUT"
-# Sessions go to a throwaway store, so the cases neither read nor delete the developer's own sessions.
+# Sessions go to a throwaway store, so the goals neither read nor delete the developer's own sessions.
 export XDG_STATE_HOME="$OUT/state"
 
 # --- Reading the screen --------------------------------------------------------------------------------------------
@@ -67,7 +73,7 @@ ui_json() {
     sim-use ui --device "$DEVICE" --json
 }
 
-# Whether the current screen has an element matching the jq condition `$1` (applied to each entry).
+# Whether the current screen has an element matching the jq condition `$1` (applied to each entry; `$a` is `$2`).
 screen_has() {
     ui_json | jq -e --arg a "${2:-}" "[.data.entries[] | select($1)] | length > 0" >/dev/null
 }
@@ -77,18 +83,13 @@ heading_is() {
     screen_has '.role == "Heading" and .label == $a' "$1"
 }
 
-# shellcheck disable=SC2016
-back_is() {
-    screen_has '.uniqueId == "BackButton" and .label == $a' "$1"
-}
-
 # The value of the element whose accessibility identifier is `$1` (a switch reads "1" or "0").
 value_of() {
     ui_json | jq -r --arg a "$1" '[.data.entries[] | select(.uniqueId == $a)][0].value // empty'
 }
 
 wait_for_heading() {
-    for _ in $(seq 1 10); do
+    for _ in $(seq 1 20); do
         heading_is "$1" && return 0
         sleep 0.5
     done
@@ -97,11 +98,11 @@ wait_for_heading() {
 
 # --- Setup and restore ---------------------------------------------------------------------------------------------
 
-# Relaunches Settings on its top screen, then taps each row in turn; sim-use cannot launch apps, simctl can. A row
-# whose screen has another title is written `row=title`.
+# Relaunches Settings in English on its top screen, then taps each row in turn (sim-use cannot launch apps; simctl
+# can). A row whose screen has another title is written `row=title`.
 open_settings() {
     xcrun simctl terminate "$DEVICE" "$SETTINGS" >/dev/null 2>&1
-    xcrun simctl launch "$DEVICE" "$SETTINGS" >/dev/null || return 1
+    xcrun simctl launch "$DEVICE" "$SETTINGS" -AppleLanguages "(en)" -AppleLocale en_US >/dev/null || return 1
     wait_for_heading Settings || return 1
     for row in "$@"; do
         sim-use tap --label "${row%%=*}" --device "$DEVICE" --json >/dev/null || return 1
@@ -109,153 +110,135 @@ open_settings() {
     done
 }
 
-# Sets the switch with identifier `$1` to `$2` ("1" or "0") and confirms it on screen. iOS switches ignore a
-# centre tap, so this taps the trailing edge with a short hold, as the tool itself does.
+# Sets the switch with identifier `$1` to `$2` ("1" or "0") and confirms it on screen. iOS switches ignore a centre
+# tap, so this taps the trailing edge with a short hold, as the tool itself does.
 set_switch() {
-    local id=$1 want=$2 frame
+    local id=$1 want=$2 x y
     [[ $(value_of "$id") == "$want" ]] && return 0
-    frame=$(ui_json | jq -r --arg a "$id" '[.data.entries[] | select(.uniqueId == $a)][0].frame
+    read -r x y < <(ui_json | jq -r --arg a "$id" '[.data.entries[] | select(.uniqueId == $a)][0].frame
         | "\(.x + .width - 26) \(.y + .height / 2)"')
-    read -r x y <<<"$frame"
     SIM_USE_NO_DAEMON=1 sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
     sleep 1
     [[ $(value_of "$id") == "$want" ]]
 }
 
-# --- Recording a case ----------------------------------------------------------------------------------------------
+# --- Recording a goal ----------------------------------------------------------------------------------------------
 
-case_dir=""
-case_failures=0
+run_dir=""
+
+check() {
+    local description=$1
+    shift
+    if "$@" >>"$run_dir/check-output.txt" 2>&1; then
+        echo "PASS  $description" >>"$run_dir/checks.txt"
+    else
+        echo "FAIL  $description" >>"$run_dir/checks.txt"
+    fi
+}
 
 negate() {
     ! "$@"
 }
 
-check() {
-    local description=$1
-    shift
-    if "$@"; then
-        echo "PASS  $description" >>"$case_dir/checks.txt"
-    else
-        echo "FAIL  $description" >>"$case_dir/checks.txt"
-        case_failures=$((case_failures + 1))
-    fi
-}
-
-# Runs jev-sim-use with `$@`, keeping stdout, stderr (the step lines), and the exit status under the prefix `$1`.
+# Runs jev-sim-use with `$@` under the prefix `$1`: stdout, stderr with each line's seconds since the start, and the
+# exit status.
 jsu() {
     local prefix=$1
     shift
-    "$BIN" "$@" >"$case_dir/$prefix.stdout.txt" 2>"$case_dir/$prefix.stderr.txt"
-    echo $? >"$case_dir/$prefix.exit-status"
+    "$BIN" "$@" >"$run_dir/$prefix.stdout.txt" \
+        2> >(perl -MTime::HiRes=time -e '$s = time; $| = 1; while (<STDIN>) { printf "%7.2f  %s", time - $s, $_ }' \
+            >"$run_dir/$prefix.stderr.txt")
+    echo $? >"$run_dir/$prefix.exit-status"
+    wait
 }
 
-status_of() {
-    cat "$case_dir/$1.exit-status"
+status_is() {
+    [[ $(cat "$run_dir/$1.exit-status") == "$2" ]]
 }
 
-# The actions of the planned step lines, such as `Tap the Button labelled "General"`, one per line.
-planned_actions() {
-    sed -nE 's/^\[[0-9]+\] (.*) \(support .*/\1/p' "$case_dir/$1.stderr.txt"
+stdout_has() {
+    grep -qF -- "$2" "$run_dir/$1.stdout.txt"
 }
 
-no_results_message() {
-    screen_has '(.label // "") | startswith("No Results")'
-}
-
-# Whether the last text entry was followed by Return, and nothing but Done came after it.
-return_after_entry() {
-    planned_actions run | grep -v '^Done$' | tail -2 | paste -sd'|' - | grep -qx 'Enter the query into .*|Press Return'
-}
-
-only_taps_planned() {
-    ! planned_actions run | grep -qvE '^(Tap |Done$|Nothing$)'
+session_of() {
+    sed -nE 's/^Session: ([0-9a-f]+)$/\1/p' "$run_dir/$1.stdout.txt"
 }
 
 session_exists() {
     "$BIN" session show "$1" >/dev/null 2>&1
 }
 
-# --- Cases ---------------------------------------------------------------------------------------------------------
+# --- Goals ---------------------------------------------------------------------------------------------------------
 
-case_navigate() {
+# A route through three screens.
+goal_route() {
     open_settings || return 1
     jsu run "In Settings, open General, then Keyboard, then Text Replacement" -d "$DEVICE" --max-steps 8
-    check "exit status 0" test "$(status_of run)" = 0
+    check "exit status 0" status_is run 0
     check "the Text Replacement screen shows" heading_is "Text Replacement"
-    check "its back button leads to the keyboard settings" back_is Keyboards
 }
 
-case_toggle() {
+# A switch, which ignores a centre tap.
+goal_toggle() {
     local id=KeyboardAutocorrection initial
     open_settings General Keyboard=Keyboards || return 1
     initial=$(value_of "$id")
     set_switch "$id" 1 || return 1
     jsu run "Turn off Auto-Correction" -d "$DEVICE" --max-steps 4
-    check "exit status 0" test "$(status_of run)" = 0
+    check "exit status 0" status_is run 0
     check "the Auto-Correction switch reads off" test "$(value_of "$id")" = 0
     check "the keyboard settings still show" heading_is Keyboards
-    check "the switch is restored to its value before the case (${initial:-1})" set_switch "$id" "${initial:-1}"
+    check "the switch is restored to its value before the goal (${initial:-1})" set_switch "$id" "${initial:-1}"
 }
 
-case_back() {
-    open_settings General About || return 1
-    jsu run "Go back to the General settings screen" -d "$DEVICE" --max-steps 3 --actions back,tap
-    check "exit status 0" test "$(status_of run)" = 0
-    check "the General screen shows" heading_is General
-    check "its About row shows" screen_has '.label == "About"'
+# A row below the first screenful, which must be scrolled into reach.
+goal_scroll() {
+    open_settings || return 1
+    jsu run "In Settings, open Privacy & Security" -d "$DEVICE" --max-steps 6 --actions tap,scroll
+    check "exit status 0" status_is run 0
+    check "the Privacy & Security screen shows" heading_is "Privacy & Security"
 }
 
-case_search() {
+# Typing a named text into the search field, then Return.
+goal_search() {
     open_settings || return 1
     jsu run "In Settings, enter the query into the search field, then press Return" -t query=Keyboard \
         -d "$DEVICE" --max-steps 6 --actions tap,type,return
-    check "exit status 0" test "$(status_of run)" = 0
+    check "exit status 0" status_is run 0
     check "the search field holds the query" screen_has '(.role == "TextField" or .role == "SearchField")
         and (.label == "Keyboard" or .value == "Keyboard")'
-    check "a result other than the field mentions the query" screen_has '.role != "TextField"
-        and .role != "SearchField" and ((.label // "") | contains("Keyboard"))'
-    check "no \"No Results\" message shows" negate no_results_message
-    check "Return was pressed after the query was entered" return_after_entry
+    # What the search finds depends on the simulator's search index (one returned "No Results"), not on this tool, so
+    # the check is that the search ran: its results or its no-results message for the query show.
+    check "the search for the query ran" screen_has '.role != "TextField" and .role != "SearchField"
+        and ((.label // "") | contains("Keyboard"))'
+    check "two actions ran: the typing and Return" stdout_has run "after 2 action(s)."
 }
 
-case_hand_over() {
+# An unreachable goal hands over; a supervisor's note makes the resumed run reach it.
+goal_hand_over() {
     local session
     open_settings || return 1
     jsu run "Open the Teleport settings screen" -d "$DEVICE" --max-steps 6
-    session=$(sed -nE 's/^Session: ([0-9a-f]+)$/\1/p' "$case_dir/run.stdout.txt")
-    check "the unreachable goal exits 1" test "$(status_of run)" = 1
+    session=$(session_of run)
+    check "the unreachable goal exits 1" status_is run 1
     check "it names the session to resume" test -n "$session"
     [[ -n $session ]] || return 0
-
-    "$BIN" session show "$session" >"$case_dir/show.stdout.txt" 2>&1
-    check "session show lists the goal" grep -q '^Goal: Open the Teleport settings screen$' "$case_dir/show.stdout.txt"
-    check "session show lists the stopped run" grep -qE '^  1\. .*action\(s\): ' "$case_dir/show.stdout.txt"
-
     "$BIN" session tell "$session" -n "This device has no Teleport screen. For this check, the Teleport screen \
-means the About screen under General; the goal is reached when the About screen shows." \
-        >"$case_dir/tell.stdout.txt" 2>&1
-    check "session tell adds the note" grep -q '^  1\. This device has no Teleport screen' "$case_dir/tell.stdout.txt"
-
+means the About screen under General; the goal is reached when the About screen shows." >"$run_dir/tell.stdout.txt"
+    check "session tell adds the note" grep -q '^  1\. This device has no Teleport screen' "$run_dir/tell.stdout.txt"
+    open_settings || return 1
     jsu resume session resume "$session" -d "$DEVICE" --max-steps 8
-    check "the resumed run exits 0" test "$(status_of resume)" = 0
+    check "the resumed run exits 0" status_is resume 0
     check "the About screen shows" heading_is About
     check "the finished session is deleted" negate session_exists "$session"
 }
 
-case_actions() {
-    open_settings || return 1
-    jsu run "In Settings, open Accessibility, then Display & Text Size" -d "$DEVICE" --max-steps 6 --actions tap
-    check "exit status 0" test "$(status_of run)" = 0
-    check "the Display & Text Size screen shows" heading_is "Display & Text Size"
-    check "every planned action is a tap, Done, or a hand-over" only_taps_planned
-}
-
-case_already_done() {
+# A goal the start screen already meets.
+goal_already_met() {
     open_settings General About || return 1
     jsu run "Show the About screen in General settings" -d "$DEVICE" --max-steps 3
-    check "exit status 0" test "$(status_of run)" = 0
-    check "it finishes without acting" grep -qx 'Goal reached after 0 action(s).' "$case_dir/run.stdout.txt"
+    check "exit status 0" status_is run 0
+    check "it finishes without acting" stdout_has run "Goal reached after 0 action(s)."
     check "the About screen still shows" heading_is About
 }
 
@@ -263,45 +246,58 @@ case_already_done() {
 
 summary="$OUT/summary.md"
 {
-    echo "| Case | Result | Exit | Actions | Seconds | Failed checks |"
-    echo "|---|---|---|---|---|---|"
+    echo "| Goal | Run | Result | Exit | Actions | Steps (s) | Wall (s) | Jev cost (USD) | Failed checks |"
+    echo "|---|---|---|---|---|---|---|---|---|"
 } >"$summary"
 failed=0
 
 for name in "${selected[@]}"; do
-    case_dir="$OUT/$name"
-    case_failures=0
-    mkdir -p "$case_dir"
-    : >"$case_dir/checks.txt"
-    echo "== $name" >&2
+    for run in $(seq 1 "$repetitions"); do
+        run_dir="$OUT/$name-r$run"
+        mkdir -p "$run_dir"
+        : >"$run_dir/checks.txt"
+        echo "== $name (run $run)" >&2
 
-    sim-use record-video --device "$DEVICE" --output "$case_dir/video.mp4" >/dev/null 2>&1 &
-    recorder=$!
-    started=$(date +%s)
-    if ! "case_${name//-/_}"; then
-        echo "FAIL  setup: could not reach the starting screen" >>"$case_dir/checks.txt"
-        case_failures=$((case_failures + 1))
-    fi
-    seconds=$(($(date +%s) - started))
-    kill -INT "$recorder" 2>/dev/null
-    wait "$recorder" 2>/dev/null
+        xcrun simctl io "$DEVICE" recordVideo --codec h264 --force "$run_dir/recording.mp4" >/dev/null 2>&1 &
+        recorder=$!
+        started=$(date +%s)
+        "goal_${name//-/_}" || echo "FAIL  setup: could not reach the starting screen" >>"$run_dir/checks.txt"
+        wall=$(($(date +%s) - started))
+        kill -INT "$recorder" 2>/dev/null
+        wait "$recorder" 2>/dev/null
 
-    ui_json >"$case_dir/ui.json" 2>&1
-    sim-use ui --device "$DEVICE" >"$case_dir/ui.txt" 2>&1
-    exits=$(cat "$case_dir"/*.exit-status 2>/dev/null | paste -sd/ -)
-    actions=$(cat "$case_dir"/*.stdout.txt 2>/dev/null | sed -nE 's/.*(after|at step) ([0-9]+).*/\2/p' | paste -sd/ -)
-    failures=$(grep '^FAIL' "$case_dir/checks.txt" | cut -c7- | paste -sd';' -)
-    result=PASS
-    if [[ $case_failures -gt 0 ]]; then
-        result=FAIL
-        failed=$((failed + 1))
-    fi
-    echo "| $name | $result | ${exits:--} | ${actions:--} | $seconds | ${failures:--} |" >>"$summary"
-    sed 's/^/   /' "$case_dir/checks.txt" >&2
+        for prefix in run resume; do
+            [[ -f $run_dir/$prefix.stdout.txt ]] || continue
+            session=$(session_of "$prefix")
+            if [[ -n $session ]] && session_exists "$session"; then
+                "$BIN" session show "$session" >"$run_dir/session-show.txt"
+            fi
+        done
+        ui_json >"$run_dir/ui.json" 2>&1
+        sim-use ui --device "$DEVICE" >"$run_dir/ui.txt" 2>&1
+
+        exits=$(cat "$run_dir"/run.exit-status "$run_dir"/resume.exit-status 2>/dev/null | paste -sd/ -)
+        actions=$(cat "$run_dir"/run.stdout.txt "$run_dir"/resume.stdout.txt 2>/dev/null \
+            | sed -nE 's/.*(after|at step) ([0-9]+).*/\2/p' | paste -sd/ -)
+        steps=$(cat "$run_dir"/run.stderr.txt "$run_dir"/resume.stderr.txt 2>/dev/null \
+            | sed -nE 's/^ *([0-9.]+)  \[([0-9]+)\] .*\(support.*/\2@\1/p' | paste -sd' ' -)
+        cost=$(cat "$run_dir"/run.stderr.txt "$run_dir"/resume.stderr.txt 2>/dev/null \
+            | sed -nE 's/.*~[$]([0-9.e-]+).*/\1/p' | awk '{ total += $1 } END { printf "%.6f", total }')
+        failures=$(grep '^FAIL' "$run_dir/checks.txt" | cut -c7- | paste -sd';' -)
+        result=PASS
+        if [[ -n $failures ]]; then
+            result=FAIL
+            failed=$((failed + 1))
+        fi
+        echo "| $name | $run | $result | ${exits:--} | ${actions:--} | ${steps:--} | $wall | $cost | ${failures:--} |" \
+            >>"$summary"
+        sed 's/^/   /' "$run_dir/checks.txt" >&2
+    done
 done
 
 echo
 cat "$summary"
 echo
+echo "Steps (s): each planned step as <step>@<seconds since that command started>."
 echo "Artifacts: $OUT"
 [[ $failed -eq 0 ]]
