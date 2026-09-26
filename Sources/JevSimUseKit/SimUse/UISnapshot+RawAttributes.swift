@@ -12,6 +12,7 @@ extension UISnapshot {
             else { return entry }
             var copy = entry
             copy.traits = node.traits
+            copy.customActions = node.customActions
             return copy
         }
     }

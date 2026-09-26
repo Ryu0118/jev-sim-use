@@ -16,13 +16,14 @@ struct RawAttributesTests {
     private func node(_ label: String?, traits: [String], y: Double = 795.2) -> String {
         let label = label.map { #""\#($0)""# } ?? "null"
         let traits = traits.map { #""\#($0)""# }.joined(separator: ",")
-        return #"{"AXLabel":\#(label),"traits":[\#(traits)],"frame":{"x":25.3,"y":\#(y),"width":96,"height":54},"children":[]}"#
+        return #"{"AXLabel":\#(label),"traits":[\#(traits)],"custom_actions":["Delete"],"frame":{"x":25.3,"y":\#(y),"width":96,"height":54},"children":[]}"#
     }
 
-    @Test("copies the traits of the node with the same frame and label")
+    @Test("copies the traits and custom actions of the node with the same frame and label")
     func copiesTraits() throws {
         let joined = try entries([entry("Library")], raw: [node("Library", traits: ["Button", "TabButton"])])
         #expect(joined.first?.traits == ["Button", "TabButton"])
+        #expect(joined.first?.customActions == ["Delete"])
     }
 
     @Test("prefers the node carrying the entry's label over an unlabelled container with the same frame")

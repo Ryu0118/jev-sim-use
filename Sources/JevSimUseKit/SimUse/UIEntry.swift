@@ -25,6 +25,8 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     /// iOS accessibility traits (such as `TabButton`), which name what an element is in any language. `UISnapshot`
     /// copies them from the raw tree; `nil` when no raw node matched, as on Android.
     package var traits: [String]?
+    /// iOS custom actions (deleting or pinning a row), copied from the raw tree like `traits`.
+    package var customActions: [String]?
 
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]
@@ -41,9 +43,10 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     }
 
     /// Whether the element is a full-width row button that shows its setting's value, such as a SwiftUI ColorPicker.
-    /// Its control (the colour well) sits at the trailing edge and ignores a tap on the row's label.
+    /// Its control (the colour well) sits at the trailing edge and ignores a tap on the row's label. A list item or
+    /// card that shows a value offers custom actions (delete, favourite) and opens from anywhere, so it is not one.
     package var isValueRow: Bool {
-        role == "Button" && !(value ?? "").isEmpty && (frame?.width ?? 0) >= 200
+        role == "Button" && !(value ?? "").isEmpty && (frame?.width ?? 0) >= 200 && (customActions ?? []).isEmpty
     }
 
     /// Whether sim-use reported the element as disabled.
