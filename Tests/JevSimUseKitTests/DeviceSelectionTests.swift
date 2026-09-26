@@ -6,14 +6,9 @@ import Testing
 /// scripts/e2e.sh; this is every case of the choice itself.
 @Suite("A run pins the requested device or the only usable one, and never guesses")
 struct DeviceSelectionTests {
-    private static func device(_ json: String) -> SimUseDevice {
-        (try? JSONDecoder().decode(SimUseDevice.self, from: Data(json.utf8)))
-            ?? SimUseDevice(deviceId: "", name: "", platform: "", kind: nil, state: "")
-    }
-
-    private static let simulator = device(Fixtures.simulator)
-    private static let emulator = device(Fixtures.emulator)
-    private static let physical = device(Fixtures.physicalIPhone)
+    private static let simulator = Fixtures.device(Fixtures.simulator)
+    private static let emulator = Fixtures.device(Fixtures.emulator)
+    private static let physical = Fixtures.device(Fixtures.physicalIPhone)
 
     @Test("selects or refuses", arguments: [
         ("the only simulator, beside a physical iPhone it cannot drive", String?.none, [simulator, physical],

@@ -9,15 +9,11 @@ struct SimUseClientTests {
     private static let device = ["--device", "B34F0000-0000-0000-0000-000000000001"]
 
     private static func client(_ runner: FakeCommandRunner) throws -> SimUseClient {
-        let device = try JSONDecoder().decode(SimUseDevice.self, from: Data(Fixtures.simulator.utf8))
-        return SimUseClient(device: device, invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner))
+        SimUseClient(device: Fixtures.device(Fixtures.simulator), invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner))
     }
 
     private static func entry(_ role: String, value: String? = nil, _ frame: ElementFrame) -> UIEntry {
-        UIEntry(
-            aliases: ElementAliases(alias: 9), role: role, label: "Target", states: [], value: value, uniqueId: nil,
-            region: nil, frame: frame,
-        )
+        Fixtures.entry(9, "Target", role: role, value: value, frame: frame)
     }
 
     private static let row = ElementFrame(x: 30, y: 150, width: 340, height: 100)

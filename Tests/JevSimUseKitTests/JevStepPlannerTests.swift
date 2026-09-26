@@ -39,13 +39,8 @@ struct JevStepPlannerTests {
     @Test("sends the request again when the connection drops, and gives up after three attempts")
     func retriesTransport() async throws {
         let answer = Self.body(["operation": ("done", ["done": 0.9])])
-        func planner(_ transport: FlakyTransport) -> JevStepPlanner {
-            JevStepPlanner(client: JevClient(
-                apiKey: "k", endpoint: URL(string: "http://localhost/jev")!, transport: transport, retryPolicy: .none,
-            ))
-        }
-        #expect(try await planner(FlakyTransport(failures: 2, body: answer)).plan(Self.request()).action == .done)
-        await #expect(throws: JevError.self) { try await planner(FlakyTransport(failures: 3, body: answer)).plan(Self.request()) }
+        #expect(try await StubTransport(body: answer, droppedConnections: 2).planner().plan(Self.request()).action == .done)
+        await #expect(throws: JevError.self) { try await StubTransport(body: answer, droppedConnections: 3).planner().plan(Self.request()) }
     }
 
     @Test("support is the weakest answer the action depends on, pooled where options do the same thing", arguments: [

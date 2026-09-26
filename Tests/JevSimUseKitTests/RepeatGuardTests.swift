@@ -10,10 +10,7 @@ struct RepeatGuardTests {
 
     /// A screen with the row to open, its relative time, and `extra` elements.
     private static func screen(_ minutes: Int, _ extra: [String] = []) -> UISnapshot {
-        let row = UIEntry(
-            aliases: ElementAliases(alias: 1), role: "Button", label: "Open", states: [],
-            value: "\(minutes) minutes ago", uniqueId: nil, region: nil, frame: nil,
-        )
+        let row = Fixtures.entry(1, "Open", value: "\(minutes) minutes ago")
         let others = extra.enumerated().map { Fixtures.entry($0.offset + 2, $0.element, role: "StaticText") }
         return Fixtures.snapshot(outline: "screen \(minutes) \(extra)", entries: [row] + others)
     }

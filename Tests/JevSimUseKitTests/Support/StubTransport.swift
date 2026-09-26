@@ -1,17 +1,27 @@
 import Foundation
 import Jev
 @testable import JevSimUseKit
+import Synchronization
 
-/// Returns one canned HTTP response to every request.
+/// Drops the first `droppedConnections` requests as a lost connection, then answers every request with `body`.
 final class StubTransport: JevTransport {
-    private let response: JevHTTPResponse
+    private let remaining: Mutex<Int>
+    private let body: String
 
-    init(status: Int = 200, body: String) {
-        response = JevHTTPResponse(status: status, headers: [:], body: Data(body.utf8))
+    init(body: String, droppedConnections: Int = 0) {
+        remaining = Mutex(droppedConnections)
+        self.body = body
     }
 
     func send(_: JevHTTPRequest) async throws -> JevHTTPResponse {
-        response
+        let drop = remaining.withLock { remaining in
+            defer { remaining -= 1 }
+            return remaining > 0
+        }
+        if drop {
+            throw URLError(.networkConnectionLost)
+        }
+        return JevHTTPResponse(status: 200, headers: [:], body: Data(body.utf8))
     }
 
     /// A planner that sends every request to this transport.

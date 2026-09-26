@@ -7,17 +7,16 @@ import Testing
 /// a cover or reveal decision can get wrong, each from a real run.
 @Suite("Which element swallows a tap on a target, and which scroll brings the target into reach")
 struct OcclusionTests {
-    private static let screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
     private static let row = entry(15, "Target row", ElementFrame(x: 16, y: 789, width: 370, height: 52))
     private static let searchBar = entry(16, "Search", ElementFrame(x: 33, y: 803, width: 336, height: 38), role: "TextField", depth: 1)
-    private static let tab = UIEntry(
-        aliases: ElementAliases(alias: 51), role: "RadioButton", label: "History", states: [], value: nil, uniqueId: nil,
-        region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 25, y: 795, width: 98, height: 54),
+    private static let tab = Fixtures.entry(
+        51, "History", role: "RadioButton", frame: ElementFrame(x: 25, y: 795, width: 98, height: 54),
+        region: ElementRegion(kind: "Group", label: "Tab Bar"),
     )
     private static let floatingButton = entry(24, "Create", ElementFrame(x: 326, y: 704, width: 56, height: 56), depth: 1)
 
     @Test("finds the element that would swallow a tap, and only that", arguments: [
-        ("a floating search bar over the row's centre covers it", row, [entry(9, "", screen, role: "Group", depth: 0), searchBar], "Search"),
+        ("a floating search bar over the row's centre covers it", row, [entry(9, "", Fixtures.screen, role: "Group", depth: 0), searchBar], "Search"),
         ("the bar also covers a row whose centre sits just above its text field",
          entry(15, "Target row", ElementFrame(x: 16, y: 775, width: 370, height: 52)), [searchBar], "Search"),
         ("a neighbouring row that only touches the edge does not", row,
@@ -44,7 +43,7 @@ struct OcclusionTests {
     ] as [(String, UIEntry, [UIEntry], SimUseDeviceAction?)])
     func revealingScroll(_: String, target: UIEntry, others: [UIEntry], expected: SimUseDeviceAction?) {
         var snapshot = Fixtures.snapshot(entries: others + [target])
-        snapshot.screen = Self.screen
+        snapshot.screen = Fixtures.screen
         #expect(snapshot.revealingScroll(for: target) == expected)
     }
 
@@ -71,8 +70,6 @@ struct OcclusionTests {
     private static func entry(
         _ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", depth: Int = 2,
     ) -> UIEntry {
-        var entry = Fixtures.entry(alias, label, role: role, frame: frame)
-        entry.depth = depth
-        return entry
+        Fixtures.entry(alias, label, role: role, frame: frame, depth: depth)
     }
 }

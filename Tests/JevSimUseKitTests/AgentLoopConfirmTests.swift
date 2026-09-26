@@ -10,8 +10,8 @@ struct AgentLoopConfirmTests {
     func staleAlias() async throws {
         let planner = TapLabelPlanner("Save")
         let (loop, driver) = loop([
-            Fixtures.snapshot(outline: "Form", entries: [button(3, "Save", y: 700)]),
-            Fixtures.snapshot(outline: "List", entries: [button(3, "Delete", y: 700)]),
+            Fixtures.snapshot(outline: "Form", entries: [Self.button(3, "Save", y: 700)]),
+            Fixtures.snapshot(outline: "List", entries: [Self.button(3, "Delete", y: 700)]),
         ], planner)
         _ = try await loop.run()
         #expect(driver.performedActions.isEmpty)
@@ -22,8 +22,8 @@ struct AgentLoopConfirmTests {
     func movedTarget() async throws {
         let planner = TapLabelPlanner("Row")
         let (loop, driver) = loop([
-            Fixtures.snapshot(outline: "List at 300", entries: [button(5, "Row", y: 300)]),
-            Fixtures.snapshot(outline: "List at 260", entries: [button(5, "Row", y: 260)]),
+            Fixtures.snapshot(outline: "List at 300", entries: [Self.button(5, "Row", y: 300)]),
+            Fixtures.snapshot(outline: "List at 260", entries: [Self.button(5, "Row", y: 260)]),
         ], planner)
         _ = try await loop.run()
         #expect(driver.performedActions == ["tap @5"])
@@ -35,10 +35,10 @@ struct AgentLoopConfirmTests {
         let planner = TapLabelPlanner("Next")
         let clock = Fixtures.entry(1, "10:00", role: "StaticText")
         let (loop, driver) = loop([
-            Fixtures.snapshot(outline: "Home 10:00", entries: [clock, button(2, "Next", y: 500)]),
+            Fixtures.snapshot(outline: "Home 10:00", entries: [clock, Self.button(2, "Next", y: 500)]),
             Fixtures.snapshot(outline: "Home 10:01 banner", entries: [
                 Fixtures.entry(1, "10:01", role: "StaticText"), Fixtures.entry(2, "Banner", role: "StaticText"),
-                button(3, "Next", y: 500),
+                Self.button(3, "Next", y: 500),
             ]),
         ], planner)
         _ = try await loop.run()
@@ -53,8 +53,8 @@ struct AgentLoopConfirmTests {
         ("only a value changed, such as a relative time", Fixtures.snapshot(outline: "List 3 s", entries: [row("3 s ago")]),
          Fixtures.snapshot(outline: "List 4 s", entries: [row("4 s ago")]), ["List 3 s"]),
         ("the same elements and states in shifted places, as tabs still animating",
-         Fixtures.snapshot(outline: "Tabs moving", entries: [tab(800)]),
-         Fixtures.snapshot(outline: "Tabs settled", entries: [tab(795)]), ["Tabs moving"]),
+         Fixtures.snapshot(outline: "Tabs moving", entries: [Self.button(1, "Home", y: 800)]),
+         Fixtures.snapshot(outline: "Tabs settled", entries: [Self.button(1, "Home", y: 795)]), ["Tabs moving"]),
     ] as [(String, UISnapshot, UISnapshot, [String])])
     func done(_: String, planned: UISnapshot, confirming: UISnapshot, plannedOn: [String]) async throws {
         let planner = RecordingDonePlanner()
@@ -80,7 +80,7 @@ struct AgentLoopConfirmTests {
 
     @Test("waits again on an unchanged screen, as for a slow save, until the stall limit ends it")
     func repeatedWait() async throws {
-        let driver = FakeDriver(outlines: ["Saving"])
+        let driver = ScriptedDriver(outlines: ["Saving"])
         let wait = StepPlan(action: .wait, confidence: 0.9, costUSD: 0)
         let outcome = try await AgentLoop(
             driver: driver, planner: FakePlanner([wait]), configuration: AgentConfiguration(goal: "g", maxSteps: 10),
@@ -90,23 +90,22 @@ struct AgentLoopConfirmTests {
 
     @Test("taps a bar item that stayed in place across the last action without waiting for the confirming reading")
     func stableBarItem() async throws {
-        let tab = UIEntry(
-            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
-            region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 90, y: 795, width: 85, height: 54),
+        let tab = Fixtures.entry(
+            5, "Map", role: "RadioButton", frame: ElementFrame(x: 90, y: 795, width: 85, height: 54),
+            region: ElementRegion(kind: "Group", label: "Tab Bar"),
         )
-        let home = Fixtures.snapshot(outline: "Home", entries: [button(1, "Next", y: 300), tab])
+        let home = Fixtures.snapshot(outline: "Home", entries: [Self.button(1, "Next", y: 300), tab])
         let detail = Fixtures.snapshot(outline: "Detail", entries: [Fixtures.entry(2, "Detail", role: "Heading"), tab])
         // A confirming reading that would have sent the plan back: were it awaited, the next plan would be on it.
-        let moved = UIEntry(
-            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
-            region: tab.region, frame: ElementFrame(x: 90, y: 760, width: 85, height: 54),
+        let moved = Fixtures.entry(
+            5, "Map", role: "RadioButton", frame: ElementFrame(x: 90, y: 760, width: 85, height: 54), region: tab.region,
         )
         let sliding = Fixtures.snapshot(outline: "Detail sliding", entries: [moved])
         let mapScreen = Fixtures.snapshot(outline: "Map", entries: [Fixtures.entry(3, "Map", role: "Heading"), tab])
         let map = StepPlan(action: .tap(alias: 5, role: "RadioButton", label: "Map"), confidence: 0.95, costUSD: 0)
         let planner = RecordingFakePlanner([.tapNext(), map, .blocked()])
-        let driver = ScriptedDriver(readings: [home, home, detail, sliding, mapScreen])
-        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        let (loop, driver) = loop([home, home, detail, sliding, mapScreen], planner)
+        _ = try await loop.run()
         #expect(driver.performedActions.prefix(2) == ["tap @1", "tap @5"])
         #expect(planner.outlines.prefix(3) == ["Home", "Detail", "Map"])
     }
@@ -119,7 +118,7 @@ struct AgentLoopConfirmTests {
         #expect(planner.outlines == ["Frame 1", "Frame 2", "Frame 6"])
     }
 
-    private func button(_ alias: Int, _ label: String, y: Double) -> UIEntry {
+    private static func button(_ alias: Int, _ label: String, y: Double) -> UIEntry {
         Fixtures.entry(alias, label, frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
     }
 
@@ -129,14 +128,9 @@ struct AgentLoopConfirmTests {
     }
 
     private static func row(_ age: String) -> UIEntry {
-        UIEntry(
-            aliases: ElementAliases(alias: 1), role: "Button", label: "Groceries", states: ["value=\"\(age)\""],
-            value: age, uniqueId: nil, region: nil, frame: ElementFrame(x: 16, y: 300, width: 370, height: 44),
+        Fixtures.entry(
+            1, "Groceries", states: ["value=\"\(age)\""], value: age, frame: ElementFrame(x: 16, y: 300, width: 370, height: 44),
         )
-    }
-
-    private static func tab(_ y: Double) -> UIEntry {
-        Fixtures.entry(1, "Home", frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
     }
 }
 

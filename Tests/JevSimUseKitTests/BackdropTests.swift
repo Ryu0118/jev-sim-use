@@ -6,12 +6,10 @@ import Testing
 /// ways the detection and the opener bookkeeping can go wrong.
 @Suite("A pop-up menu's full-screen dismiss button is recognised, and Jev learns which control opened the menu")
 struct BackdropTests {
-    private static let screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
+    private static let screen = Fixtures.screen
 
     private static func entry(_ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", depth: Int) -> UIEntry {
-        var entry = Fixtures.entry(alias, label, role: role, frame: frame, band: "Content")
-        entry.depth = depth
-        return entry
+        Fixtures.entry(alias, label, role: role, frame: frame, band: "Content", depth: depth)
     }
 
     private static func snapshot(_ entries: [UIEntry], bounds: ElementFrame? = screen) -> UISnapshot {

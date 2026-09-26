@@ -7,10 +7,6 @@ import Testing
 struct ActionCatalogTests {
     @Test("offers enabled, labelled elements, text rows included, and leaves out everything else")
     func targets() {
-        let back = UIEntry(
-            aliases: ElementAliases(alias: 7), role: "Button", label: "Back", states: [], value: nil,
-            uniqueId: "BackButton", region: nil, frame: nil,
-        )
         let snapshot = Fixtures.snapshot(entries: [
             Fixtures.entry(1, "Wi-Fi"),
             Fixtures.entry(2, "Locked", states: ["disabled"]),
@@ -18,7 +14,7 @@ struct ActionCatalogTests {
             Fixtures.entry(4, "", role: "Group", frame: ElementFrame(x: 0, y: 0, width: 10, height: 10)),
             Fixtures.entry(5, "  "),
             Fixtures.entry(6, "Settings", role: "Heading"),
-            back,
+            Fixtures.entry(7, "Back", uniqueId: "BackButton"),
             Fixtures.entry(8, "General"),
         ])
         let menu = ActionCatalog.menu(for: snapshot, texts: [], explored: ["General"])
@@ -34,10 +30,7 @@ struct ActionCatalogTests {
 
     private static let ios = Fixtures.snapshot(entries: [Fixtures.entry(1, "Close"), Fixtures.entry(2, "", role: "TextField")])
     private static let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: ios.entries, crashDialog: nil)
-    private static let iosWithBack = Fixtures.snapshot(entries: ios.entries! + [UIEntry(
-        aliases: ElementAliases(alias: 3), role: "Button", label: "Back", states: [], value: nil, uniqueId: "BackButton",
-        region: nil, frame: nil,
-    )])
+    private static let iosWithBack = Fixtures.snapshot(entries: ios.entries! + [Fixtures.entry(3, "Back", uniqueId: "BackButton")])
     private static let query = [InputText(name: "query", value: "milk")]
 
     @Test("offers an operation only where it can work", arguments: [

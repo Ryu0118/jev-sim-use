@@ -6,10 +6,7 @@ import Testing
 @Suite("The shared rules mention only operations the step offers")
 struct PlanningRulesTests {
     private static let snapshot = Fixtures.snapshot(entries: [
-        UIEntry(
-            aliases: ElementAliases(alias: 1), role: "Button", label: "Home", states: [], value: nil,
-            uniqueId: "BackButton", region: nil, frame: nil,
-        ),
+        Fixtures.entry(1, "Home", uniqueId: "BackButton"),
         Fixtures.entry(2, "Title", role: "TextField"),
         Fixtures.entry(3, "Save"),
     ])
