@@ -130,7 +130,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   without `--no-raw` (5 to 16 KB, no slower) and `UISnapshot` copies each `help` to the entry at the same frame with
   a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Hints stay
   out of the first request (`PlanRequest.includesHints`), so an app that hints every control does not grow every
-  step. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
+  step. The raw tree also marks the system status bar's items (time, signal, battery, the Dynamic Island)
+  with the trait `StatusBarElement`; `UISnapshot.withoutStatusBar` drops those entries when a snapshot is decoded, so
+  they are never targets, state, or part of `identity`: Jev tapped the clock instead of going back, and the ticking
+  clock made an unchanged screen look new. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
   elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
 - State (`PlanningState`) is named JSON: `rules`, `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible

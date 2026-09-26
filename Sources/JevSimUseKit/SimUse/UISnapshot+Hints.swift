@@ -3,11 +3,13 @@ struct RawAccessibilityNode: Decodable {
     let label: String?
     let help: String?
     let frame: ElementFrame?
+    /// iOS accessibility traits, such as `Button` or `StatusBarElement`.
+    let traits: [String]?
     let children: [Self]?
 
     private enum CodingKeys: String, CodingKey {
         case label = "AXLabel"
-        case help, frame, children
+        case help, frame, traits, children
     }
 
     /// This node and every node below it.
