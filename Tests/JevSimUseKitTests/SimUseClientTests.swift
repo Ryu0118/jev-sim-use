@@ -56,4 +56,34 @@ struct SimUseClientTests {
         let client = try Self.client(FakeCommandRunner(["tap": output]))
         await #expect(throws: expected) { try await client.tap(alias: 3, on: Fixtures.snapshot()) }
     }
+
+    @Test("runs every iOS tap outside the daemon, which checks for crashed apps and doubles a tap's time")
+    func noDaemon() async throws {
+        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
+        let toggle = Fixtures.entry(9, "Switch", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Row")])
+        _ = try await Self.client(runner).tap(alias: 9, on: snapshot)
+        _ = try await Self.client(runner).tap(alias: 4, on: snapshot)
+        #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
+    }
+
+    @Test("passes paste text after a terminator so it is never parsed as an option")
+    func pasteTerminator() async throws {
+        let runner = FakeCommandRunner([
+            "paste": .json(#"{"ok":true,"data":{}}"#),
+            "keyboard-state": .json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#),
+        ])
+        _ = try await Self.client(runner).paste("-5")
+        #expect(runner.recordedCalls.last == ["paste"] + Self.device + ["--json", "--", "-5"])
+    }
+
+    @Test("stops before pasting while only the software keyboard is up, since iOS would drop the paste silently")
+    func softKeyboard() async throws {
+        let runner = FakeCommandRunner([
+            "paste": .json(#"{"ok":true,"data":{}}"#),
+            "keyboard-state": .json(#"{"ok":true,"data":{"visible":true,"platform":"ios"}}"#),
+        ])
+        await #expect(throws: SimUseError.hardwareKeyboardRequired) { try await Self.client(runner).paste("text") }
+        #expect(runner.recordedCalls == [["keyboard-state"] + Self.device + ["--json"]])
+    }
 }

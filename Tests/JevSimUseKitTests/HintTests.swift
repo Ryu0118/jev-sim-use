@@ -1,5 +1,6 @@
 import Foundation
 @testable import JevSimUseKit
+import Synchronization
 import Testing
 
 /// iOS sim-use leaves `entries[].hint` empty and keeps the hint as the raw tree's `help`. Sending hints only on the
@@ -30,5 +31,65 @@ struct HintTests {
         let json = #"{"platform":"ios","outline":"o","entries":[\#(entries.joined(separator: ","))],"raw":[{"AXLabel":null,"frame":{"x":0,"y":0,"width":402,"height":874},"children":[\#(nodes.joined(separator: ","))]}]}"#
         let snapshot = try JSONDecoder().decode(UISnapshot.self, from: Data(json.utf8))
         #expect(snapshot.entries?.map(\.hint) == expected)
+    }
+}
+
+/// Serves one screen whose button carries a hint, and records the taps.
+private final class HintedScreenDriver: DeviceDriving {
+    private let taps = Mutex(0)
+    var tapCount: Int {
+        taps.withLock { $0 }
+    }
+
+    func observe() async throws -> ScreenObservation {
+        var entry = Fixtures.entry(1, "Assistant")
+        entry.hint = "Rewrites this memo from your instruction"
+        let snapshot = Fixtures.snapshot(outline: taps.withLock { "screen \($0)" }, entries: [entry])
+        return ScreenObservation(snapshot: snapshot, disappearedApps: [])
+    }
+
+    func tap(alias _: Int, on _: UISnapshot) async throws -> [String] {
+        taps.withLock { $0 += 1 }
+        return []
+    }
+
+    func perform(_: ElementGesture, alias _: Int, on _: UISnapshot) async throws -> [String] {
+        []
+    }
+
+    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+        []
+    }
+
+    func paste(_: String) async throws -> [String] {
+        []
+    }
+}
+
+/// Unsure without hints, sure with them; records whether each request carried hints.
+private final class HintSensitivePlanner: StepPlanning {
+    private let requests = Mutex<[Bool]>([])
+    var withHints: [Bool] {
+        requests.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        let count = requests.withLock { $0.append(request.includesHints); return $0.count }
+        if count > 2 {
+            return .done()
+        }
+        return .tapNext(confidence: request.includesHints ? 0.9 : 0.3)
+    }
+}
+
+@Suite("A step that would hand over is asked once more with the screen's hints")
+struct HintRetryTests {
+    @Test("leaves hints out of the first request and acts on the hinted retry when it is sure")
+    func retries() async throws {
+        let driver = HintedScreenDriver()
+        let planner = HintSensitivePlanner()
+        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        #expect(Array(planner.withHints.prefix(2)) == [false, true])
+        #expect(driver.tapCount == 1)
     }
 }

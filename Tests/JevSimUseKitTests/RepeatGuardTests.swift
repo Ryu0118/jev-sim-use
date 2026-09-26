@@ -1,4 +1,5 @@
 @testable import JevSimUseKit
+import Synchronization
 import Testing
 
 /// A row tapped 26 times never opened while a relative time on the screen ticked, so every screen looked new. The loop
@@ -6,10 +7,10 @@ import Testing
 /// apart.
 @Suite("The same action repeated on a screen whose elements stay put is refused, even while a value there ticks")
 struct RepeatGuardTests {
-    private static let open = AgentAction.tap(alias: 1, role: "Button", label: "Open")
+    static let open = AgentAction.tap(alias: 1, role: "Button", label: "Open")
 
     /// A screen with the row to open, its relative time, and `extra` elements.
-    private static func screen(_ minutes: Int, _ extra: [String] = []) -> UISnapshot {
+    static func screen(_ minutes: Int, _ extra: [String] = []) -> UISnapshot {
         let row = Fixtures.entry(1, "Open", value: "\(minutes) minutes ago")
         let others = extra.enumerated().map { Fixtures.entry($0.offset + 2, $0.element, role: "StaticText") }
         return Fixtures.snapshot(outline: "screen \(minutes) \(extra)", entries: [row] + others)
@@ -31,5 +32,46 @@ struct RepeatGuardTests {
         #expect(progress.isFutileRepeat(Self.open) == futile)
         #expect(!progress.isFutileRepeat(.tap(alias: 2, role: "Button", label: "Other")), "another action is never refused")
         #expect(!progress.isFutileRepeat(.wait), "waiting out a slow save is never refused")
+    }
+
+    @Test("the loop hands over instead of tapping a row a fourth time on the same elements")
+    func loopHandsOver() async throws {
+        let driver = TickingListDriver()
+        let plan = StepPlan(action: Self.open, confidence: 0.95, costUSD: 0)
+        let outcome = try await AgentLoop(
+            driver: driver, planner: FakePlanner([plan]), configuration: AgentConfiguration(goal: "g", maxSteps: 10),
+        ).run().outcome
+        #expect(outcome == .noActionFits(step: AgentProgress.repeatLimit + 1))
+        #expect(driver.taps == AgentProgress.repeatLimit)
+    }
+}
+
+/// Shows the list with one more minute on its relative time after every tap.
+private final class TickingListDriver: DeviceDriving {
+    private let count = Mutex(0)
+
+    var taps: Int {
+        count.withLock { $0 }
+    }
+
+    func observe() async throws -> ScreenObservation {
+        ScreenObservation(snapshot: RepeatGuardTests.screen(taps), disappearedApps: [])
+    }
+
+    func tap(alias _: Int, on _: UISnapshot) async throws -> [String] {
+        count.withLock { $0 += 1 }
+        return []
+    }
+
+    func perform(_: ElementGesture, alias _: Int, on _: UISnapshot) async throws -> [String] {
+        []
+    }
+
+    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+        []
+    }
+
+    func paste(_: String) async throws -> [String] {
+        []
     }
 }

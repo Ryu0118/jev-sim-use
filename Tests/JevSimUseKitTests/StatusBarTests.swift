@@ -36,4 +36,15 @@ struct StatusBarTests {
         let json = #"{"platform":"ios","outline":"o","entries":[\#(entries.joined(separator: ","))],"raw":[\#(nodes.joined(separator: ","))]}"#
         #expect(try JSONDecoder().decode(UISnapshot.self, from: Data(json.utf8)).entries?.map(\.label) == expected)
     }
+
+    @Test("a status-bar clock that ticks does not make a new screen or a new tap target")
+    func clockDoesNotChangeIdentity() throws {
+        func screen(_ time: String) throws -> UISnapshot {
+            let json = #"{"platform":"ios","outline":"o","entries":[\#(Self.entry(time, frame: Self.clock)),\#(Self.entry("Close", frame: Self.close))],"raw":[\#(Self.node(time, frame: Self.clock, statusBar: true))]}"#
+            return try JSONDecoder().decode(UISnapshot.self, from: Data(json.utf8))
+        }
+        let before = try screen("10:41"), after = try screen("10:42")
+        #expect(before.identity == after.identity)
+        #expect(ActionCatalog.menu(for: after, texts: []).elements.map(\.label) == ["Close"])
+    }
 }

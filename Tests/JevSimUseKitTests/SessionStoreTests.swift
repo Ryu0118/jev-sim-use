@@ -34,4 +34,13 @@ struct SessionStoreTests {
         #expect(throws: SessionStoreError.notFound(id: id)) { try store.load(id) }
         #expect(throws: SessionStoreError.notFound(id: id)) { try store.delete(id) }
     }
+
+    @Test("writes sessions readable only by the user")
+    func permissions() throws {
+        try store.save(SessionRecord(id: "p1", goal: "g", texts: [InputText(name: "password", value: "secret")], updatedAt: Date()))
+        let file = try FileManager.default.attributesOfItem(atPath: store.directory.appending(path: "p1.json").path(percentEncoded: false))
+        let directory = try FileManager.default.attributesOfItem(atPath: store.directory.path(percentEncoded: false))
+        #expect((file[.posixPermissions] as? Int) == 0o600)
+        #expect((directory[.posixPermissions] as? Int) == 0o700)
+    }
 }

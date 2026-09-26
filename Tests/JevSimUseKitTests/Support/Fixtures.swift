@@ -15,6 +15,10 @@ enum Fixtures {
     {"deviceId":"00008110-000A1B2C3D4E5F60","kind":"physical","name":"iPhone","platform":"ios","state":"Booted"}
     """
 
+    static func devices(_ items: String...) -> String {
+        #"{"ok":true,"data":{"devices":["# + items.joined(separator: ",") + "]}}"
+    }
+
     /// A 402x874 iPhone screen, in the points describe-ui reports.
     static let screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
 
