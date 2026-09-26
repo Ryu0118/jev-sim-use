@@ -112,8 +112,53 @@ struct OcclusionTests {
         #expect(runner.recordedCalls.first?.prefix(2) == ["gesture", "scroll-up"])
     }
 
-    private func entry(_ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", depth: Int = 2) -> UIEntry {
-        var entry = Fixtures.entry(alias, label, role: role, frame: frame)
+    private var inlineTitle: UIEntry {
+        entry(3, "Settings", ElementFrame(x: 185, y: 74, width: 32, height: 21), role: "Heading", band: "Top", depth: 1)
+    }
+
+    @Test("a row scrolled up above the inline title lies under the top bar and is revealed by scrolling content above")
+    func aboveInlineTitle() {
+        let row = entry(2, "General", ElementFrame(x: 16, y: 9, width: 370, height: 52), band: "Top")
+        var snapshot = Fixtures.snapshot(entries: [row, inlineTitle])
+        snapshot.screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
+        #expect(snapshot.cover(of: row)?.label == "Settings")
+        #expect(snapshot.revealingScroll(for: row) == .revealContentAbove)
+    }
+
+    @Test("a row whose centre sits below the top bar's items is not covered by them")
+    func belowInlineTitle() {
+        let row = entry(5, "General", ElementFrame(x: 16, y: 113, width: 370, height: 52), band: "Content")
+        #expect(Fixtures.snapshot(entries: [row, inlineTitle]).cover(of: row) == nil)
+    }
+
+    @Test("top bar items at one depth do not cover each other")
+    func barItemsBesideEachOther() {
+        let back = entry(7, "Back", ElementFrame(x: 16, y: 62, width: 44, height: 44), band: "Top", depth: 1)
+        let edit = entry(8, "Edit", ElementFrame(x: 326, y: 66, width: 56, height: 36), band: "Top", depth: 1)
+        let snapshot = Fixtures.snapshot(entries: [back, inlineTitle, edit])
+        #expect(snapshot.cover(of: back) == nil)
+        #expect(snapshot.cover(of: edit) == nil)
+    }
+
+    @Test("a sheet's bar items inside its shallower bar group are not covered by the grabber above them")
+    func sheetBarItems() {
+        let grabber = entry(2, "Grabber", ElementFrame(x: 151, y: 58, width: 100, height: 24), band: "Top", depth: 1)
+        let close = entry(3, "Close", ElementFrame(x: 20, y: 82, width: 36, height: 36), band: "Top")
+        let barGroup = entry(6, "", ElementFrame(x: 0, y: 78, width: 402, height: 54), role: "Group", band: "Top", depth: 1)
+        #expect(Fixtures.snapshot(entries: [grabber, close, barGroup]).cover(of: close) == nil)
+    }
+
+    @Test("on Android a row above a shallower top item is not covered, since its frame is clipped to what shows")
+    func androidTopBand() {
+        let row = entry(2, "General", ElementFrame(x: 16, y: 9, width: 370, height: 52), band: "Top")
+        let snapshot = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: [row, inlineTitle], crashDialog: nil)
+        #expect(snapshot.cover(of: row) == nil)
+    }
+
+    private func entry(
+        _ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", band: String? = nil, depth: Int = 2,
+    ) -> UIEntry {
+        var entry = Fixtures.entry(alias, label, role: role, frame: frame, band: band)
         entry.depth = depth
         return entry
     }

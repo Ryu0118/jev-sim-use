@@ -11,6 +11,11 @@ extension UISnapshot {
     /// Bars (a tab bar, toolbar, navigation bar, or another named group) are drawn over the content that scrolls
     /// beneath them, so content never covers an element inside one: a history row scrolled under the tab bar had its
     /// frame over a tab's centre, and the tab was wrongly treated as covered.
+    ///
+    /// On iOS a top bar's background reaches from the screen's top edge down to its items, but only the items are in
+    /// the tree. A row scrolled up above a shallower top-band item (the inline title or back button) lies under that
+    /// background, so it is covered even where it overlaps no item: a row with its centre in the status bar strip was
+    /// tapped there, and nothing happened. Android reports clipped frames, so its rows never reach under a bar.
     func cover(of entry: UIEntry) -> UIEntry? {
         guard let target = entry.frame else { return nil }
         let center = target.center
@@ -21,7 +26,10 @@ extension UISnapshot {
                 return false
             }
             let isChild = target.contains(frame) && (other.depth ?? 0) > (entry.depth ?? 0)
-            let floatsOver = (other.depth ?? 0) < (entry.depth ?? 0) && frame.overlaps(target)
+            let shallower = (other.depth ?? 0) < (entry.depth ?? 0)
+            let underTopBar = shallower && platform == SimUseContract.Platform.ios
+                && other.region.map { Self.topBarKinds.contains($0.kind) } == true && center.y < frame.y
+            let floatsOver = shallower && (frame.overlaps(target) || underTopBar)
             // A deeper element lies beneath: a list row under a floating create button (depth 1 over rows at 2)
             // held the button's centre, and the button was scrolled away instead of tapped.
             let beneath = (other.depth ?? 0) > (entry.depth ?? 0)
@@ -54,6 +62,9 @@ extension UISnapshot {
 extension UISnapshot {
     /// sim-use's region kinds for containers drawn over the scrolling content.
     static let barKinds: Set = ["NavBar", "TabBar", "Toolbar", "Group"]
+
+    /// sim-use's region kinds at the top of the screen, where a navigation bar's items sit.
+    static let topBarKinds: Set = ["Top", "NavBar"]
 }
 
 extension ElementFrame {
