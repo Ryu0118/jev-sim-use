@@ -16,7 +16,7 @@ rules:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: c7510982d086aed67b01c6367f7b4d2ff611cbf58033544e1004db295729ec2b
+  checksum: 058b5cf9175f4b803b1b6e1b3dc5389d2573ff3cb0889528bd56e309b1497999
 - name: rules-lint-and-format
   sources:
   - .swiftformat
@@ -49,11 +49,3 @@ rules:
   message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
     then run `mise run generate-skill`.
   checksum: 49fd7b3312c30219dc74b27b8fc16cbe2d3f2ce2ac3a0ad370018dc8b42f15ac
-- name: claude-e2e
-  sources:
-  - scripts/e2e.sh
-  - scripts/e2e/fake-sim-use
-  - scripts/e2e/stub-jev
-  doc: CLAUDE.md
-  message: The end-to-end harness changed; review the Testing section in CLAUDE.md.
-  checksum: 8e97aac21084d20c256610e12acd694126cc463f16a87d2641ec78daf8f6d554

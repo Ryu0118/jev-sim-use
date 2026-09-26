@@ -74,12 +74,12 @@ conventions live in `swift-coding.md`; lint-enforced details in `lint-and-format
 
 ## Tests
 
-The policy is the Testing section of `CLAUDE.md`: end-to-end cases first (`mise run e2e`), isolated tests only for
-enumerable failure modes, written as that list before the code.
+The policy is the Testing section of `CLAUDE.md`: the real-simulator E2E run (`mise run e2e`) is the primary means of
+verification; unit tests guard concrete failure modes; a new isolated test starts from its written list of failure
+modes, before the code.
 
-- Isolated Kit tests inject fakes (`Fake*`, `Recording*`, `Failing*`, `Stub*`) through the initializer. A command's
-  output and exit status are checked end to end; the CLI test target covers argument parsing only.
+- Isolated Kit tests inject fakes (`Fake*`, `Recording*`, `Failing*`, `Stub*`) through the initializer; the CLI test
+  target covers argument parsing.
 - Unit tests do not use the network or the developer's home directory; file-system tests use a temporary directory.
 - Anything that needs a real external tool (a simulator, `sim-use`, a live API) is an integration or contract test in
-  its own clearly named target or task (`mise run contract-test`, `scripts/e2e-simulator.sh`), not part of the default
-  unit run.
+  its own clearly named task (`mise run contract-test`, `mise run e2e`), not part of the default unit run or CI.

@@ -10,9 +10,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 ## Development workflow
 
 - `mise run setup` — install tools, configure Git hooks
-- `mise run check` — format, lint, AST lint, build, test, end-to-end cases, docsync
+- `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
-- `mise run e2e` — run `scripts/e2e.sh`: the release binary against a fake sim-use and a stub Jev server (see Testing)
+- `mise run e2e -- <udid>` — the real-simulator E2E run (see Testing); not in CI
 - `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
@@ -20,27 +20,22 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 
 ## Testing
 
-- Do not write unit tests after writing the code.
-- End-to-end tests are the primary way to verify: they prove that complex features work and leave artifacts anyone
-  can check.
-- When something must be tested in isolation, first write down every way it can fail, then write the code. The test
-  is that list, parameterized with `@Test(arguments:)` where it fits.
+1. Do not write unit tests after writing the code.
+2. Make E2E tests the primary means of verification: prove that complex features work, and produce verifiable
+   artifacts.
+3. When something must be tested in isolation, first write down every way it can fail, then write the code (tests
+   first).
 
-Where each kind runs:
-
-- `mise run e2e` (`scripts/e2e.sh`; part of `mise run check` and CI): the release binary against
-  `scripts/e2e/fake-sim-use`, a scripted screen state machine on `PATH` that records every call with its arguments
-  and `SIM_USE_NO_DAEMON`, and `scripts/e2e/stub-jev`, a local server that answers from a scripted list and keeps every
-  request body. Scenarios are `scripts/e2e/cases/*.json`. Each case checks the exit status, stdout, the stderr step
-  lines, the recorded sim-use calls, the request bodies, and the session files, and keeps them under
-  `.e2e/<timestamp>/<case>/` (gitignored). A new command, option, outcome, or guard gets a case.
-- `swift test`: isolated tests, only where the failure modes are enumerable: parsers (versions, arguments, envelopes),
-  thresholds and support arithmetic, screen identity and cover logic, the repeat and stall guards, the backdrop and
-  status-bar filters, and the loop's handling of readings taken mid-transition, which a scripted screen never shows.
-  The CLI test target covers argument parsing only; command output and exit statuses are end-to-end checks.
-- `scripts/e2e-simulator.sh` (manual, not in CI; spends real API calls): the release binary drives Apple's Settings app
-  on a booted iOS simulator through the real sim-use and Jev, and each case is judged by reading the screen afterwards.
-- `mise run contract-test`: the installed sim-use against `SimUseContract`.
+- E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
+  sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
+  simulator's built-in Settings app: a multi-screen route, a switch, a row reached by scrolling, typing into search
+  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Each goal is judged by reading
+  the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
+  lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
+  (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
+- Unit tests (`swift test`, in CI with build and lint) guard concrete failure modes the code must not regress to: bugs
+  seen in real runs and invariants such as the stale alias, the confirming read, and a false DONE.
+- `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
 
 ## Architecture
 
@@ -50,8 +45,7 @@ Where each kind runs:
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
-    the only place the CLI reads `ProcessInfo`. CLI tests cover argument parsing; `scripts/e2e.sh` runs the commands
-    end to end.
+    the only place the CLI reads `ProcessInfo`. CLI tests cover argument parsing.
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
     usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
@@ -123,8 +117,9 @@ Where each kind runs:
   and every question opens with `JevStepPlanner.rulesPointer` (`rules` is guidance, `screen` is data). Do not add a
   second round trip.
 - Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
-  `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
-  jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
+  `goalProbablyReached`. `finishes` is asked and logged on every step line but does not end a run: after any action
+  Jev judges the new screen in another request (a changed screen once came from elsewhere, and a run ended as reached
+  on a tap that never landed). Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
   so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the

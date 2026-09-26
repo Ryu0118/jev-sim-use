@@ -7,7 +7,7 @@
   - **error** at 200+ added lines or 6+ changed files: stop and split the change into smaller commits before continuing.
   - **warning** at 120+ added lines or 3+ changed files: good checkpoint, commit now.
   - **info** at 80+ added lines: there is enough local change to justify a checkpoint commit.
-- Re-run `mise run build`, `mise run test`, `mise run lint`, and `mise run ast-lint` after every content-changing commit, not only at the end. `mise run check` runs format, lint, AST lint, build, test, the end-to-end cases, and docsync in one go.
+- Re-run `mise run build`, `mise run test`, `mise run lint`, and `mise run ast-lint` after every content-changing commit, not only at the end. `mise run check` runs format, lint, AST lint, build, test, and docsync in one go.
 - Do a directory move as a pure `git mv` in its own commit, before any content edits.
 
 ## Git Hooks
@@ -42,6 +42,6 @@ Claude Code (`.claude/settings.json`) and Codex (`.codex/hooks.json`) run the sa
 
 ## CI
 
-- `.github/workflows/test.yml`: SwiftFormat `--lint`, SwiftLint `--strict`, and AST lint, then build, test, and the end-to-end cases (`scripts/e2e.sh`), keeping their `.e2e/` artifacts when they fail.
+- `.github/workflows/test.yml`: SwiftFormat `--lint`, SwiftLint `--strict`, and AST lint, then build and test.
 - `.github/workflows/docsync-check.yml`: `docsync check`.
 - `.github/workflows/gitleaks.yml`: secret scan of the full history on every push and pull request.
