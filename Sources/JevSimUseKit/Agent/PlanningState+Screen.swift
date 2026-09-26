@@ -13,8 +13,11 @@ extension PlanningState {
             let entries = snapshot.entries ?? []
             title = snapshot.title
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
-            elements = (snapshot.entries ?? []).map {
-                Element($0, coveredBy: snapshot.cover(of: $0), slider: snapshot.caption(ofSlider: $0), hint: hints)
+            // The backdrop is not a target, and listing it would still invite Jev to reason about dismissing the menu.
+            let backdrop = snapshot.backdrop
+            elements = entries.filter { $0 != backdrop }.map {
+                let cover = snapshot.cover(of: $0).flatMap { $0 == backdrop ? nil : $0 }
+                return Element($0, coveredBy: cover, slider: snapshot.caption(ofSlider: $0), hint: hints)
                     .showing(texts)
             }
         }
