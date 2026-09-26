@@ -19,6 +19,9 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     case pressReturn
     /// Press Escape on the iOS keyboard: closes a menu, sheet, or dialog without choosing anything.
     case pressEscape
+    /// Drag two fingers down a list from its first shown row to its last, which starts multiple selection in UIKit
+    /// lists. It targets no element: asked for one, Jev named the button whose menu also selects rows.
+    case selectRows(from: ElementFrame, to: ElementFrame)
 
     /// Every action sim-use supports on `platform`. Escape needs `ios key`, which Android lacks. Backspace, Tab, the
     /// arrow keys, and Cmd+A are not offered: focus, the caret, and a selection do not show in `sim-use ui`. Backspace
@@ -56,6 +59,8 @@ package enum SimUseDeviceAction: Sendable, Hashable {
                 ? [SimUseContract.Command.type, SimUseContract.Key.newline]
                 : SimUseContract.Command.iosKey + [SimUseContract.Key.returnKeycode]
         case .pressEscape: SimUseContract.Command.iosKey + [SimUseContract.Key.escapeKeycode]
+        case let .selectRows(first, last):
+            SimUseContract.MultiTouch.arguments(centerX: first.center.x, from: first.center.y, to: last.center.y)
         }
     }
 }

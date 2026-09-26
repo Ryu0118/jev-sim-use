@@ -11,6 +11,7 @@ extension SimUseDeviceAction {
         case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))"
         case .pressReturn: "press_return"
         case .pressEscape: "press_escape"
+        case .selectRows: "select_rows_with_two_fingers"
         }
     }
 
@@ -43,6 +44,9 @@ extension SimUseDeviceAction {
         case .pressEscape:
             "Press Escape on the keyboard: close the open menu, sheet, or dialog without choosing anything; a form it "
                 + "closes loses what was typed"
+        case .selectRows:
+            "Drag two fingers down the list shown, from its first row to its last, to select all those rows at once "
+                + "(multiple selection); in selection mode a tap then adds or removes one row"
         }
     }
 
@@ -63,6 +67,7 @@ extension SimUseDeviceAction {
         case .press(.siri): "Press the button that starts Siri"
         case .pressReturn: "Press Return"
         case .pressEscape: "Press Escape"
+        case .selectRows: "Select the list's rows with two fingers"
         }
     }
 
@@ -74,6 +79,8 @@ extension SimUseDeviceAction {
         case .swipeFromRightEdge, .pressReturn: .reversible
         // Escape closed a form holding typed text without asking, and Jev cannot judge that as it does a tap.
         case .pressEscape: .irreversible
+        // Selecting changes nothing until an action runs on the selection.
+        case .selectRows: .reversible
         // Leaving the app cannot be undone: sim-use has no launch verb.
         case .press: .leavesApp
         }

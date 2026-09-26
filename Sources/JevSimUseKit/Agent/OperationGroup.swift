@@ -12,6 +12,7 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
     case swipe
     case pinch
     case rotate
+    case twoFinger = "two-finger"
     case buttons
     case keys
     case wait
@@ -27,6 +28,7 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
         case let (.swipe, .gesture(gesture)): [.swipeLeft, .swipeRight, .swipeUp, .swipeDown].contains(gesture)
         case let (.pinch, .gesture(gesture)): [.pinchIn, .pinchOut].contains(gesture)
         case let (.rotate, .gesture(gesture)): [.rotateClockwise, .rotateCounterclockwise].contains(gesture)
+        case (.twoFinger, .device(.selectRows)): true
         case let (.scroll, .device(action)):
             [.revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft].contains(action)
         case let (.back, .device(action)): action == .goBack
