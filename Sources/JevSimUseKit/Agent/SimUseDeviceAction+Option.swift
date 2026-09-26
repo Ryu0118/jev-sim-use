@@ -35,7 +35,7 @@ extension SimUseDeviceAction {
         case .press(.recents): "Press the recent apps button, which lists open apps"
         case .press(.applePay): "Double-press the side button for Apple Pay"
         case .press(.sideButton): "Press the side button"
-        case .press(.siri): "Hold the button that starts Siri"
+        case .press(.siri): "Press the button that starts Siri"
         case .pressReturn:
             "Press Return on the keyboard: submit the text just typed, for a search field or form that shows its "
                 + "result only after Return"
@@ -56,7 +56,7 @@ extension SimUseDeviceAction {
         case .press(.recents): "Press the recent apps button"
         case .press(.applePay): "Double-press the side button for Apple Pay"
         case .press(.sideButton): "Press the side button"
-        case .press(.siri): "Hold the button that starts Siri"
+        case .press(.siri): "Press the button that starts Siri"
         case .pressReturn: "Press Return"
         }
     }

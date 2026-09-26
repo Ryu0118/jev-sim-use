@@ -33,4 +33,11 @@ struct SimUseDeviceActionTests {
         #expect(HardwareButton.available(on: "android") == [.home, .lock, .recents])
         #expect(!HardwareButton.available(on: "ios").contains(.recents))
     }
+
+    @Test("does not offer Siri, whose press left the screen unreadable, and describes it as the press it sends")
+    func siri() {
+        #expect(!HardwareButton.available(on: "ios").contains(.siri))
+        #expect(SimUseDeviceAction.press(.siri).arguments(platform: "ios") == ["button", "siri"])
+        #expect(SimUseDeviceAction.press(.siri).optionDescription.hasPrefix("Press"))
+    }
 }
