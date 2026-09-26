@@ -52,20 +52,8 @@ extension AgentLoop {
         return .deciding(PlannedStep(observation: observation, fresh: fresh, plan: plan, overlapped: overlapped, settled: settled))
     }
 
-    /// Scrolls first for the goal's named item, or turns the plan (asked again with hints when it would hand over)
-    /// into a stop or an action.
+    /// Turns the plan, asked again with hints when it would hand over, into a stop or an action.
     func decideStep(_ step: PlannedStep, context: inout AgentLoopContext) async throws -> AgentLoopState {
-        if configuration.allowedOperations.allows(.device(.revealContentBelow)), let scan = ScanFirst.override(
-            step.plan, on: step.observation.snapshot, goal: configuration.goal, notes: configuration.notes,
-            alreadyScanned: context.progress.hasScannedCurrentTitle, tried: context.progress.ineffectiveActions,
-        ), context.progress.steps < configuration.maxSteps {
-            guard step.settled else { return context.disagreed(pending: step.fresh) }
-            report(.scanning(step: context.progress.nextStep))
-            context.progress.markScanned()
-            let disappeared = try await execute(scan, on: step.fresh.snapshot)
-            context.scanned(scan, disappeared: disappeared, on: step.fresh.snapshot)
-            return .observing(pending: nil)
-        }
         var decision = decide(on: step.plan, progress: context.progress)
         if shouldRetryWithHints(decision, on: step.observation.snapshot) {
             report(.retryingWithHints(step: context.progress.nextStep))

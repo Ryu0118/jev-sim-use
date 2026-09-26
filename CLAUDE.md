@@ -128,8 +128,7 @@ Never write unit tests after the code.
   on a tap that never landed). Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
-  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the
-  goal's quoted item (`ScanFirst.namedTerms`, such as one colour name across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
+  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); typing that appends
   (`enter_text`) or replaces (`replace_text`, `paste --replace`, offered only when a field holds a value: appending
@@ -210,12 +209,11 @@ Never write unit tests after the code.
   (`UISnapshot.skeleton`: identity without values) hands over too: a row tapped 26 times never opened while a relative
   time ticked, so every screen looked new. A stepper whose count is only its own value would hand over the same way. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
-  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. One
-  narrow exception, `ScanFirst`: when the goal names items in the UI's script, none is visible, the screen is a list of rows to open (buttons or cells; a sheet listing features as text
-  is not),
-  and Jev would tap an unnamed element with support below 0.85 (a confident tap is Jev knowing the way), code scrolls
-  that list once per title first (Jev's prior sent it into 一般
-  for デベロッパ at 0.51-0.77, and wording did not move it). Sections entered and left are not offered again from
+  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
+  former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
+  name; it was removed because it matched strings in one script only, and measured runs (an item below the fold, in
+  a Japanese and an English UI, 5 each) finished the same without it. An unsure dive hands over on support instead.
+  Sections entered and left are not offered again from
   the same title (`AgentProgress.exploredElements`).
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev
