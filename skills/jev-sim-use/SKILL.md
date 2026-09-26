@@ -46,8 +46,8 @@ have to discover:
 - **Numbered steps** for anything longer: several screens, a flow that returns somewhere and continues, or a screen
   with two features that look alike. Spell out the route, one action per step. In a comparison run, a
   create-edit-favourite-convert-complete flow written as an end state stalled at its fourth action and once left the
-  app; the same flow written as numbered steps ran 15 actions in about a minute, most of them at 0.8 support or
-  higher.
+  app; the same flow written as numbered steps, with its taps named by their on-screen text, ran 16 actions in about
+  32 seconds, most of them at 0.9 support or higher.
 
 <examples>
 <example>
@@ -57,10 +57,10 @@ jev-sim-use "Turn on Dark Mode in Settings"
 jev-sim-use "Search the memos for the query text and show the results" -t query=milk
 </example>
 <example>
-jev-sim-use --max-steps 30 "1. On the Home tab, tap the New Memo button.
+jev-sim-use --max-steps 30 --actions tap,type,scroll,back,wait "1. On the Home tab, tap the New Memo button.
 2. In the editor, enter the title text into the Title field.
 3. Tap Save.
-4. In the memo list, tap the memo titled with the title text.
+4. In the memo list, tap the memo Buy milk.
 5. On the memo's screen, tap Favorite.
 6. Tap Type and choose To-do.
 7. Tap Back until the Home tab shows the memo list.
@@ -85,9 +85,12 @@ How to write numbered steps so Jev follows them:
 - Refer to controls by their labels, never by coordinates or positions; Jev only sees labels.
 - Make an explicit save or submit tap its own step when the app has one. Controls can appear only after a change
   (a sheet shows Save once a field is edited), so scout a step with its change made, not just by opening the screen.
-- When the app is slow to show a result (a saved item reaching its list), write the wait into the step: "wait until
-  the memo titled with the title text appears, then tap it". Jev can wait, but only chooses to when the goal says so
-  or the screen is visibly loading.
+- Write a step plainly even when the app is slow to show its result (a saved item reaching its list). The run keeps
+  reading for up to 5 s before it hands over, and Jev waits on a loading screen by itself. Spelling it out ("wait
+  until the memo appears, then tap it") split Jev between waiting and tapping and left it at 0.3-0.5.
+- Pass `--actions` with the operation groups the route uses (`tap,type,scroll,back,wait` for most form and
+  navigation flows). Each request gets shorter, and gestures or hardware buttons the route never needs cannot be
+  chosen by mistake.
 - End with the finished state as a sentence Jev can check on screen, and one that is not already true where the run
   starts: a route that ended on the tab it started from was judged done before its first step. Exit 0 is still a
   claim; read the screen.
