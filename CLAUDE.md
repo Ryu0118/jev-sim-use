@@ -130,7 +130,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   without `--no-raw` (5 to 16 KB, no slower) and `UISnapshot` copies each `help` to the entry at the same frame with
   a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Hints stay
   out of the first request (`PlanRequest.includesHints`), so an app that hints every control does not grow every
-  step. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
+  step. The raw tree also marks the system status bar's items (time, signal, battery, the Dynamic Island)
+  with the trait `StatusBarElement`; `UISnapshot.withoutStatusBar` drops those entries when a snapshot is decoded, so
+  they are never targets, state, or part of `identity`: Jev tapped the clock instead of going back, and the ticking
+  clock made an unchanged screen look new. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
   elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
 - State (`PlanningState`) is named JSON: `rules`, `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
@@ -149,10 +152,17 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   findable after it was saved.
 - Targets are named by element id with `null` criteria (the state carries role, label, value). Every enabled element
   is a target, whatever its role: Reminders exposes its rows only as `StaticText`. At most 255 per question.
+  Except a pop-up menu's dismiss backdrop (`UISnapshot.backdrop`: a `Button` spanning the screen with labelled
+  elements deeper inside it), left out of targets and state: Jev tapped it at 0.35-0.40 instead of the menu's item.
+  While it shows, the state carries `screen.opened_by` (the last tap that changed the screen,
+  `AgentProgress.menuOpener`) and the rules gain one sentence about it, so the items read as choices for that control.
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
-  anyway hands over, and landing on screens already seen counts toward the stall limit. `history` tells Jev each
+  anyway hands over, and landing on screens already seen counts toward the stall limit. A fourth identical action in a row
+  (`AgentProgress.repeatLimit`) on a screen showing the same elements as one of the last three was taken on
+  (`UISnapshot.skeleton`: identity without values) hands over too: a row tapped 26 times never opened while a relative
+  time ticked, so every screen looked new. A stepper whose count is only its own value would hand over the same way. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. One
   narrow exception, `ScanFirst`: when the goal names items in the UI's script, none is visible, the screen is a list of rows to open (buttons or cells; a sheet listing features as text

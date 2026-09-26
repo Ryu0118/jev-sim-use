@@ -17,11 +17,13 @@ struct PlanningState: Encodable, Sendable {
     let history: [Step]
 
     init(_ request: PlanRequest) {
-        rules = PlanningRules(operations: request.menu.operations).text
+        rules = PlanningRules(operations: request.menu.operations, inMenu: request.openedBy != nil).text
         goal = request.goal
         notes = Array(request.notes.suffix(Self.notesLimit))
         platform = request.snapshot.platform
-        screen = Screen(request.snapshot, texts: request.menu.texts, hints: request.includesHints)
+        screen = Screen(
+            request.snapshot, texts: request.menu.texts, hints: request.includesHints, openedBy: request.openedBy,
+        )
         history = request.history.suffix(Self.historyLimit).map(Step.init)
     }
 

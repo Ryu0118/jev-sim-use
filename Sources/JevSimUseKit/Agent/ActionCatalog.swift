@@ -21,6 +21,7 @@ enum ActionCatalog {
     ///
     /// `explored` names elements whose branch this run already entered and came back from; offering them again made
     /// Jev loop (一般 → back → 一般). Only operations in `allowed` are offered, and targets only for allowed ones.
+    /// A menu's full-screen dismiss backdrop (`UISnapshot.backdrop`) is never a target.
     static func menu(
         for snapshot: UISnapshot,
         texts: [InputText],
@@ -29,7 +30,9 @@ enum ActionCatalog {
         allowed: Set<OperationGroup> = OperationGroup.all,
     ) -> ActionMenu {
         let entries = (snapshot.entries ?? []).filter { !$0.isDisabled }
+        let backdrop = snapshot.backdrop
         let elements = entries
+            .filter { $0 != backdrop }
             .filter { snapshot.platform != SimUseContract.Platform.ios || $0.uniqueId != iOSBackButtonIdentifier }
             .filter { !titleRoles.contains($0.role) && !explored.contains(label(for: $0)) }
             // An unlabelled container (the screen-sized group) gives Jev nothing to choose by.
