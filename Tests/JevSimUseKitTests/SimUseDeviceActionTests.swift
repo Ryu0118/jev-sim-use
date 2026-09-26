@@ -34,6 +34,14 @@ struct SimUseDeviceActionTests {
         #expect(!HardwareButton.available(on: "ios").contains(.recents))
     }
 
+    @Test("offers Escape only on iOS, gated like an irreversible tap since it closed a filled form without asking")
+    func escape() {
+        #expect(SimUseDeviceAction.pressEscape.arguments(platform: "ios") == ["ios", "key", "41"])
+        #expect(SimUseDeviceAction.available(on: "ios").contains(.pressEscape))
+        #expect(!SimUseDeviceAction.available(on: "android").contains(.pressEscape))
+        #expect(SimUseDeviceAction.pressEscape.risk == .irreversible)
+    }
+
     @Test("does not offer Siri, whose press left the screen unreadable, and describes it as the press it sends")
     func siri() {
         #expect(!HardwareButton.available(on: "ios").contains(.siri))

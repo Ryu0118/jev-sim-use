@@ -10,6 +10,7 @@ extension SimUseDeviceAction {
         case .swipeFromRightEdge: "swipe_in_from_right_edge"
         case let .press(button): "press_\(button.rawValue.replacing("-", with: "_"))"
         case .pressReturn: "press_return"
+        case .pressEscape: "press_escape"
         }
     }
 
@@ -39,6 +40,9 @@ extension SimUseDeviceAction {
         case .pressReturn:
             "Press Return on the keyboard: submit the text just typed, for a search field or form that shows its "
                 + "result only after Return"
+        case .pressEscape:
+            "Press Escape on the keyboard: close the open menu, sheet, or dialog without choosing anything; a form it "
+                + "closes loses what was typed"
         }
     }
 
@@ -58,6 +62,7 @@ extension SimUseDeviceAction {
         case .press(.sideButton): "Press the side button"
         case .press(.siri): "Press the button that starts Siri"
         case .pressReturn: "Press Return"
+        case .pressEscape: "Press Escape"
         }
     }
 
@@ -67,6 +72,8 @@ extension SimUseDeviceAction {
         case .revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft, .goBack: .harmless
         // Return submits what was typed; jev-use gates it at 0.5, close to a tap.
         case .swipeFromRightEdge, .pressReturn: .reversible
+        // Escape closed a form holding typed text without asking, and Jev cannot judge that as it does a tap.
+        case .pressEscape: .irreversible
         // Leaving the app cannot be undone: sim-use has no launch verb.
         case .press: .leavesApp
         }

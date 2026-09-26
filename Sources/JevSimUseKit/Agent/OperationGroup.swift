@@ -13,6 +13,7 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
     case pinch
     case rotate
     case buttons
+    case keys
     case wait
 
     /// Every group: the default when `--actions` is not given.
@@ -31,6 +32,7 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
         case let (.back, .device(action)): action == .goBack
         case let (.swipe, .device(action)): action == .swipeFromRightEdge
         case let (.return, .device(action)): action == .pressReturn
+        case (.keys, .device(.pressEscape)): true
         case (.buttons, .device(.press)), (.wait, .wait): true
         default: false
         }

@@ -44,6 +44,8 @@ package enum SimUseContract {
     enum Key {
         /// USB HID usage 0x28, as `sim-use ios key --help` lists it.
         static let returnKeycode = "40"
+        /// USB HID usage 0x29. `ios key --help` does not list it; it closed a sheet and a context menu on iOS 26.
+        static let escapeKeycode = "41"
         /// Android has no `key` verb; its `type` help says to embed a newline for Enter.
         static let newline = "\n"
     }

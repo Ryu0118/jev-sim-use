@@ -40,6 +40,13 @@ struct ActionCatalogTests {
             .contains(.replaceText))
     }
 
+    @Test("leaves Escape out when the keys group is not allowed")
+    func keys() {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Close")])
+        #expect(ActionCatalog.menu(for: snapshot, texts: []).operations.contains(.device(.pressEscape)))
+        #expect(!ActionCatalog.menu(for: snapshot, texts: [], allowed: [.tap, .back]).operations.contains(.device(.pressEscape)))
+    }
+
     @Test("offers only the allowed operation groups, and element targets only when an element operation is allowed")
     func allowedGroups() {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Settings"), Fixtures.entry(2, "", role: "TextField")])
