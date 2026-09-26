@@ -11,12 +11,17 @@
 # Artifacts: .e2e/<timestamp>/<goal>-r<n>/ (gitignored): exit status, stdout, stderr with each line's time since the
 # start, the check results, `session show` when a session remains, the final `sim-use ui` reading, and a recording.
 # E2E_OUTPUT overrides the directory; E2E_SKIP_BUILD=1 reuses the release binary.
+# shellcheck disable=SC2016 # jq programs name their argument `$a` inside single quotes.
 set -uo pipefail
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 BIN="$ROOT/.build/release/jev-sim-use"
 SETTINGS=com.apple.Preferences
-GOALS=(route toggle scroll search hand-over already-met)
+GOALS=(route toggle scroll search hand-over already-met calendar maps photos reminders)
+CALENDAR=com.apple.mobilecal
+MAPS=com.apple.Maps
+PHOTOS=com.apple.mobileslideshow
+REMINDERS=com.apple.reminders
 
 fail_setup() {
     echo "e2e: $*" >&2
@@ -78,7 +83,6 @@ screen_has() {
     ui_json | jq -e --arg a "${2:-}" "[.data.entries[] | select($1)] | length > 0" >/dev/null
 }
 
-# shellcheck disable=SC2016 # `$a` is a jq variable.
 heading_is() {
     screen_has '.role == "Heading" and .label == $a' "$1"
 }
@@ -120,6 +124,97 @@ set_switch() {
     SIM_USE_NO_DAEMON=1 sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
     sleep 1
     [[ $(value_of "$id") == "$want" ]]
+}
+
+# Relaunches the app `$1` in English, waits until sim-use reads it as `$2`, and answers first-run prompts, which appear
+# only on a fresh simulator. The launch arguments leave the simulator's own language as it is.
+open_app() {
+    local bundle=$1 name=$2
+    xcrun simctl terminate "$DEVICE" "$bundle" >/dev/null 2>&1
+    xcrun simctl launch "$DEVICE" "$bundle" -AppleLanguages "(en)" -AppleLocale en_US >/dev/null || return 1
+    for _ in $(seq 1 20); do
+        [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]] && break
+        sleep 0.5
+    done
+    for prompt in Continue "Not Now"; do
+        screen_has '.role == "Button" and .label == $a' "$prompt" \
+            && sim-use tap --label "$prompt" --device "$DEVICE" --json >/dev/null && sleep 1
+    done
+    [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]]
+}
+
+# Taps the element with identifier `$1` when it shows.
+tap_id_if_shown() {
+    screen_has '.uniqueId == $a' "$1" || return 0
+    sim-use tap --id "$1" --device "$DEVICE" --json >/dev/null
+    sleep 1
+}
+
+# Relaunches Calendar in its list view, which lists events as rows whatever the time of day, scrolled to today. A
+# relaunch may return it to the multi-day view, and the list keeps an earlier scroll position. Today's first event then
+# sits under the bar, where the tool does not see it as covered (the list lies in a labelled group, which the occlusion
+# check keeps apart from the bar), so the list is drawn down until it shows.
+open_calendar_list() {
+    open_app "$CALENDAR" Calendar || return 1
+    if ! screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List; then
+        sim-use tap --id toggle-day-list-view --device "$DEVICE" --json >/dev/null && sleep 1
+        sim-use tap --id list-view --device "$DEVICE" --json >/dev/null && sleep 1
+    fi
+    tap_id_if_shown today-button
+    sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null && sleep 1
+    screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List
+}
+
+# Calendar's list view without any event an earlier run left behind.
+open_calendar() {
+    open_calendar_list || return 1
+    delete_calendar_events || return 1
+    open_calendar_list
+}
+
+# Deletes every event whose label starts with `E2E-`, with all its repeats. The earliest shown row is opened each time,
+# below the bar that covers the list's top, so "all future events" takes the whole series; an occurrence edited on its
+# own is a separate event and takes another pass.
+delete_calendar_events() {
+    local point
+    for _ in 1 2 3 4 5; do
+        point=$(ui_json | jq -r '[.data.entries[] | select(((.label // "") | startswith("E2E-")) and .frame.y > 110)]
+            | sort_by(.frame.y) | .[0].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
+        [[ -n $point ]] || break
+        sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
+        sleep 1.5
+        tap_id_if_shown delete-event-cell
+        tap_id_if_shown delete-all-future-events-alert-button
+        tap_id_if_shown delete-alert-button
+        sleep 1
+    done
+    negate screen_has '(.label // "") | startswith("E2E-")'
+}
+
+# Relaunches Reminders on its default list. A relaunch may show the overview of lists instead, where the list is a row
+# labelled with its name and count.
+open_reminders_list() {
+    local list
+    open_app "$REMINDERS" Reminders || return 1
+    list=$(ui_json | jq -r '[.data.entries[] | select(.role == "Button" and ((.label // "") | startswith("Reminders, ")))]
+        [0].label // empty')
+    [[ -n $list ]] || return 0
+    sim-use tap --label "$list" --device "$DEVICE" --json >/dev/null || return 1
+    wait_for_heading Reminders
+}
+
+# The Reminders list without any reminder an earlier run left behind (a long swipe deletes a row).
+open_reminders() {
+    open_reminders_list || return 1
+    for _ in 1 2 3; do
+        local frame
+        frame=$(ui_json | jq -r '[.data.entries[] | select((.label // "") | startswith("E2E-"))][0].frame
+            | select(. != null) | "\(.x + .width - 20),\(.y + .height / 2) \(.x + 40),\(.y + .height / 2)"')
+        [[ -n $frame ]] || return 0
+        sim-use swipe --from "${frame% *}" --to "${frame#* }" --duration 0.3 --device "$DEVICE" --json >/dev/null
+        sleep 1.5
+    done
+    negate screen_has '(.label // "") | startswith("E2E-")'
 }
 
 # --- Recording a goal ----------------------------------------------------------------------------------------------
@@ -244,6 +339,63 @@ goal_already_met() {
     check "the About screen still shows" heading_is About
 }
 
+# Creating an event with a typed title and two menus (one behind the date row), then reopening and editing it.
+goal_calendar() {
+    local title=E2E-Standup
+    open_calendar || return 1
+    jsu run "Create a new event titled with the title text, set its Alert to 15 minutes before, open its date and \
+time to set Repeat to Every Week, then save it" -t title="$title" -d "$DEVICE" --max-steps 12
+    check "exit status 0" status_is run 0
+    check "the list shows the event" screen_has '(.label // "") | startswith($a)' "$title"
+    open_calendar_list || return 1
+    jsu run2 "Open the event titled with the title text and change its alert to 5 minutes before, then save the \
+change" -t title="$title" -d "$DEVICE" --max-steps 8
+    check "the edit exits 0" status_is run2 0
+    check "the event's details show the new alert" screen_has '.uniqueId == "alert-cell" and .label == $a' \
+        "Alert, 5 minutes before"
+    check "the event still repeats weekly" screen_has '.uniqueId == "event-details-recurrence-button"
+        and ((.label // "") | test("weekly"; "i"))'
+    check "the event is deleted afterwards" open_calendar
+}
+
+# Searching Maps with a typed place and opening it with Return. Needs the network.
+goal_maps() {
+    open_app "$MAPS" Maps || return 1
+    tap_id_if_shown CardButtonTypeClose
+    jsu run "Search for the place in the Maps search field, then press Return" -t place="Golden Gate Bridge" \
+        -d "$DEVICE" --max-steps 6 --actions tap,type,return
+    check "exit status 0" status_is run 0
+    check "the place card for the place shows" screen_has '.uniqueId == "PlaceHeaderView"
+        and ((.label // "") | startswith("Golden Gate Bridge"))'
+    tap_id_if_shown CardButtonTypeClose
+}
+
+# Opening a photo from the library grid and going back to it.
+goal_photos() {
+    open_app "$PHOTOS" Photos || return 1
+    tap_id_if_shown LibraryTab
+    jsu run "Open the first photo in the library, then go back to the library" -d "$DEVICE" --max-steps 6
+    check "exit status 0" status_is run 0
+    check "two actions ran: opening the photo and going back" stdout_has run "after 2 action(s)."
+    check "the library grid shows again" screen_has '.uniqueId == "LibraryTab" and (.states | index("selected"))'
+}
+
+# Adding a reminder with a typed title, then deleting it with its swipe action.
+goal_reminders() {
+    local title=E2E-Task
+    open_reminders || return 1
+    jsu run "Add a new reminder titled with the title text" -t title="$title" -d "$DEVICE" --max-steps 5
+    check "exit status 0" status_is run 0
+    check "the list shows the reminder" screen_has '(.label // "") | startswith($a)' "$title"
+    open_reminders_list || return 1
+    jsu run2 "Delete the reminder titled with the title text using its swipe actions; the goal is reached once it no \
+longer shows" -t title="$title" \
+        -d "$DEVICE" --max-steps 5 --actions tap,swipe
+    check "the deletion exits 0" status_is run2 0
+    check "the reminder is gone" negate screen_has '(.label // "") | startswith($a)' "$title"
+    check "no reminder is left behind" open_reminders
+}
+
 # --- Driver --------------------------------------------------------------------------------------------------------
 
 summary="$OUT/summary.md"
@@ -268,7 +420,7 @@ for name in "${selected[@]}"; do
         kill -INT "$recorder" 2>/dev/null
         wait "$recorder" 2>/dev/null
 
-        for prefix in run resume; do
+        for prefix in run run2 resume; do
             [[ -f $run_dir/$prefix.stdout.txt ]] || continue
             session=$(session_of "$prefix")
             if [[ -n $session ]] && session_exists "$session"; then
@@ -278,12 +430,12 @@ for name in "${selected[@]}"; do
         ui_json >"$run_dir/ui.json" 2>&1
         sim-use ui --device "$DEVICE" >"$run_dir/ui.txt" 2>&1
 
-        exits=$(cat "$run_dir"/run.exit-status "$run_dir"/resume.exit-status 2>/dev/null | paste -sd/ -)
-        actions=$(cat "$run_dir"/run.stdout.txt "$run_dir"/resume.stdout.txt 2>/dev/null \
+        exits=$(cat "$run_dir"/{run,run2,resume}.exit-status 2>/dev/null | paste -sd/ -)
+        actions=$(cat "$run_dir"/{run,run2,resume}.stdout.txt 2>/dev/null \
             | sed -nE 's/.*(after|at step) ([0-9]+).*/\2/p' | paste -sd/ -)
-        steps=$(cat "$run_dir"/run.stderr.txt "$run_dir"/resume.stderr.txt 2>/dev/null \
+        steps=$(cat "$run_dir"/{run,run2,resume}.stderr.txt 2>/dev/null \
             | sed -nE 's/^ *([0-9.]+)  \[([0-9]+)\] .*\(support.*/\2@\1/p' | paste -sd' ' -)
-        cost=$(cat "$run_dir"/run.stderr.txt "$run_dir"/resume.stderr.txt 2>/dev/null \
+        cost=$(cat "$run_dir"/{run,run2,resume}.stderr.txt 2>/dev/null \
             | sed -nE 's/.*~[$]([0-9.e-]+).*/\1/p' | awk '{ total += $1 } END { printf "%.6f", total }')
         failures=$(grep '^FAIL' "$run_dir/checks.txt" | cut -c7- | paste -sd';' -)
         result=PASS
