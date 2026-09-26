@@ -64,7 +64,8 @@ step's time:
 **A warning that a sim-use screen read had no answer after 3 s** means the device's sim-use daemon hung. A hung
 daemon's readings take 10-20 s instead of under one, or never answer. On iOS jev-sim-use handles this itself: it
 cancels the reading, stops the device's daemon, reads the screen without it, and goes on; that step's `read` includes
-the 3 s and the restart. This happens at most twice per run. A third hang stops the run with exit 3. Android readings
+the 3 s and the restart. This happens at most twice per run; after that, slow readings are waited out, and only a
+reading with no answer after 30 s (a daemon that stopped answering altogether) stops the run with exit 3. Android readings
 have no such deadline, so there a `read` far above the usual, on a step that did not hand over, points to the same
 cause. To fix it by hand, whether after that exit or while running sim-use yourself:
 

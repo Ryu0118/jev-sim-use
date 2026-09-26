@@ -59,8 +59,9 @@ Never write unit tests after the code.
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
   `SimUseDaemonWatchdog` gives every iOS `ui` read through the daemon a 3 s deadline (healthy reads 0.45-0.67 s, a
   hung daemon's 10-20 s or never): past it the read is cancelled, `daemon stop --device <udid> --timeout 1` runs, and
-  the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run (`SimUseError.readTimedOut` after), reported
-  as a warning. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
+  the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run, reported as a warning. After that reads are
+  waited out up to 30 s (`SimUseError.readTimedOut` past it): a natural hang answered in about 10 s and a fresh daemon
+  hung again within a minute, so failing sooner would end runs that finish today. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
   report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
   counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
   the default `--timeout`). Android reads have no deadline: their normal time was never measured.
