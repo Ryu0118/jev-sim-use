@@ -26,3 +26,17 @@ extension UISnapshot {
         return ([appLabel ?? ""] + elements).joined(separator: "\n")
     }
 }
+
+extension UISnapshot {
+    /// Which elements show, without values, frames, or bands: what stays put while a relative time ("12 minutes ago")
+    /// ticks. Too coarse for telling whether an action worked (typing and toggles change only values), so it serves
+    /// only to spot the same action repeated on what is essentially the same screen.
+    var skeleton: String {
+        guard let entries, !entries.isEmpty else { return outline }
+        let elements = entries.map { entry in
+            let states = entry.states.filter { !$0.hasPrefix("value=") }
+            return [entry.role, entry.label, entry.uniqueId ?? "", states.joined(separator: ",")].joined(separator: "|")
+        }
+        return ([appLabel ?? ""] + elements).joined(separator: "\n")
+    }
+}

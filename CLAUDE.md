@@ -159,7 +159,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
-  anyway hands over, and landing on screens already seen counts toward the stall limit. `history` tells Jev each
+  anyway hands over, and landing on screens already seen counts toward the stall limit. A fourth identical action in a row
+  (`AgentProgress.repeatLimit`) on a screen showing the same elements as one of the last three was taken on
+  (`UISnapshot.skeleton`: identity without values) hands over too: a row tapped 26 times never opened while a relative
+  time ticked, so every screen looked new. A stepper whose count is only its own value would hand over the same way. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. One
   narrow exception, `ScanFirst`: when the goal names items in the UI's script, none is visible, the screen is a list of rows to open (buttons or cells; a sheet listing features as text

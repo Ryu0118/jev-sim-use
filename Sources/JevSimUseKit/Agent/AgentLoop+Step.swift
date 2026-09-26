@@ -43,10 +43,12 @@ extension AgentLoop {
         let step = progress.nextStep
         // Code does not explore on Jev's behalf: scrolling or going back when Jev was unsure moved away from the right
         // screen as often as it found anything. Nothing fitting, or a repeat of an action that did nothing on this
-        // screen, hands over like low support does.
+        // screen, hands over like low support does; so does a fourth identical action in a row on a screen showing the
+        // same elements as one of the last three was taken on, values such as a ticking relative time aside.
         // Waiting again on an unchanged screen is how a slow save is waited out; the stall limit still ends it.
         if plan.action == .noneApplies
             || plan.action != .wait && progress.ineffectiveActions.contains(plan.action.optionName)
+            || progress.isFutileRepeat(plan.action)
         {
             return .stop(.noActionFits(step: step))
         }
