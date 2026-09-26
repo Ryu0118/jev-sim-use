@@ -147,15 +147,17 @@ extension AgentLoop {
     /// The element `plan` taps when it can be tapped without waiting for the confirming reading: a confident tap on
     /// a bar item (tab bar, toolbar, navigation bar) that `before`, the screen the last action was taken on, showed
     /// unchanged in the same place, after an action whose effect showed. Such an item is not moving with the
-    /// transition, and a tap on the same label in the same place does the same thing either side of it.
+    /// transition, and a tap on the same label in the same place does the same thing either side of it. A labelled group
+    /// does not count as a bar: sim-use also groups ordinary content under one, such as a week's day buttons.
     func stableBarTarget(
         of plan: StepPlan, on snapshot: UISnapshot, before: UISnapshot?, progress: AgentProgress,
     ) -> UIEntry? {
         guard case let .tap(alias, _, _) = plan.action, plan.support >= ActionPolicy.confidentSupport,
               progress.history.last?.screenChanged == true, let before,
-              let entry = snapshot.entry(alias: alias), let region = entry.region,
-              UISnapshot.barKinds.contains(region.kind), snapshot.revealingScroll(for: entry) == nil,
-              snapshot.counterpart(of: alias, in: before) != nil
+              let entry = snapshot.entry(alias: alias),
+              entry.isTabButton || entry.region.map { UISnapshot.barKinds.contains($0.kind) } == true,
+            snapshot.revealingScroll(for: entry) == nil,
+            snapshot.counterpart(of: alias, in: before) != nil
         else { return nil }
         return entry
     }

@@ -34,6 +34,11 @@ package struct UIEntry: Decodable, Sendable, Hashable {
         Self.toggleRoles.contains(role)
     }
 
+    /// Whether the element is a tab bar item. A segmented control's segments share its subrole but not this trait.
+    package var isTabButton: Bool {
+        traits?.contains("TabButton") == true
+    }
+
     /// Whether the element is a full-width row button that shows its setting's value, such as a SwiftUI ColorPicker.
     /// Its control (the colour well) sits at the trailing edge and ignores a tap on the row's label.
     package var isValueRow: Bool {

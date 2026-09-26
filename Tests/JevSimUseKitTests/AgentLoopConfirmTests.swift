@@ -13,6 +13,28 @@ struct AgentLoopConfirmTests {
         return (AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")), driver)
     }
 
+    /// The screens planned on when `label`, unchanged on the screen the last tap opened, is tapped next while the
+    /// confirming reading shows it moving. A stable bar item is tapped at once, so the moving reading is never planned on.
+    private func plannedScreens(tapping label: String, region: ElementRegion, traits: [String]) async throws -> [String] {
+        func item(y: Double) -> UIEntry {
+            var entry = UIEntry(
+                aliases: ElementAliases(alias: 5), role: "RadioButton", label: label, states: [], value: nil, uniqueId: nil,
+                region: region, frame: ElementFrame(x: 90, y: y, width: 85, height: 54),
+            )
+            entry.traits = traits
+            return entry
+        }
+        let home = Fixtures.snapshot(outline: "Home", entries: [button(1, "Next", y: 300), item(y: 795)])
+        let detail = Fixtures.snapshot(outline: "Detail", entries: [Fixtures.entry(2, "Detail", role: "Heading"), item(y: 795)])
+        let sliding = Fixtures.snapshot(outline: "Detail sliding", entries: [item(y: 760)])
+        let next = Fixtures.snapshot(outline: label, entries: [Fixtures.entry(3, label, role: "Heading"), item(y: 795)])
+        let tap = StepPlan(action: .tap(alias: 5, role: "RadioButton", label: label), confidence: 0.95, costUSD: 0)
+        let planner = RecordingFakePlanner([.tapNext(), tap, .blocked(), .blocked()])
+        let driver = ScriptedDriver(readings: [home, home, detail, sliding, next, next])
+        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        return Array(planner.outlines.prefix(3))
+    }
+
     @Test("does not tap a stale alias when the confirming reading shows the next screen")
     func staleAlias() async throws {
         let planner = TapLabelPlanner("Save")
@@ -107,27 +129,18 @@ struct AgentLoopConfirmTests {
         #expect(outcome == .stalled(steps: 3))
     }
 
-    @Test("taps a bar item that stayed in place across the last action without waiting for the confirming reading")
-    func stableBarItem() async throws {
-        let tab = UIEntry(
-            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
-            region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 90, y: 795, width: 85, height: 54),
-        )
-        let home = Fixtures.snapshot(outline: "Home", entries: [button(1, "Next", y: 300), tab])
-        let detail = Fixtures.snapshot(outline: "Detail", entries: [Fixtures.entry(2, "Detail", role: "Heading"), tab])
-        // A confirming reading that would have sent the plan back: were it awaited, the next plan would be on it.
-        let moved = UIEntry(
-            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
-            region: tab.region, frame: ElementFrame(x: 90, y: 760, width: 85, height: 54),
-        )
-        let sliding = Fixtures.snapshot(outline: "Detail sliding", entries: [moved])
-        let mapScreen = Fixtures.snapshot(outline: "Map", entries: [Fixtures.entry(3, "Map", role: "Heading"), tab])
-        let map = StepPlan(action: .tap(alias: 5, role: "RadioButton", label: "Map"), confidence: 0.95, costUSD: 0)
-        let planner = RecordingFakePlanner([.tapNext(), map, .blocked()])
-        let driver = ScriptedDriver(readings: [home, home, detail, sliding, mapScreen])
-        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
-        #expect(driver.performedActions.prefix(2) == ["tap @1", "tap @5"])
-        #expect(planner.outlines.prefix(3) == ["Home", "Detail", "Map"])
+    @Test(
+        "taps a tab that stayed in place across the last action without waiting for the confirming reading, in any band",
+        arguments: [ElementRegion(kind: "Group", label: "Tab Bar"), ElementRegion(kind: "Bottom", label: nil)],
+    )
+    func stableTab(region: ElementRegion) async throws {
+        #expect(try await plannedScreens(tapping: "Map", region: region, traits: ["Button", "TabButton"]) == ["Home", "Detail", "Map"])
+    }
+
+    @Test("waits for the confirming reading before tapping content that sim-use grouped under a labelled container")
+    func groupedContent() async throws {
+        let screens = try await plannedScreens(tapping: "Tuesday", region: ElementRegion(kind: "Group", label: "Week"), traits: ["Button"])
+        #expect(screens == ["Home", "Detail", "Detail sliding"])
     }
 
     @Test("accepts DONE when the readings show the same elements and states in shifted places")
