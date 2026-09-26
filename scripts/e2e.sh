@@ -237,6 +237,13 @@ case_reveal_covered_row() {
     check "the screen is read between the scroll and the tap" called_with ui --device "$DEVICE" --json
     check "history records the tap" request_has 2 '.state.history[0].action == "Tap the Button labelled \"Hidden row\""'
     common_run_checks
+
+    use_scenario reveal-offscreen-switch || return 1
+    jsu switch run "Turn on reminders" --base-url "$URL"
+    check "a switch below the screen: exit status 0" status_is switch 0
+    check "it is scrolled into reach, then tapped on its trailing edge with a short hold" actions_are \
+        "gesture scroll-up --duration 1.5" "tap -x 360.0 -y 522.0 --duration 0.05  [no daemon]"
+    common_run_checks
 }
 
 case_type_and_return() {

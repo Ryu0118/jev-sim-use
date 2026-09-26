@@ -56,4 +56,4 @@ rules:
   - scripts/e2e/stub-jev
   doc: CLAUDE.md
   message: The end-to-end harness changed; review the Testing section in CLAUDE.md.
-  checksum: 9745b48a31dd73e5a6f44a0dc621fc90458db506d28f543bc1df9e3b8bae66f0
+  checksum: 8ff6ee55e5689f147bbf014ef08ea736a7554c77d81ede989492ac8eb0bf085d
