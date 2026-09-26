@@ -179,12 +179,13 @@ session; an unfinished one expires a week after it last changed.
 
 ## What Jev can do
 
-Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
-has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
-buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. A tap Jev judges
-irreversible (deleting or discarding something, in any language) needs at least 0.6 confidence and a hardware button
-(leaving the app) 0.85, because going back cannot undo them. Anything else sim-use can do is left to you through
-`exec`.
+Taps; long-press, swipes, pinch, and rotate on an element; typing a named text after a field's text or in place of
+it; scrolls in four directions; going back where the screen has a back button (iOS) or always (Android); a right-edge
+swipe; Return, to submit a search or form; Escape, to close a menu, sheet, or dialog (iOS); a two-finger drag down a
+list, to select its rows (iOS); hardware buttons other than Siri; and waiting a moment while the app loads or a saved
+item has not reached its list yet. A tap Jev judges irreversible (deleting or discarding something, in any language)
+and Escape need at least 0.6 confidence, and a hardware button (leaving the app) 0.85, because going back cannot undo
+them. Anything else sim-use can do, such as Siri, other keys, or pull to refresh, is left to you through `exec`.
 
 ## Options
 
@@ -194,7 +195,7 @@ irreversible (deleting or discarding something, in any language) needs at least 
 | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
-| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
+| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `two-finger`, `buttons`, `keys`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
 ## Privacy
 
