@@ -36,7 +36,7 @@ package struct JevStepPlanner: StepPlanning {
         while true {
             do {
                 let response = try await client.evaluate(state: state, questions: questions)
-                return try Self.interpret(response, menu: request.menu, goal: request.goal)
+                return try Self.interpret(response, menu: request.menu)
             } catch let JevError.invalidRequest(body) {
                 throw PlanningError.rejected(body: body)
             } catch JevError.transport where attempt < Self.transportAttempts {

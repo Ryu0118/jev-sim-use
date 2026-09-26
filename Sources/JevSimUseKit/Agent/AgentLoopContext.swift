@@ -23,13 +23,6 @@ struct AgentLoopContext {
         disagreements = 0
     }
 
-    /// Records the scroll `ScanFirst` took on `snapshot`. It is not the step's own action, so the step keeps its re-plans.
-    mutating func scanned(_ scroll: AgentAction, disappeared: [String], on snapshot: UISnapshot) {
-        progress.recordAction(scroll, disappeared: disappeared)
-        actedOn = snapshot
-        disagreements = 0
-    }
-
     /// The confirming reading `fresh` disagreed with the planned one: plan again on it.
     mutating func disagreed(pending fresh: ScreenObservation) -> AgentLoopState {
         disagreements += 1
