@@ -1,18 +1,28 @@
-import Foundation
 @testable import JevSimUseKit
 import Testing
 
+/// Finding sim-use on PATH without `/usr/bin/env`, so "not installed" is told apart from exit 127. A missing sim-use
+/// runs end to end in scripts/e2e.sh.
+@Suite("sim-use is found by searching PATH in order")
 struct ExecutableLocatorTests {
-    @Test("returns the first executable in PATH order")
-    func firstMatchWins() throws {
-        let first = try TemporaryPath().withExecutable("sim-use")
-        let second = try TemporaryPath().withExecutable("sim-use")
-        let locator = ExecutableLocator(environment: ["PATH": "/missing:\(first):\(second)"])
-        #expect(locator.locate("sim-use")?.path(percentEncoded: false) == "\(first)/sim-use")
+    @Test("returns the first executable in PATH order, or nil", arguments: [
+        ("two matches: the first wins", true, true, "first"),
+        ("a missing directory before the match is skipped", false, true, "second"),
+        ("no match", false, false, nil),
+    ] as [(String, Bool, Bool, String?)])
+    func locate(_: String, inFirst: Bool, inSecond: Bool, expected: String?) throws {
+        let first = TemporaryPath(), second = TemporaryPath()
+        let directories = try [
+            inFirst ? first.withExecutable("sim-use") : "/missing",
+            inSecond ? second.withExecutable("sim-use") : "/missing/bin",
+        ]
+        let found = ExecutableLocator(environment: ["PATH": directories.joined(separator: ":")]).locate("sim-use")
+        let expectedPath = expected.map { ($0 == "first" ? directories[0] : directories[1]) + "/sim-use" }
+        #expect(found?.path(percentEncoded: false) == expectedPath)
     }
 
-    @Test("returns nil when PATH is missing or has no match", arguments: [[:], ["PATH": "/missing/bin"]])
-    func notFound(environment: [String: String]) {
-        #expect(ExecutableLocator(environment: environment).locate("sim-use") == nil)
+    @Test("returns nil when PATH is unset")
+    func noPath() {
+        #expect(ExecutableLocator(environment: [:]).locate("sim-use") == nil)
     }
 }

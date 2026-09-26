@@ -15,10 +15,6 @@ enum Fixtures {
     {"deviceId":"00008110-000A1B2C3D4E5F60","kind":"physical","name":"iPhone","platform":"ios","state":"Booted"}
     """
 
-    static func devices(_ items: String...) -> String {
-        #"{"ok":true,"data":{"devices":["# + items.joined(separator: ",") + "]}}"
-    }
-
     static func snapshot(outline: String = "App: Settings  402x874", entries: [UIEntry] = []) -> UISnapshot {
         UISnapshot(platform: "ios", outline: outline, appLabel: "Settings", entries: entries, crashDialog: nil)
     }
