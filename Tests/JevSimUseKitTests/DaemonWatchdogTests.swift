@@ -3,11 +3,15 @@ import Foundation
 import Synchronization
 import Testing
 
-/// How a hung sim-use daemon can be mishandled, listed before the watchdog was written. A hung daemon kept `ui` blocked
-/// for 10-20 s, and a stopped daemon process for minutes; the E2E never hangs one, so every recovery path is here.
+/// How a hung sim-use daemon can be mishandled, listed before the watchdog was written. A hung daemon made `ui` take
+/// about 10 s, a fresh one hung again within a minute, and a stopped daemon process blocked a read for minutes; the E2E
+/// hangs none on purpose, so every recovery path is here.
 @Suite("A hung sim-use daemon is replaced a bounded number of times without hiding a crash or a real failure")
 struct DaemonWatchdogTests {
     private static let deadline: Duration = .milliseconds(100)
+    private static let cap: Duration = .milliseconds(600)
+    /// Longer than the deadline, shorter than the cap: a natural hang, which answers in the end.
+    private static let slow: Duration = .milliseconds(300)
     private static let hang: Duration = .seconds(30)
 
     private static func client(
@@ -16,13 +20,14 @@ struct DaemonWatchdogTests {
         SimUseClient(
             device: Fixtures.device(device),
             invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner),
-            watchdog: SimUseDaemonWatchdog(deadline: deadline, report: { reports.append($0) }),
+            watchdog: SimUseDaemonWatchdog(deadline: deadline, cap: cap, report: { reports.append($0) }),
         )
     }
 
     /// Daemon reads whose index is in `hanging` hang, the others show `app`; reads outside the daemon show `reread`.
     private static func runner(
-        hanging: Set<Int>, app: String = "A", reread: String = "A", stop: CommandOutput = .daemonStop(stopped: true),
+        hanging: Set<Int>, for delay: Duration = hang, app: String = "A", reread: String = "A",
+        stop: CommandOutput = .daemonStop(stopped: true),
     ) -> ScriptedCommandRunner {
         let daemonReads = Mutex(0)
         return ScriptedCommandRunner { call in
@@ -37,7 +42,7 @@ struct DaemonWatchdogTests {
                 return reads
             }
             if hanging.contains(index) {
-                try await Task.sleep(for: hang)
+                try await Task.sleep(for: delay)
             }
             return .screen(app: app)
         }
@@ -74,19 +79,28 @@ struct DaemonWatchdogTests {
         #expect(runner.recordedCalls.last.map { $0.arguments.first == "ui" && !$0.bypassedDaemon } == true)
     }
 
-    @Test("replaces the daemon at most twice per run, then fails naming the commands that fix it")
+    @Test("replaces the daemon at most twice per run, then waits slow reads out instead of failing a run that works today")
     func boundedRecoveries() async throws {
         let reports = Reports()
-        let runner = Self.runner(hanging: [0, 1, 2])
+        let runner = Self.runner(hanging: [0, 1, 2, 3], for: Self.slow)
         let client = Self.client(runner, reports: reports)
-        _ = try await client.observe()
-        _ = try await client.observe()
-        await #expect(throws: SimUseError.readTimedOut(deviceID: "B34F0000-0000-0000-0000-000000000001", seconds: 0.1)) {
-            try await client.observe()
+        for _ in 0 ..< 4 {
+            #expect(try await client.observe().snapshot.appLabel == "A")
         }
         #expect(runner.recordedCalls.count { $0.arguments.first == "daemon" } == 2)
-        #expect(reports.all.count == 2)
-        let message = SimUseError.readTimedOut(deviceID: "X", seconds: 3).description
+        #expect(reports.all.map(\.left) == [1, 0])
+        #expect(reports.all.last?.description.contains("waited out") == true)
+    }
+
+    @Test("fails naming the commands that fix it only when a read outlasts the cap after the allowance is spent")
+    func frozenDaemon() async throws {
+        let client = Self.client(Self.runner(hanging: [0, 1, 2]))
+        _ = try await client.observe()
+        _ = try await client.observe()
+        await #expect(throws: SimUseError.readTimedOut(deviceID: "B34F0000-0000-0000-0000-000000000001", seconds: 0.6)) {
+            try await client.observe()
+        }
+        let message = SimUseError.readTimedOut(deviceID: "X", seconds: 30).description
         #expect(message.contains("jev-sim-use exec daemon status") && message.contains("exec daemon stop --device X"))
     }
 
