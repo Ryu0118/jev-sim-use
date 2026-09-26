@@ -36,6 +36,11 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Unit tests (`swift test`, in CI with build and lint) guard concrete failure modes the code must not regress to: bugs
   seen in real runs and invariants such as the stale alias, the confirming read, and a false DONE.
 - `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
+- Rules 1-3 govern new tests; they are not a reason to delete existing ones. Before removing or merging a test, name
+  the failure mode it guards and where that failure mode stays guarded (another test, or an E2E goal that actually
+  exercises it), and confirm it by breaking the guarded check and seeing the remaining test go red. Paths the E2E never
+  runs (setup and version checks, skill install, config, sessions, security checks) keep their unit tests. A pruning
+  PR lists every removed test with that failure mode and its remaining guard.
 
 ## Architecture
 
