@@ -120,7 +120,9 @@ struct AgentProgress: Sendable {
     }
 
     mutating func recordAction(_ action: AgentAction, disappeared: [String]) {
-        history.append(HistoryEntry(step: nextStep, action: action.description, screenChanged: nil))
+        history.append(HistoryEntry(
+            step: nextStep, action: action.description, screenChanged: nil, effectMayNotShow: action.effectMayNotShow ? true : nil,
+        ))
         steps += 1
         lastActionName = action.optionName
         repeatRun = if let run = repeatRun, run.action == action.description {
