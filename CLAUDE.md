@@ -10,8 +10,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 ## Development workflow
 
 - `mise run setup` — install tools, configure Git hooks
-- `mise run check` — format, lint, AST lint, build, test, docsync
+- `mise run check` — format, lint, AST lint, build, test, end-to-end cases, docsync
 - `mise run test` — run the test suite
+- `mise run e2e` — run `scripts/e2e.sh`: the release binary against a fake sim-use and a stub Jev server (see Testing)
 - `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint

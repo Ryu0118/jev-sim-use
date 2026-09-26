@@ -13,6 +13,8 @@ on:
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
+      - 'scripts/e2e.sh'
+      - 'scripts/e2e/**'
   pull_request:
     branches: [main]
     paths:
@@ -25,6 +27,8 @@ on:
       - '.swiftlint.yml'
       - '.mise.toml'
       - '.github/workflows/test.yml'
+      - 'scripts/e2e.sh'
+      - 'scripts/e2e/**'
 
 concurrency:
 
@@ -81,3 +85,14 @@ jobs:
 
       - name: Test
         run: swift test
+
+      - name: End-to-end
+        run: scripts/e2e.sh
+
+      - name: Keep end-to-end artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-artifacts
+          path: .e2e/
+          if-no-files-found: ignore

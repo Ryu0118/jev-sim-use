@@ -50,14 +50,19 @@ run = "swift test"
 description = "Check the installed sim-use against SimUseContract (needs sim-use and a booted device)"
 run = "JEV_SIM_USE_CONTRACT=1 swift test --filter JevSimUseContractTests"
 
+[tasks.e2e]
+description = "Run the end-to-end cases: the release binary against a fake sim-use and a stub Jev server"
+run = "./scripts/e2e.sh"
+
 [tasks.check]
-description = "Format, lint, build, and test"
+description = "Format, lint, build, test, run the end-to-end cases, and check docsync"
 run = [
     "mise run format",
     "mise run lint",
     "mise run ast-lint",
     "mise run build",
     "mise run test",
+    "mise run e2e",
     "mise run docsync-check",
 ]
 
