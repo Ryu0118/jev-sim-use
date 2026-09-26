@@ -15,7 +15,8 @@ polling before a hand-over), so `ui` always prints the current screen and only a
 Action keys: `tap:<label>` (by alias or by the point's element), `long-press:<label>`, `swipe:<label>`,
 `gesture:<preset>`, `button:<name>`, `key:<code>`, `paste:<text>` (or `paste:*`), `type:<text>`. An action without a
 transition leaves the screen as it was. Every call is appended to $E2E_STATE/calls.jsonl with its arguments and
-SIM_USE_NO_DAEMON; every command but `--version` must pass `--json`, and device commands the scenario's device.
+SIM_USE_NO_DAEMON, marked as a read or an action; every command but `--version` must pass `--json`, and device
+commands the scenario's device.
 """
 
 import json
@@ -96,7 +97,9 @@ def main():
     state = os.environ["E2E_STATE"]
     with open(os.environ["E2E_SCENARIO"]) as file:
         scenario = json.load(file)
-    call = {"args": arguments}
+    # Reads leave the screen as it is; the end-to-end checks compare only the calls that act.
+    read_commands = ("--version", "devices", "ui", "keyboard-state")
+    call = {"args": arguments, "kind": "read" if arguments[:1] and arguments[0] in read_commands else "action"}
     if "SIM_USE_NO_DAEMON" in os.environ:
         call["env"] = {"SIM_USE_NO_DAEMON": os.environ["SIM_USE_NO_DAEMON"]}
     with open(os.path.join(state, "calls.jsonl"), "a") as file:
@@ -111,10 +114,11 @@ def main():
     options = arguments[:arguments.index("--")] if "--" in arguments else arguments
     options = [token for token in options if token != "--json"]
     command = options[0] if options else ""
+    devices = scenario.get("devices", [DEVICE])
     if command == "devices":
-        reply({"devices": scenario.get("devices", [DEVICE])})
+        reply({"devices": devices})
 
-    device = scenario.get("devices", [DEVICE])[0]["deviceId"]
+    device = devices[0]["deviceId"] if devices else DEVICE["deviceId"]
     if "--device" not in options or options[options.index("--device") + 1] != device:
         fail(f"--device {device} missing from {arguments}", 1)
     position = options.index("--device")

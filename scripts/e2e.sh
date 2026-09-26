@@ -15,8 +15,10 @@ E2E="$ROOT/scripts/e2e"
 BIN="$ROOT/.build/release/jev-sim-use"
 OUT=${E2E_OUTPUT:-$ROOT/.e2e/$(date +%Y%m%d-%H%M%S)}
 DEVICE="E2E-DEVICE"
+# The fake's default device, as a jq object, for scenarios that list several.
+SIMULATOR='{deviceId: "E2E-DEVICE", kind: "simulator", name: "E2E Phone", platform: "ios", state: "Booted"}'
 CASES=(tap-to-goal toggle-and-back reveal-covered-row type-and-return soft-keyboard hand-over-and-resume unsure-done
-    no-effect-repeat ticking-repeat destructive-bar app-disappears step-limit hint-retry menu-backdrop doctor exec skill
+    blocked no-effect-repeat ticking-repeat destructive-bar app-disappears step-limit hint-retry menu-backdrop doctor exec skill
     setup-errors runtime-errors)
 
 fail_setup() {
@@ -44,7 +46,6 @@ mkdir -p "$OUT"
 # --- Per-case environment ------------------------------------------------------------------------------------------
 
 case_dir=""
-case_failures=0
 stub_pid=""
 URL=""
 
@@ -52,9 +53,9 @@ URL=""
 start_stub() {
     "$E2E/stub-jev" "$case_dir/scenario.json" "$case_dir/jev" 2>"$case_dir/jev/server.log" &
     stub_pid=$!
-    for _ in $(seq 1 50); do
+    for _ in $(seq 1 250); do
         [[ -f $case_dir/jev/port ]] && break
-        sleep 0.1
+        sleep 0.02
     done
     [[ -f $case_dir/jev/port ]] || return 1
     URL="http://127.0.0.1:$(cat "$case_dir/jev/port")"
@@ -65,8 +66,11 @@ stop_stub() {
     stub_pid=""
 }
 
-# Prepares the case directory from scripts/e2e/cases/<scenario>.json, changed by the optional jq filter `$2`.
+# Prepares the case directory from scripts/e2e/cases/<scenario>.json, changed by the optional jq filter `$2`. Called
+# again within a case, it starts over: a fresh screen, call log, stub, and session store.
 use_scenario() {
+    stop_stub
+    rm -rf "$case_dir/sim" "$case_dir/jev" "$case_dir/state"
     mkdir -p "$case_dir/bin" "$case_dir/sim" "$case_dir/jev" "$case_dir/home"
     jq "${2:-.}" "$E2E/cases/$1.json" >"$case_dir/scenario.json" || return 1
     cp "$E2E/fake-sim-use" "$case_dir/bin/sim-use"
@@ -74,21 +78,17 @@ use_scenario() {
 }
 
 # Runs jev-sim-use with `$@` in a clean environment: only the fake sim-use on PATH, a throwaway HOME and XDG
-# directories, and a dummy API key. JSU_UNSET names variables to leave out (TYPESAFE_API_KEY) and JSU_PATH replaces
-# PATH. Keeps stdout, stderr, and the exit status under the prefix `$1`.
+# directories, and a dummy API key. JSU_NO_KEY=1 leaves the key out and JSU_PATH replaces PATH. Keeps stdout,
+# stderr, and the exit status under the prefix `$1`.
 jsu() {
     local prefix=$1
     shift
     local environment=(
         "PATH=${JSU_PATH:-$case_dir/bin:/usr/bin:/bin}" "HOME=$case_dir/home" "XDG_STATE_HOME=$case_dir/state"
-        "XDG_CONFIG_HOME=$case_dir/config" "TYPESAFE_API_KEY=e2e-dummy-key" "E2E_SCENARIO=$case_dir/scenario.json"
-        "E2E_STATE=$case_dir/sim"
+        "XDG_CONFIG_HOME=$case_dir/config" "E2E_SCENARIO=$case_dir/scenario.json" "E2E_STATE=$case_dir/sim"
     )
-    local kept=() entry
-    for entry in "${environment[@]}"; do
-        [[ " ${JSU_UNSET:-} " == *" ${entry%%=*} "* ]] || kept+=("$entry")
-    done
-    env -i "${kept[@]}" "$BIN" "$@" >"$case_dir/$prefix.stdout.txt" 2>"$case_dir/$prefix.stderr.txt"
+    [[ ${JSU_NO_KEY:-0} == 1 ]] || environment+=("TYPESAFE_API_KEY=e2e-dummy-key")
+    env -i "${environment[@]}" "$BIN" "$@" >"$case_dir/$prefix.stdout.txt" 2>"$case_dir/$prefix.stderr.txt"
     echo $? >"$case_dir/$prefix.exit-status"
 }
 
@@ -101,7 +101,6 @@ check() {
         echo "PASS  $description" >>"$case_dir/checks.txt"
     else
         echo "FAIL  $description" >>"$case_dir/checks.txt"
-        case_failures=$((case_failures + 1))
     fi
 }
 
@@ -125,10 +124,10 @@ stderr_has() {
     grep -qF -- "$2" "$case_dir/$1.stderr.txt"
 }
 
-# The sim-use calls that act, one per line without `--device <id> --json`, marked when they ran outside the daemon.
+# The sim-use calls the fake counts as actions, one per line without `--device <id> --json`, marked when they ran outside the daemon.
 actions() {
     [[ -f $case_dir/sim/calls.jsonl ]] || return 0
-    jq -r --arg d "$DEVICE" 'select(.args[0] | IN("ui", "keyboard-state", "devices", "--version") | not)
+    jq -r --arg d "$DEVICE" 'select(.kind == "action")
         | ([.args[] | select(. != "--device" and . != $d and . != "--json")] | join(" "))
         + (if .env.SIM_USE_NO_DAEMON == "1" then "  [no daemon]" else "" end)' "$case_dir/sim/calls.jsonl"
 }
@@ -143,17 +142,17 @@ called_with() {
         | grep -q .
 }
 
-requests() {
-    find "$case_dir/jev/requests" -name '*.json' 2>/dev/null | wc -l | tr -d ' '
-}
-
 request_count_is() {
-    [[ $(requests) == "$1" ]]
+    [[ $(find "$case_dir/jev/requests" -name '*.json' 2>/dev/null | wc -l | tr -d ' ') == "$1" ]]
 }
 
 # Whether request `$1`'s body satisfies the jq condition `$2`.
 request_has() {
     jq -e "$2" "$case_dir/jev/requests/$1.json" >/dev/null
+}
+
+request_lacks() {
+    ! grep -qF -- "$2" "$case_dir/jev/requests/$1.json"
 }
 
 no_request_contains() {
@@ -253,7 +252,7 @@ case_type_and_return() {
     check "--actions narrows the offered operations" request_has 1 \
         '[.questions.operation.criteria | keys[]] | sort == ["blocked", "done", "enter_text", "press_return", "tap"]'
     check "texts are offered by name only" request_has 1 '.questions.text_to_enter.criteria | keys == ["query"]'
-    check "the value never reaches Jev before it is on screen" negate grep -qF needle-4711 "$case_dir/jev/requests/1.json"
+    check "the value never reaches Jev before it is on screen" request_lacks 1 needle-4711
     check "the field showing the value carries the text's name" \
         request_has 2 '.state.screen.elements[] | select(.label == "Search") | .shows_text == ["query"]'
     common_run_checks
@@ -290,7 +289,8 @@ case_hand_over_and_resume() {
     check "session show prints the goal, device, and run" stdout_is show "Session: $id (stopped)" \
         "Goal: Open the profile" "Device: E2E-DEVICE" "Notes:" "  (none)" "Runs:" \
         "$(sed -n 7p "$case_dir/show.stdout.txt")" "Actions:"
-    check "the run line gives the outcome" grep -qF "0 action(s): Stopped at step 1" "$case_dir/show.stdout.txt"
+    check "the run line gives its time, actions, and outcome" grep -qE \
+        "^  1\. [0-9T:-]+Z, 0 action\(s\): Stopped at step 1: " "$case_dir/show.stdout.txt"
     jsu tell session tell "$id" -n "The profile is the Profile row on the home screen."
     jsu tell2 session tell -n "A wrong fact."
     jsu forget session forget "$id" -n 2
@@ -319,8 +319,15 @@ case_unsure_done() {
     check "exit status 1: a DONE below the bar is not success" status_is run 1
     check "stdout says probably reached" stdout_has run \
         "Stopped after 0 action(s): the goal is probably reached (p=0.50), but not surely; check the screen."
-    jsu blocked run "Show the summary" --base-url "$URL"
-    check "BLOCKED hands over at once" stdout_has blocked \
+    check "nothing is done" actions_are ""
+    common_run_checks
+}
+
+case_blocked() {
+    use_scenario unsure-done '.answers = [{"op": "blocked", "p": 0.9}]' || return 1
+    jsu run run "Show the summary" --base-url "$URL"
+    check "exit status 1" status_is run 1
+    check "BLOCKED hands over at once" stdout_has run \
         "Stopped at step 1: no offered action advances the goal on this screen."
     check "nothing is done" actions_are ""
     common_run_checks
@@ -396,8 +403,7 @@ case_menu_backdrop() {
     use_scenario menu-backdrop || return 1
     jsu run run "Set the kind to option B" --base-url "$URL"
     check "exit status 0" status_is run 0
-    check "the menu's dismiss backdrop is neither a target nor in the state" \
-        negate grep -qF "Dismiss menu" "$case_dir/jev/requests/2.json"
+    check "the menu's dismiss backdrop is neither a target nor in the state" request_lacks 2 "Dismiss menu"
     check "no opener or menu rule before a menu shows" request_has 1 \
         '(.state.screen | has("opened_by") | not) and (.state.rules | contains("opened_by") | not)'
     check "the state names the control that opened the menu" request_has 2 \
@@ -417,7 +423,7 @@ case_doctor() {
         "✓ device: E2E Phone (E2E-DEVICE); screen readable, 3 elements"
     check "jev passes" stdout_has ready "✓ jev: jev-1.13.0 at $URL/v1/systemone, API key set"
     check "doctor never calls Jev" request_count_is 0
-    JSU_UNSET=TYPESAFE_API_KEY jsu keyless doctor
+    JSU_NO_KEY=1 jsu keyless doctor
     check "a missing key exits 1" status_is keyless 1
     check "the jev line says to set the key" stdout_has keyless "✗ jev: Set TYPESAFE_API_KEY"
     JSU_PATH=/usr/bin:/bin jsu missing doctor
@@ -481,7 +487,7 @@ case_skill() {
 
 case_setup_errors() {
     use_scenario tap-to-goal || return 1
-    JSU_UNSET=TYPESAFE_API_KEY jsu keyless run "Open the details screen" --base-url "$URL"
+    JSU_NO_KEY=1 jsu keyless run "Open the details screen" --base-url "$URL"
     check "a missing key exits 2" status_is keyless 2
     check "and says to set it" stderr_has keyless "TYPESAFE_API_KEY"
     JSU_PATH=/usr/bin:/bin jsu missing run "Open the details screen" --base-url "$URL"
@@ -499,22 +505,19 @@ case_setup_errors() {
     check "an unknown --device fails" negate status_is unknown 0
     check "it reads the full device list before giving up" called_with devices --json
 
-    jq '.version = "v0.9.0"' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    use_scenario tap-to-goal '.version = "v0.9.0"' || return 1
     jsu outdated run "Open the details screen" --base-url "$URL"
     check "an outdated sim-use exits 2" status_is outdated 2
-    jq '.devices = [{"deviceId": "E2E-DEVICE", "kind": "simulator", "name": "One", "platform": "ios", "state": "Booted"},
-        {"deviceId": "E2E-OTHER", "kind": "simulator", "name": "Two", "platform": "ios", "state": "Booted"}]' \
-        "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    use_scenario tap-to-goal ".devices = [$SIMULATOR, $SIMULATOR + {deviceId: \"E2E-OTHER\"}]" || return 1
     jsu several run "Open the details screen" --base-url "$URL"
     check "two devices without --device exit 2" status_is several 2
     check "and list both" stderr_has several "E2E-OTHER"
-    jq '.devices = []' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    use_scenario tap-to-goal '.devices = []' || return 1
     jsu none run "Open the details screen" --base-url "$URL"
     check "no device exits 2" status_is none 2
 
-    jq '.version = "v0.15.0" | .devices = [{"deviceId": "E2E-DEVICE", "kind": "simulator", "name": "One",
-        "platform": "ios", "state": "Booted"}, {"deviceId": "00008110-E2E", "kind": "physical", "name": "Phone",
-        "platform": "ios", "state": "Booted"}]' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    use_scenario tap-to-goal ".version = \"v0.15.0\"
+        | .devices = [$SIMULATOR, $SIMULATOR + {deviceId: \"00008110-E2E\", kind: \"physical\"}]" || return 1
     jsu newer run "Open the details screen" --base-url "$URL"
     check "a newer sim-use still runs, on the only simulator beside a physical iPhone" status_is newer 0
     check "with a warning" stderr_has newer "Warning: sim-use 0.15.0 is newer than the tested 0.14.0."
@@ -526,8 +529,6 @@ case_runtime_errors() {
     jsu failing run "Open the details screen" --base-url "$URL"
     check "a sim-use error envelope exits 3" status_is failing 3
     check "stderr gives sim-use's error and hint" stderr_has failing "failed: No snapshot"
-    stop_stub
-    rm -rf "$case_dir/jev" "$case_dir/sim" "$case_dir/state"
     use_scenario tap-to-goal '.answers = [{"status": 422, "body": "state too long"}]' || return 1
     jsu rejected run "Open the details screen" --base-url "$URL"
     check "a 422 from Jev exits 3" status_is rejected 3
@@ -536,39 +537,46 @@ case_runtime_errors() {
 
 # --- Driver --------------------------------------------------------------------------------------------------------
 
+# Every case function must be listed in CASES, or it would silently never run.
+for function in $(declare -F | sed -n 's/^declare -f case_//p'); do
+    [[ " ${CASES[*]} " == *" ${function//_/-} "* ]] || fail_setup "case_$function is not listed in CASES."
+done
+
+# Runs one case in its own directory and writes its summary row there. Cases share nothing, so they run in parallel:
+# most of their time is the binary waiting before a hand-over.
+run_case() {
+    local name=$1 started seconds total failures result=PASS
+    case_dir="$OUT/$name"
+    mkdir -p "$case_dir"
+    : >"$case_dir/checks.txt"
+    started=$(date +%s)
+    "case_${name//-/_}" || echo "FAIL  setup: the case could not start" >>"$case_dir/checks.txt"
+    stop_stub
+    seconds=$(($(date +%s) - started))
+    total=$(grep -c . "$case_dir/checks.txt")
+    failures=$(grep '^FAIL' "$case_dir/checks.txt" | cut -c7- | paste -sd';' -)
+    [[ -z $failures ]] || result=FAIL
+    echo "| $name | $result | $total | $seconds | ${failures:--} |" >"$case_dir/summary-row.md"
+}
+
+for name in "${selected[@]}"; do
+    run_case "$name" &
+done
+wait
+
 summary="$OUT/summary.md"
 {
     echo "| Case | Result | Checks | Seconds | Failed checks |"
     echo "|---|---|---|---|---|"
 } >"$summary"
-failed=0
-
 for name in "${selected[@]}"; do
-    case_dir="$OUT/$name"
-    case_failures=0
-    mkdir -p "$case_dir"
-    : >"$case_dir/checks.txt"
     echo "== $name" >&2
-    started=$(date +%s)
-    if ! "case_${name//-/_}"; then
-        echo "FAIL  setup: the case could not start" >>"$case_dir/checks.txt"
-        case_failures=$((case_failures + 1))
-    fi
-    stop_stub
-    seconds=$(($(date +%s) - started))
-    total=$(grep -c . "$case_dir/checks.txt")
-    failures=$(grep '^FAIL' "$case_dir/checks.txt" | cut -c7- | paste -sd';' -)
-    result=PASS
-    if [[ $case_failures -gt 0 ]]; then
-        result=FAIL
-        failed=$((failed + 1))
-    fi
-    echo "| $name | $result | $total | $seconds | ${failures:--} |" >>"$summary"
-    sed 's/^/   /' "$case_dir/checks.txt" >&2
+    sed 's/^/   /' "$OUT/$name/checks.txt" >&2
+    cat "$OUT/$name/summary-row.md" >>"$summary"
 done
 
 echo
 cat "$summary"
 echo
 echo "Artifacts: $OUT"
-[[ $failed -eq 0 ]]
+! grep -q '| FAIL |' "$summary"

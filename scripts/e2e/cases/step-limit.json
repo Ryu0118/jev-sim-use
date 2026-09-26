@@ -3,103 +3,30 @@
   "screens": {
     "page1": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Page 1",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "label": "Next",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Page 1", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"label": "Next", "frame": [16, 200, 370, 44]}
       ],
-      "on": {
-        "tap:Next": "page2"
-      }
+      "on": {"tap:Next": "page2"}
     },
     "page2": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Page 2",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "label": "Next",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Page 2", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"label": "Next", "frame": [16, 200, 370, 44]}
       ],
-      "on": {
-        "tap:Next": "page3"
-      }
+      "on": {"tap:Next": "page3"}
     },
     "page3": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Page 3",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "label": "Next",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Page 3", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"label": "Next", "frame": [16, 200, 370, 44]}
       ],
       "on": {}
     }
   },
   "answers": [
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Next"
-    },
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Next"
-    },
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Next"
-    },
-    {
-      "op": "done",
-      "p": 0.9
-    }
+    {"op": "tap", "p": 0.9, "target": "Next"},
+    {"op": "tap", "p": 0.9, "target": "Next"},
+    {"op": "tap", "p": 0.9, "target": "Next"},
+    {"op": "done", "p": 0.9}
   ]
 }

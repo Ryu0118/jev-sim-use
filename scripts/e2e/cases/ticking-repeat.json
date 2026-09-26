@@ -3,175 +3,41 @@
   "screens": {
     "list0": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Reports",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "role": "Cell",
-          "label": "Open report",
-          "value": "0 minutes ago",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        },
-        {
-          "label": "Filter",
-          "frame": [
-            16,
-            252,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Reports", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "Cell", "label": "Open report", "value": "0 minutes ago", "frame": [16, 200, 370, 44]},
+        {"label": "Filter", "frame": [16, 252, 370, 44]}
       ],
-      "on": {
-        "tap:Open report": "list1"
-      }
+      "on": {"tap:Open report": "list1"}
     },
     "list1": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Reports",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "role": "Cell",
-          "label": "Open report",
-          "value": "1 minutes ago",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        },
-        {
-          "label": "Filter",
-          "frame": [
-            16,
-            252,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Reports", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "Cell", "label": "Open report", "value": "1 minutes ago", "frame": [16, 200, 370, 44]},
+        {"label": "Filter", "frame": [16, 252, 370, 44]}
       ],
-      "on": {
-        "tap:Open report": "list2"
-      }
+      "on": {"tap:Open report": "list2"}
     },
     "list2": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Reports",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "role": "Cell",
-          "label": "Open report",
-          "value": "2 minutes ago",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        },
-        {
-          "label": "Filter",
-          "frame": [
-            16,
-            252,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Reports", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "Cell", "label": "Open report", "value": "2 minutes ago", "frame": [16, 200, 370, 44]},
+        {"label": "Filter", "frame": [16, 252, 370, 44]}
       ],
-      "on": {
-        "tap:Open report": "list3"
-      }
+      "on": {"tap:Open report": "list3"}
     },
     "list3": {
       "elements": [
-        {
-          "role": "Heading",
-          "label": "Reports",
-          "region": "Top",
-          "frame": [
-            16,
-            100,
-            370,
-            40
-          ]
-        },
-        {
-          "role": "Cell",
-          "label": "Open report",
-          "value": "3 minutes ago",
-          "frame": [
-            16,
-            200,
-            370,
-            44
-          ]
-        },
-        {
-          "label": "Filter",
-          "frame": [
-            16,
-            252,
-            370,
-            44
-          ]
-        }
+        {"role": "Heading", "label": "Reports", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "Cell", "label": "Open report", "value": "3 minutes ago", "frame": [16, 200, 370, 44]},
+        {"label": "Filter", "frame": [16, 252, 370, 44]}
       ],
       "on": {}
     }
   },
   "answers": [
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Open report"
-    },
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Open report"
-    },
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Open report"
-    },
-    {
-      "op": "tap",
-      "p": 0.9,
-      "target": "Open report"
-    }
+    {"op": "tap", "p": 0.9, "target": "Open report"},
+    {"op": "tap", "p": 0.9, "target": "Open report"},
+    {"op": "tap", "p": 0.9, "target": "Open report"},
+    {"op": "tap", "p": 0.9, "target": "Open report"}
   ]
 }
