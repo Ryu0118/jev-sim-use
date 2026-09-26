@@ -73,8 +73,11 @@ package struct SimUseClient: DeviceDriving {
         let envelope = try await invoker.invoke(
             [SimUseContract.Command.ui] + deviceArguments, environment: environment, as: UISnapshot.self,
         )
-        guard let snapshot = envelope.data else {
+        guard var snapshot = envelope.data else {
             throw SimUseError.malformedOutput(arguments: [SimUseContract.Command.ui], detail: "the envelope has no data")
+        }
+        if envelope.advisory?.kind == SimUseContract.orientationFallback {
+            snapshot.orientation = await settledOrientation(of: snapshot)
         }
         return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }

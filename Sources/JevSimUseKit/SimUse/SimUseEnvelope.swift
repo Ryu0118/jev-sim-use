@@ -9,6 +9,7 @@ struct SimUseEnvelope<Payload: Decodable & Sendable>: Decodable, Sendable {
         case error
         case hint
         case process
+        case advisory
     }
 
     let succeeded: Bool
@@ -16,6 +17,14 @@ struct SimUseEnvelope<Payload: Decodable & Sendable>: Decodable, Sendable {
     let error: String?
     let hint: String?
     let process: ProcessReport?
+    /// A caveat about how sim-use read the result, such as an orientation it assumed rather than confirmed.
+    let advisory: Advisory?
+}
+
+/// A caveat sim-use attaches to an otherwise successful envelope.
+struct Advisory: Decodable, Sendable {
+    /// `orientation_calibration_fallback` when sim-use assumed the orientation.
+    let kind: String
 }
 
 /// App liveness events sim-use attaches to an envelope.
