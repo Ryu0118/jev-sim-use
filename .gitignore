@@ -5,3 +5,4 @@
 DerivedData/
 xcuserdata/
 *.xcodeproj/
+.e2e/

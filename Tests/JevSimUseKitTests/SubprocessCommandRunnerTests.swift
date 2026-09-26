@@ -2,6 +2,9 @@ import Foundation
 @testable import JevSimUseKit
 import Testing
 
+/// The child-process edges every sim-use call crosses. Passing SIM_USE_NO_DAEMON on top of the inherited environment
+/// runs end to end in scripts/e2e.sh.
+@Suite("Running a child process survives large output, lingering grandchildren, and signals")
 struct SubprocessCommandRunnerTests {
     @Test("drains output larger than the pipe buffer without deadlocking")
     func largeOutput() async throws {
@@ -30,15 +33,5 @@ struct SubprocessCommandRunnerTests {
     func signalledChild() async throws {
         let output = try await SubprocessCommandRunner().run(URL(filePath: "/bin/sh"), arguments: ["-c", "kill -TERM $$"])
         #expect(output.exitCode == 128 + SIGTERM)
-    }
-
-    @Test("adds the given environment to the inherited one")
-    func environment() async throws {
-        let output = try await SubprocessCommandRunner().run(
-            URL(filePath: "/usr/bin/env"), arguments: [], environment: ["JEV_SIM_USE_TEST": "1"],
-        )
-        let lines = String(decoding: output.stdout, as: UTF8.self).split(separator: "\n")
-        #expect(lines.contains("JEV_SIM_USE_TEST=1"))
-        #expect(lines.contains { $0.hasPrefix("PATH=") })
     }
 }

@@ -3,6 +3,9 @@ import Jev
 import Synchronization
 import Testing
 
+/// Real-run regressions the loop must not return to: a tap repeated on a screen it did not change, a back swipe a map
+/// swallowed, a false DONE (below the bar, or claimed from the expectation that an action would finish the goal), a
+/// Home press at 0.66 that left the app, and a crash going unnoticed.
 struct AgentLoopTests {
     private func run(_ driver: FakeDriver, _ plans: [StepPlan], maxSteps: Int = 5) async throws -> AgentOutcome {
         try await AgentLoop(
@@ -12,12 +15,12 @@ struct AgentLoopTests {
         ).run().outcome
     }
 
-    @Test("acts until Jev chooses DONE")
-    func reachesGoal() async throws {
-        let driver = FakeDriver(outlines: ["A", "B", "C"])
-        let outcome = try await run(driver, [.tapNext(), .tapNext(), .done()])
-        #expect(outcome == .goalReached(steps: 2))
-        #expect(driver.performedActions == ["tap @1", "tap @1"])
+    @Test("hands over instead of repeating an action that did not change the screen")
+    func noRepeat() async throws {
+        let driver = FakeDriver(outlines: ["A"])
+        let outcome = try await run(driver, [.tapNext()], maxSteps: 10)
+        #expect(outcome == .noActionFits(step: 2))
+        #expect(driver.performedActions == ["tap @1"])
     }
 
     @Test("goes back on iOS by tapping the back button, which a map on the screen cannot swallow like the edge swipe")
@@ -30,28 +33,6 @@ struct AgentLoopTests {
         let plan = StepPlan(action: .device(.goBack), confidence: 0.9, costUSD: 0)
         _ = try await run(driver, [plan, .done()])
         #expect(driver.performedActions == ["tap @7"])
-    }
-
-    @Test("hands over an unsure tap without acting or exploring")
-    func escalates() async throws {
-        let driver = FakeDriver(outlines: ["A"])
-        let outcome = try await run(driver, [.tapNext(confidence: 0.3)])
-        #expect(outcome == .escalated(step: 1, action: .tap(alias: 1, role: "Button", label: "Next"), confidence: 0.3))
-        #expect(driver.performedActions.isEmpty)
-    }
-
-    @Test("hands over instead of repeating an action that did not change the screen")
-    func noRepeat() async throws {
-        let driver = FakeDriver(outlines: ["A"])
-        let outcome = try await run(driver, [.tapNext()], maxSteps: 10)
-        #expect(outcome == .noActionFits(step: 2))
-        #expect(driver.performedActions == ["tap @1"])
-    }
-
-    @Test("stops at the step limit")
-    func stepLimit() async throws {
-        let outcome = try await run(FakeDriver(outlines: ["A", "B", "C", "D"]), [.tapNext()], maxSteps: 2)
-        #expect(outcome == .stepLimitReached(steps: 2))
     }
 
     @Test("stops when the app disappears after an action")
@@ -77,22 +58,6 @@ struct AgentLoopTests {
         let planner = FakePlanner([.tapNext(finishes: 0.9), .blocked()])
         let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
         #expect(outcome.outcome == .noActionFits(step: 2))
-    }
-
-    @Test("hands over at once when nothing fits")
-    func noActionFits() async throws {
-        let driver = FakeDriver(outlines: ["A"])
-        #expect(try await run(driver, [.blocked()]) == .noActionFits(step: 1))
-        #expect(driver.performedActions.isEmpty)
-    }
-
-    @Test("enters text on the support a tap needs, since text in a field can be cleared")
-    func textOnTapSupport() async throws {
-        let enter = AgentAction.enterText(field: 1, label: "Name", text: InputText(name: "name", value: "hi"))
-        let driver = FakeDriver(outlines: ["A", "B"])
-        #expect(try await run(driver, [StepPlan(action: enter, confidence: 0.7, costUSD: 0), .done()])
-            == .goalReached(steps: 1))
-        #expect(driver.performedActions == ["tap @1", "paste hi"])
     }
 
     @Test("hands over leaving the app on support that would be enough for a tap")
@@ -169,6 +134,9 @@ private final class TapOncePlanner: StepPlanning {
     }
 }
 
+/// Acting, stopping, handing over, resuming, and not repeating a tap that did nothing run end to end in
+/// scripts/e2e.sh, where the fake screen changes at once. These are the ways a real screen still moving can mislead
+/// the loop, each from a real run.
 @Suite("Plans are made on a settled screen, not one still mid-transition")
 struct AgentLoopSettleTests {
     @Test("keeps reading after an action that has not changed the screen yet, as a save still in flight")

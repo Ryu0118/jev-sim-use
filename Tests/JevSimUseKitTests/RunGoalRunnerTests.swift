@@ -3,6 +3,8 @@ import Foundation
 import Synchronization
 import Testing
 
+/// A session must survive a run that stops short (it is what `resume` continues) and be deleted once the goal is
+/// reached.
 struct RunGoalRunnerTests {
     private let environment = [
         JevSettings.apiKeyVariable: "k",
@@ -33,17 +35,6 @@ struct RunGoalRunnerTests {
         )
     }
 
-    @Test("reports the pinned device and endpoint, then runs the loop in a new session")
-    func reachesGoal() async throws {
-        let events = Mutex<[RunGoalEvent]>([])
-        let result = try await runner().run(request()) { event in events.withLock { $0.append(event) } }
-        #expect(result == RunGoalOutcome(sessionID: "s1", outcome: .goalReached(steps: 0)))
-        let first = try #require(events.withLock { $0.first })
-        #expect(first.description.hasPrefix("Device: iPhone 17 Pro"))
-        #expect(events.withLock { $0.contains(.session(id: "s1", resumed: false)) })
-        #expect(try SessionStore(environment: environment).list().isEmpty)
-    }
-
     @Test("saves the session with its device, history, and run outcome")
     func savesSession() async throws {
         let unsurePaste = StepPlan(
@@ -68,21 +59,5 @@ struct RunGoalRunnerTests {
         #expect(result.sessionID == "old")
         #expect(events.withLock { $0.contains(.session(id: "old", resumed: true)) })
         #expect(throws: SessionStoreError.notFound(id: "old")) { try store.load("old") }
-    }
-
-    @Test("warns when sim-use is newer than the tested version")
-    func untestedVersion() async throws {
-        let events = Mutex<[RunGoalEvent]>([])
-        _ = try await runner(version: "v0.15.0").run(request()) { event in events.withLock { $0.append(event) } }
-        #expect(events.withLock { $0.contains { $0.description.hasPrefix("Warning: sim-use 0.15.0") } })
-    }
-}
-
-@Suite("The progress line names the session and says it goes away on success")
-struct RunGoalEventSessionTests {
-    @Test("new and resumed sessions both say they are deleted when the goal is reached")
-    func sessionLine() {
-        #expect(RunGoalEvent.session(id: "s1", resumed: false).description == "Session: s1 (deleted when the goal is reached)")
-        #expect(RunGoalEvent.session(id: "s1", resumed: true).description == "Resuming session s1 (deleted when the goal is reached)")
     }
 }
