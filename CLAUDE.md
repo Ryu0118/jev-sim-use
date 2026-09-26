@@ -117,8 +117,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   irreversible at least 0.6, as jev-use gates destructive picks. A tap is irreversible unless Jev's `irreversible`
   answer is below 0.35 (`ActionPolicy.reversibleTapMaximum`, the undecided band's lower edge), so a label in any
   language is judged by what the control does and a missing or unsure answer fails safe (`StepPlan.risk`); a stub server
-  that omits the key gets the irreversible bar for every tap. Taps that keep data scored 0.07-0.23, deleting and
-  discarding 0.72-0.83, and archiving, cancelling an edit, or unfavouriting 0.43-0.65; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
+  that omits the key gets the irreversible bar for every tap. Opening and navigating taps scored 0.07-0.23 and deleting or
+  discarding 0.72-0.83; closing, cancelling an edit, archiving, or unfavouriting scored 0.39-0.65, so those face 0.6
+  and keep their own probability; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
   to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). The shared rules also say a word that could
   name a place in the app or on the device (home, settings, search, back) means the app's own first. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
