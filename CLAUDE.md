@@ -173,6 +173,9 @@ Never write unit tests after the code.
   not a tap, moves it. On the iOS 26.5 simulator no sim-use drag moved a SwiftUI slider (swipes from the thumb or the
   track, slow drags, split `touch --down` / `--up`; `--pre-delay` waits before touching down), so a slider goal
   stops there until sim-use can hold then move.
+- Known limit: an empty iOS search field reports its placeholder as its value, with nothing else in the raw tree to
+  tell it from typed text, so `replace_text` is offered there and Jev may press Return before typing (2 of 8 first
+  steps in the E2E search goal). Telling them apart would take a label heuristic, which the tool does not use.
 - Hints: iOS sim-use leaves `entries[].hint` empty but keeps `accessibilityHint` as the raw tree's `help`, so `ui` runs
   without `--no-raw` (5 to 16 KB, no slower) and `UISnapshot` copies each `help` to the entry at the same frame with
   a matching label. A hint shared by three or more elements (the status bar's gesture help) is dropped. Hints stay
