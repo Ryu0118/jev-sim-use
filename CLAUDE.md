@@ -204,10 +204,13 @@ Never write unit tests after the code.
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
-  anyway hands over, and landing on screens already seen counts toward the stall limit. A fourth identical action in a row
-  (`AgentProgress.repeatLimit`) on a screen showing the same elements as one of the last three was taken on
-  (`UISnapshot.skeleton`: identity without values) hands over too: a row tapped 26 times never opened while a relative
-  time ticked, so every screen looked new. A stepper whose count is only its own value would hand over the same way. `history` tells Jev each
+  anyway hands over, and landing on screens already seen counts toward the stall limit. The same action repeated on a
+  screen showing the same elements as one it was taken on (`UISnapshot.skeleton`) hands over once its last
+  `AgentProgress.repeatLimit` repeats each left the elements' values and states as a state already seen in the run
+  (`AgentProgress.isFutileRepeat`): a row tapped 26 times never opened while a relative time on it ticked, so every
+  screen looked new. Elements seen changing between the planned and the confirming reading, with no action between
+  (`AgentProgress.noteReading`), tick on their own and are left out of those states; a counter whose value goes up
+  with each tap keeps going, and a switch flipped back and forth hands over once its states repeat. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
   former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
