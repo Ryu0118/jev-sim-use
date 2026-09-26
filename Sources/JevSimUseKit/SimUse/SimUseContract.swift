@@ -83,18 +83,26 @@ package enum SimUseContract {
         /// Half the gap between the fingers, in points.
         static let fingerOffset = 20.0
 
-        /// Two fingers side by side at `centerX`, moved from `from` to `to` vertically over 0.8 s.
-        static func arguments(centerX: Double, from: Double, to: Double) -> [String] {
+        /// Two fingers side by side at `centerX`, moved from `from` to `to` down the screen as `space` shows it, over
+        /// 0.8 s.
+        static func arguments(centerX: Double, from: Double, to: Double, in space: ScreenSpace) -> [String] {
             let left = centerX - fingerOffset, right = centerX + fingerOffset
-            let values = [left, from, right, from, left, to, right, to].map { "\($0)" }
+            let points = [(left, from), (right, from), (left, to), (right, to)].map { space.native(x: $0.0, y: $0.1) }
+            let values = points.flatMap { [$0.x, $0.y] }.map { "\($0)" }
             return [command] + zip(flags, values).flatMap { [$0, $1] } + [duration, "0.8"]
         }
     }
 
-    /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.
+    /// `swipe` endpoints, as `x,y` in device-native points (see `ScreenSpace`).
     enum Swipe {
         static let from = "--from"
         static let to = "--to"
+
+        /// A swipe between two device-native points.
+        static func arguments(from start: (x: Double, y: Double), to end: (x: Double, y: Double)) -> [String] {
+            [Command.swipe, from, "\(start.x),\(start.y)", to, "\(end.x),\(end.y)"]
+        }
+
         static let duration = "--duration"
         /// Fast enough for a pull to refresh; the scroll preset's 1.5 s is not.
         static let refreshSeconds = "0.3"
@@ -112,7 +120,7 @@ package enum SimUseContract {
         static let pinchOut = "pinch-out"
         static let rotateClockwise = "rotate-cw"
         static let rotateCounterclockwise = "rotate-ccw"
-        /// Pivot of a two-finger preset. On iOS these are device-native portrait points, the space describe-ui uses.
+        /// Pivot of a two-finger preset, in device-native points (see `ScreenSpace`).
         static let centerX = "--center-x"
         static let centerY = "--center-y"
         static let duration = "--duration"

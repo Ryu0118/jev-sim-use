@@ -57,7 +57,7 @@ private final class HintedScreenDriver: DeviceDriving {
         []
     }
 
-    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+    func perform(_: SimUseDeviceAction, in _: ScreenSpace) async throws -> [String] {
         []
     }
 

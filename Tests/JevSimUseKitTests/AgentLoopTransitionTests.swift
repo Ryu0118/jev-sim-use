@@ -166,7 +166,7 @@ private final class SlowSecondReadDriver: DeviceDriving {
         []
     }
 
-    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+    func perform(_: SimUseDeviceAction, in _: ScreenSpace) async throws -> [String] {
         []
     }
 
@@ -206,7 +206,7 @@ private final class CrashingReadDriver: DeviceDriving {
         []
     }
 
-    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+    func perform(_: SimUseDeviceAction, in _: ScreenSpace) async throws -> [String] {
         []
     }
 

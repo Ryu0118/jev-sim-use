@@ -71,8 +71,8 @@ private final class DelayedDriver: DeviceDriving {
         try await base.perform(gesture, alias: alias, on: snapshot)
     }
 
-    func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
-        try await base.perform(action, platform: platform)
+    func perform(_ action: SimUseDeviceAction, in space: ScreenSpace) async throws -> [String] {
+        try await base.perform(action, in: space)
     }
 
     func paste(_ text: String, replacing: Bool) async throws -> [String] {

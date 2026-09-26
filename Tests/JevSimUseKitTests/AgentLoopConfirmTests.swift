@@ -227,7 +227,7 @@ private final class LosingDriver: DeviceDriving {
         []
     }
 
-    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
+    func perform(_: SimUseDeviceAction, in _: ScreenSpace) async throws -> [String] {
         []
     }
 

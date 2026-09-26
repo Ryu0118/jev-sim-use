@@ -13,19 +13,20 @@ package enum ElementGesture: String, Sendable, Hashable, CaseIterable {
     case rotateClockwise = "rotate_clockwise"
     case rotateCounterclockwise = "rotate_counterclockwise"
 
-    /// The sim-use arguments for this gesture on the element `@alias` with `frame`. Frames and the pivot and swipe
-    /// coordinates share describe-ui's space (points on iOS).
-    func arguments(alias: Int, frame: ElementFrame) -> [String] {
+    /// The sim-use arguments for this gesture on the element `@alias` with `frame`, as the screen `space` describes
+    /// shows it.
+    func arguments(alias: Int, frame: ElementFrame, in space: ScreenSpace) -> [String] {
         typealias Gesture = SimUseContract.Gesture
         let center = frame.center
         // Horizontal swipes travel 40% of the width: enough to reveal a row's actions, short of the full swipe that
         // deletes a Reminders row without asking. Vertical swipes run across 80% of the element.
         let insetX = frame.width * 0.1, insetY = frame.height * 0.1
         func swipe(from: (Double, Double), to: (Double, Double)) -> [String] {
-            [SimUseContract.Command.swipe, SimUseContract.Swipe.from, "\(from.0),\(from.1)", SimUseContract.Swipe.to, "\(to.0),\(to.1)"]
+            SimUseContract.Swipe.arguments(from: space.native(x: from.0, y: from.1), to: space.native(x: to.0, y: to.1))
         }
         func twoFinger(_ preset: String) -> [String] {
-            [SimUseContract.Command.gesture, preset, Gesture.centerX, "\(center.x)", Gesture.centerY, "\(center.y)"]
+            let pivot = space.native(x: center.x, y: center.y)
+            return [SimUseContract.Command.gesture, preset, Gesture.centerX, "\(pivot.x)", Gesture.centerY, "\(pivot.y)"]
         }
         return switch self {
         case .longPress: [SimUseContract.Command.longPress, "@\(alias)"]

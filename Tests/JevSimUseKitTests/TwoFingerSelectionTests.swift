@@ -13,7 +13,7 @@ struct TwoFingerSelectionTests {
             Fixtures.entry(4, "New", frame: ElementFrame(x: 331, y: 803, width: 38, height: 38)),
         ])
         let rows = try #require(snapshot.rowRun)
-        #expect(SimUseDeviceAction.selectRows(from: rows.first, to: rows.last).arguments(platform: "ios") == [
+        #expect(SimUseDeviceAction.selectRows(from: rows.first, to: rows.last).arguments(in: ScreenSpace(platform: "ios")) == [
             "multi-touch", "--x1", "181.0", "--y1", "189.5", "--x2", "221.0", "--y2", "189.5",
             "--x1-end", "181.0", "--y1-end", "275.5", "--x2-end", "221.0", "--y2-end", "275.5", "--duration", "0.8",
         ])
