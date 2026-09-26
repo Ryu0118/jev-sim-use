@@ -144,7 +144,9 @@ Never write unit tests after the code.
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); typing that appends
   (`enter_text`) or replaces (`replace_text`, `paste --replace`, offered only when a field holds a value: appending
-  left the old title in front of the new one); screen-level scrolls in
+  left the old title in front of the new one; the two are `Operation.equivalents`, so their support adds up and the
+  more probable one runs, since apart they split an empty title 0.53 / 0.43 on a form whose other fields showed
+  placeholders, and typing a text a field already holds exactly always replaces); screen-level scrolls in
   four directions, go back (on iOS only when a `BackButton` shows a navigation stack, and done by tapping it, since a
   map on a detail screen swallowed the left-edge swipe; the swipe does
   nothing on a sheet or a tab's root, where Jev chose it at 0.79-0.88), a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`
