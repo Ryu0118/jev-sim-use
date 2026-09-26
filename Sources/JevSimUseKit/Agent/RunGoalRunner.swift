@@ -48,6 +48,7 @@ package struct RunGoalRunner: Sendable {
         var session = loaded
         let connection = try await bootstrap.connect(
             deviceID: SimUseBootstrap.deviceID(flag: request.deviceID ?? session.deviceID, environment: environment),
+            onDaemonRecovery: { report(.warning($0.description)) },
         )
         connection.versionWarning.map { report(.warning($0)) }
         report(.connected(device: connection.client.device, endpoint: settings.endpoint))

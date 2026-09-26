@@ -35,8 +35,11 @@ package struct SimUseBootstrap: Sendable {
         return (executable, version)
     }
 
-    /// Verifies the installation and pins `deviceID`, or the only usable device when `nil`.
-    package func connect(deviceID: String?) async throws -> SimUseConnection {
+    /// Verifies the installation and pins `deviceID`, or the only usable device when `nil`. `onDaemonRecovery`
+    /// receives each replacement of a hung sim-use daemon.
+    package func connect(
+        deviceID: String?, onDaemonRecovery: @escaping @Sendable (DaemonRecovery) -> Void = { _ in },
+    ) async throws -> SimUseConnection {
         let (executable, version) = try await verifyInstallation()
         let invoker = SimUseInvoker(executable: executable, runner: runner)
         var devices = try await listDevices(invoker, [SimUseContract.noPhysicalIOSFlag])
@@ -45,7 +48,10 @@ package struct SimUseBootstrap: Sendable {
             devices = try await listDevices(invoker, [])
         }
         let device = try DeviceSelection.select(deviceID, from: devices)
-        return SimUseConnection(client: SimUseClient(device: device, invoker: invoker), version: version)
+        return SimUseConnection(
+            client: SimUseClient(device: device, invoker: invoker, watchdog: SimUseDaemonWatchdog(report: onDaemonRecovery)),
+            version: version,
+        )
     }
 
     private func listDevices(_ invoker: SimUseInvoker, _ flags: [String]) async throws -> [SimUseDevice] {

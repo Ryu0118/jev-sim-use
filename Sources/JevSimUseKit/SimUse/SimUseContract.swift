@@ -35,9 +35,19 @@ package enum SimUseContract {
         static let longPress = "long-press"
         static let swipe = "swipe"
         static let keyboardState = "keyboard-state"
+        static let daemon = "daemon"
         /// `ios key`: press one HID key on an iOS simulator.
         static let iosKey = ["ios", "key"]
         static let type = "type"
+    }
+
+    /// `daemon stop`, which ends the per-device daemon; the next command through the daemon starts a fresh one.
+    enum Daemon {
+        static let stop = "stop"
+        static let timeout = "--timeout"
+        /// Seconds per stop step (cooperative, then SIGTERM). The default 2 s made a stop of an unresponsive daemon take
+        /// 6 s; the reading after it does not need the daemon gone.
+        static let stopSeconds = "1"
     }
 
     /// Return, which submits a search field or a form.

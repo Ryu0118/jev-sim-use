@@ -16,6 +16,8 @@ package enum SimUseError: Error, Sendable, Equatable {
     case hardwareKeyboardRequired
     /// `sim-use` exited without an output this tool understands.
     case malformedOutput(arguments: [String], detail: String)
+    /// A screen read on `deviceID` still had no answer after `seconds`, with the run's daemon replacements used up.
+    case readTimedOut(deviceID: String, seconds: Double)
     /// A tap scrolled its element into reach but did not find it afterwards, so only `scroll` happened. The agent
     /// loop records the scroll instead of the tap and plans on the moved screen.
     case targetNotRevealed(scroll: SimUseDeviceAction, disappearedApps: [String])

@@ -16,6 +16,7 @@ package extension SimUseContract {
         (Command.longPress, [deviceFlag, jsonFlag]),
         (Command.swipe, [Swipe.from, Swipe.to, Swipe.duration, deviceFlag, jsonFlag]),
         (MultiTouch.command, MultiTouch.flags + [MultiTouch.duration, deviceFlag, jsonFlag]),
+        ([Command.daemon, Daemon.stop].joined(separator: " "), [deviceFlag, Daemon.timeout, jsonFlag]),
         (Command.iosKey.joined(separator: " "), ["\(Key.returnKeycode) - Return", deviceFlag, jsonFlag]),
     ]
 }
