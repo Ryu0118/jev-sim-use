@@ -82,6 +82,15 @@ struct SimUseClientTests {
         #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
     }
 
+    @Test("treats a control with the iOS toggle trait as a switch whatever role sim-use gave it")
+    func toggleTrait() async throws {
+        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
+        var toggle = Fixtures.entry(9, "Dark Appearance", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        toggle.traits = ["Button", "Toggle"]
+        _ = try await client(runner).tap(alias: 9, on: Fixtures.snapshot(entries: [toggle]))
+        #expect(runner.recordedCalls == [["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"]])
+    }
+
     @Test("taps a full-width value row on its trailing control, and a narrow value button at its alias")
     func valueRowTap() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])

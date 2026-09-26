@@ -29,9 +29,10 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]
 
-    /// Whether the element is an on / off control.
+    /// Whether the element is an on / off control: a toggle role, or on iOS the `Toggle` trait, which marks a switch
+    /// whatever role sim-use derived for it.
     package var isToggle: Bool {
-        Self.toggleRoles.contains(role)
+        Self.toggleRoles.contains(role) || traits?.contains("Toggle") == true
     }
 
     /// Whether the element is a tab bar item. A segmented control's segments share its subrole but not this trait.
