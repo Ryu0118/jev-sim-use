@@ -78,7 +78,8 @@ Never write unit tests after the code.
   deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
   step (progress, the acted-on screen, re-plan and disagreement counters, the step's `StepTiming`). Each step ends
   with a `[n] took …s (read …, jev …, act …)` line: the loop's own waits, which never overlap, so the confirming read
-  under Jev's request counts only for the wait after Jev answered. `JevStepPlanner` sends one request asking which
+  under Jev's request counts only for the wait after Jev answered. A step that waited to hand over adds `hand-over …`:
+  counted as reading, that wait made stopped steps look like slow first reads. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `skills/jev-sim-use/` is the only
   copy (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes alongside it): the

@@ -1,3 +1,4 @@
+import Foundation
 @testable import JevSimUseKit
 import Testing
 
@@ -51,6 +52,23 @@ struct StepTimingTests {
         #expect(result.history.count == 1)
         #expect(result.timing.jev >= first.jev + 0.08)
         #expect(result.timing.read >= first.read + 0.08)
+    }
+
+    @Test("blames the wait before a hand-over on the hand-over, not on reading, which made a stop look like a slow read")
+    func handOverWaitIsItsOwnPart() async throws {
+        let driver = DelayedDriver(FakeDriver(outlines: ["A"]), readDelay: .milliseconds(20))
+        let configuration = AgentConfiguration(goal: "g", handOverWait: Self.slow)
+        let result = try await AgentLoop(driver: driver, planner: FakePlanner([.blocked()]), configuration: configuration).run()
+        #expect(result.timing.handOver >= Self.slowSeconds)
+        #expect(result.timing.read < Self.slowSeconds / 2)
+        #expect(result.timing.description.contains("hand-over"))
+    }
+
+    @Test("reads a timing saved before the hand-over part existed, and leaves the part out of a step that did not wait")
+    func oldTimingDecodes() throws {
+        let timing = try JSONDecoder().decode(StepTiming.self, from: Data(#"{"read":0.5,"jev":0.2,"act":0.1}"#.utf8))
+        #expect(timing.handOver == 0 && abs(timing.total - 0.8) < 0.0001)
+        #expect(!timing.description.contains("hand-over"))
     }
 }
 

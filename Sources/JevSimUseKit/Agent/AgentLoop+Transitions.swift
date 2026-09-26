@@ -88,7 +88,7 @@ extension AgentLoop {
         // scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the screen moved on
         // (jev-ultrafast checks freshness the same way), a bounded number of times per step.
         guard context.staleReplans < Self.staleReplanLimit, outcome.isHandOver else { return .finished(outcome) }
-        let (again, changed) = try await context.timing.add(to: \.read) { try await reading(changedFrom: step.fresh.snapshot) }
+        let (again, changed) = try await context.timing.add(to: \.handOver) { try await reading(changedFrom: step.fresh.snapshot) }
         // An app that disappeared while the wait read is a crash, whether or not the screen moved on.
         if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
             return .finished(crash)
