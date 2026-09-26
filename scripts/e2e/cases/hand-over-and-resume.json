@@ -1,0 +1,25 @@
+{
+  "start": "home",
+  "screens": {
+    "home": {
+      "elements": [
+        {"role": "Heading", "label": "Home", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"label": "Profile", "frame": [16, 200, 370, 44]},
+        {"label": "Help", "frame": [16, 252, 370, 44]}
+      ],
+      "on": {"tap:Profile": "profile"}
+    },
+    "profile": {
+      "elements": [
+        {"label": "Home", "id": "BackButton", "region": "Top", "depth": 1, "frame": [16, 62, 44, 44]},
+        {"role": "Heading", "label": "Profile", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "StaticText", "label": "Account", "frame": [16, 200, 370, 44]}
+      ]
+    }
+  },
+  "answers": [
+    {"op": "tap", "p": 0.3, "target": "Profile"},
+    {"op": "tap", "p": 0.9, "target": "Profile"},
+    {"op": "done", "p": 0.9}
+  ]
+}

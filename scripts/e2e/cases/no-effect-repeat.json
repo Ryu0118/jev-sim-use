@@ -1,0 +1,16 @@
+{
+  "start": "feed",
+  "screens": {
+    "feed": {
+      "elements": [
+        {"role": "Heading", "label": "Feed", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"label": "Refresh", "frame": [16, 200, 370, 44]},
+        {"label": "Filters", "frame": [16, 252, 370, 44]}
+      ]
+    }
+  },
+  "answers": [
+    {"op": "tap", "p": 0.9, "target": "Refresh"},
+    {"op": "tap", "p": 0.9, "target": "Refresh"}
+  ]
+}

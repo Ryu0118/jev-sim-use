@@ -1,0 +1,16 @@
+{
+  "start": "form",
+  "screens": {
+    "form": {
+      "keyboard": true,
+      "elements": [
+        {"role": "Heading", "label": "New contact", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "TextField", "label": "Name", "frame": [16, 200, 370, 44]}
+      ],
+      "on": {"paste:*": "form"}
+    }
+  },
+  "answers": [
+    {"op": "enter_text", "p": 0.9, "field": "Name", "text": "name"}
+  ]
+}

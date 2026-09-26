@@ -1,0 +1,32 @@
+{
+  "start": "find",
+  "screens": {
+    "find": {
+      "elements": [
+        {"role": "Heading", "label": "Find", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "SearchField", "label": "Search", "frame": [16, 160, 370, 40]},
+        {"label": "Cancel", "frame": [16, 210, 370, 44]}
+      ],
+      "on": {"paste:needle-4711": "typed"}
+    },
+    "typed": {
+      "elements": [
+        {"role": "Heading", "label": "Find", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "SearchField", "label": "Search", "value": "needle-4711", "frame": [16, 160, 370, 40]},
+        {"label": "Cancel", "frame": [16, 210, 370, 44]}
+      ],
+      "on": {"key:40": "results"}
+    },
+    "results": {
+      "elements": [
+        {"role": "Heading", "label": "Results", "region": "Top", "frame": [16, 100, 370, 40]},
+        {"role": "StaticText", "label": "needle-4711 in sample notes", "frame": [16, 200, 370, 44]}
+      ]
+    }
+  },
+  "answers": [
+    {"op": "enter_text", "p": 0.9, "field": "Search", "text": "query"},
+    {"op": "press_return", "p": 0.9},
+    {"op": "done", "p": 0.9}
+  ]
+}
