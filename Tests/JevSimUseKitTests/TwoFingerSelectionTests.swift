@@ -19,6 +19,14 @@ struct TwoFingerSelectionTests {
         ])
     }
 
+    @Test("ends on the last row within reach, not on one under the tab bar")
+    func skipsCoveredRows() throws {
+        let tabBar = Fixtures.entry(9, "Tabs", role: "Group", frame: ElementFrame(x: 0, y: 795, width: 402, height: 54))
+        let snapshot = Fixtures.snapshot(entries: [row(1, y: 168), row(2, y: 211), row(3, y: 820), tabBar])
+        let rows = try #require(snapshot.rowRun)
+        #expect(rows.last.y == 211)
+    }
+
     @Test("is offered only on iOS, only where rows line up, and only with the two-finger group")
     func offered() {
         let list = Fixtures.snapshot(entries: [row(1, y: 168), row(2, y: 211)])
