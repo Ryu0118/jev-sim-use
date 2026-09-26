@@ -207,7 +207,9 @@ Never write unit tests after the code.
   elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
 - State (`PlanningState`) is named JSON: `rules`, `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
-  effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
+  effect"). `screen.title` (`UISnapshot.title`) is a top-bar heading, or a large title: the first content heading
+  with no content above it. A heading below fields is a section, so a sheet whose top bar names it only in an
+  identifier sends no title rather than its first section's. Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
   agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen
   as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
   `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. If Jev planned on
