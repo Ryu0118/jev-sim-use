@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""A stand-in `sim-use` for scripts/e2e.sh: answers like sim-use 0.14.0 from a scripted scenario.
+
+The scenario ($E2E_SCENARIO, JSON) is a state machine, not a queue of replies: jev-sim-use reads the screen a
+varying number of times (a confirming read while it plans, back-to-back reads after an action that changed nothing,
+polling before a hand-over), so `ui` always prints the current screen and only actions move to another one.
+
+    {"start": "home", "version": "v0.14.0", "devices": [...],
+     "screens": {"home": {"app": "Sample", "keyboard": false,
+                          "elements": [{"label": "Open", "role": "Button", "frame": [16, 200, 370, 44],
+                                        "depth": 2, "region": "Content", "id": "...", "value": "...", "hint": "..."}],
+                          "on": {"tap:Open": "details", "gesture:scroll-up": {"to": "home", "disappeared": "x"},
+                                 "paste:*": {"error": "message"}}}}}
+
+Action keys: `tap:<label>` (by alias or by the point's element), `long-press:<label>`, `swipe:<label>`,
+`gesture:<preset>`, `button:<name>`, `key:<code>`, `paste:<text>` (or `paste:*`), `type:<text>`. An action without a
+transition leaves the screen as it was. Every call is appended to $E2E_STATE/calls.jsonl with its arguments and
+SIM_USE_NO_DAEMON; every command but `--version` must pass `--json`, and device commands the scenario's device.
+"""
+
+import json
+import os
+import sys
+import time
+
+DEVICE = {"deviceId": "E2E-DEVICE", "kind": "simulator", "name": "E2E Phone", "platform": "ios", "state": "Booted"}
+SCREEN = {"x": 0, "y": 0, "width": 402, "height": 874}
+CLOCK_FRAME = {"x": 57, "y": 22, "width": 35, "height": 20}
+
+
+def fail(message, status=64):
+    sys.stderr.write(f"fake sim-use: {message}\n")
+    sys.exit(status)
+
+
+def reply(data=None, process=None):
+    envelope = {"ok": True, "data": data if data is not None else {}}
+    if process:
+        envelope["process"] = {"events": [{"kind": "disappeared", "bundleId": process, "pid": 1}], "pending": []}
+    print(json.dumps(envelope))
+    sys.exit(0)
+
+
+def frame_of(element, index):
+    x, y, width, height = element.get("frame", [16, 120 + index * 52, 370, 44])
+    return {"x": x, "y": y, "width": width, "height": height}
+
+
+def entries_of(screen, reads):
+    """The screen's entries as sim-use lists them, after the status bar's clock, which ticks with every read."""
+    clock = {"role": "StaticText", "label": f"9:{41 + reads % 10:02d} AM", "region": {"kind": "Top"}, "depth": 2,
+             "frame": CLOCK_FRAME, "states": []}
+    entries = [clock]
+    for index, element in enumerate(screen["elements"]):
+        entry = {"role": element.get("role", "Button"), "label": element.get("label", ""),
+                 "states": element.get("states", []), "depth": element.get("depth", 2),
+                 "region": {"kind": element.get("region", "Content")}, "frame": frame_of(element, index)}
+        if "value" in element:
+            entry["value"] = element["value"]
+        if "id" in element:
+            entry["uniqueId"] = element["id"]
+        entries.append(entry)
+    for alias, entry in enumerate(entries, start=1):
+        entry["aliases"] = {"at": alias}
+    return entries
+
+
+def raw_of(screen, entries):
+    """The raw tree: the clock marked as a status-bar item, and each hint as the node's `help`."""
+    nodes = [{"AXLabel": entries[0]["label"], "frame": CLOCK_FRAME, "traits": ["StatusBarElement"], "children": []}]
+    for index, element in enumerate(screen["elements"]):
+        if "hint" in element:
+            nodes.append({"AXLabel": element.get("label"), "help": element["hint"], "frame": frame_of(element, index),
+                          "traits": [], "children": []})
+    return [{"AXLabel": None, "frame": SCREEN, "traits": [], "children": nodes}]
+
+
+def element_at(entries, x, y):
+    inside = [entry for entry in entries[1:] if entry["frame"]["x"] <= x <= entry["frame"]["x"] + entry["frame"]["width"]
+              and entry["frame"]["y"] <= y <= entry["frame"]["y"] + entry["frame"]["height"]]
+    # The innermost element under the point, as a real touch would reach it.
+    return max(inside, key=lambda entry: entry["depth"], default=None)
+
+
+def by_alias(entries, token):
+    if not token.startswith("@"):
+        fail(f"expected an alias, got {token}")
+    alias = int(token[1:])
+    if not 1 <= alias <= len(entries):
+        fail(f"no element @{alias} on this screen", 1)
+    return entries[alias - 1]
+
+
+def main():
+    arguments = sys.argv[1:]
+    state = os.environ["E2E_STATE"]
+    with open(os.environ["E2E_SCENARIO"]) as file:
+        scenario = json.load(file)
+    call = {"args": arguments}
+    if "SIM_USE_NO_DAEMON" in os.environ:
+        call["env"] = {"SIM_USE_NO_DAEMON": os.environ["SIM_USE_NO_DAEMON"]}
+    with open(os.path.join(state, "calls.jsonl"), "a") as file:
+        file.write(json.dumps(call) + "\n")
+
+    if arguments == ["--version"]:
+        print(scenario.get("version", "v0.14.0"))
+        sys.exit(0)
+    if "--json" not in arguments:
+        fail(f"--json missing from {arguments}")
+    operands = arguments[arguments.index("--") + 1:] if "--" in arguments else []
+    options = arguments[:arguments.index("--")] if "--" in arguments else arguments
+    options = [token for token in options if token != "--json"]
+    command = options[0] if options else ""
+    if command == "devices":
+        reply({"devices": scenario.get("devices", [DEVICE])})
+
+    device = scenario.get("devices", [DEVICE])[0]["deviceId"]
+    if "--device" not in options or options[options.index("--device") + 1] != device:
+        fail(f"--device {device} missing from {arguments}", 1)
+    position = options.index("--device")
+    options = options[:position] + options[position + 2:]
+
+    screen_file = os.path.join(state, "screen")
+    current = open(screen_file).read().strip() if os.path.exists(screen_file) else scenario["start"]
+    screen = scenario["screens"][current]
+    reads_file = os.path.join(state, "reads")
+    reads = int(open(reads_file).read()) if os.path.exists(reads_file) else 0
+    entries = entries_of(screen, reads)
+
+    if command == "ui":
+        with open(reads_file, "w") as file:
+            file.write(str(reads + 1))
+        # A real read takes about half a second; a short pause keeps the polling loops' logs small.
+        time.sleep(0.05)
+        # The outline leaves the ticking clock out, as a real one read within the same minute would.
+        outline = "\n".join([f"App: {screen.get('app', 'Sample')}  402x874"]
+                            + [f"@{entry['aliases']['at']} {entry['role']} \"{entry['label']}\" {entry.get('value', '')}"
+                               for entry in entries[1:]])
+        reply({"platform": "ios", "appLabel": screen.get("app", "Sample"), "outline": outline, "screen": SCREEN,
+               "entries": entries, "raw": raw_of(screen, entries)})
+    if command == "keyboard-state":
+        reply({"visible": screen.get("keyboard", False), "platform": "ios"})
+
+    if command == "tap" and len(options) > 1 and options[1].startswith("@"):
+        key = "tap:" + by_alias(entries, options[1])["label"]
+    elif command == "tap" and "-x" in options and "-y" in options:
+        target = element_at(entries, float(options[options.index("-x") + 1]), float(options[options.index("-y") + 1]))
+        key = "tap:" + (target["label"] if target else "")
+    elif command == "long-press":
+        key = "long-press:" + by_alias(entries, options[1])["label"]
+    elif command == "swipe":
+        start = [float(value) for value in options[options.index("--from") + 1].split(",")]
+        target = element_at(entries, *start)
+        key = "swipe:" + (target["label"] if target else "")
+    elif command in ("gesture", "button"):
+        key = f"{command}:{options[1]}"
+    elif options[:2] == ["ios", "key"]:
+        key = "key:" + options[2]
+    elif command in ("paste", "type"):
+        if not operands:
+            fail(f"{command} needs its text after --")
+        key = f"{command}:{operands[0]}"
+    else:
+        fail(f"unexpected command {arguments}")
+
+    transitions = screen.get("on", {})
+    transition = transitions.get(key, transitions.get(key.split(":")[0] + ":*"))
+    if isinstance(transition, str):
+        transition = {"to": transition}
+    transition = transition or {}
+    if "error" in transition:
+        print(json.dumps({"ok": False, "error": transition["error"], "hint": transition.get("hint")}))
+        sys.exit(1)
+    if "to" in transition:
+        with open(screen_file, "w") as file:
+            file.write(transition["to"])
+    reply(process=transition.get("disappeared"))
+
+
+main()
