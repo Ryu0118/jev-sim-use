@@ -1,4 +1,14 @@
 extension UISnapshot {
+    /// A pull to refresh down the middle of the screen, from 30% of its height to 85%: below a navigation bar, on the
+    /// list, and about half the screen long. `nil` when the reading has no size.
+    var refreshPull: SimUseDeviceAction? {
+        let frames = (entries ?? []).compactMap(\.frame)
+        let width = screen?.width ?? frames.map { $0.x + $0.width }.max() ?? 0
+        let height = screen?.height ?? frames.map { $0.y + $0.height }.max() ?? 0
+        guard width > 0, height > 0 else { return nil }
+        return .pullToRefresh(x: (width / 2).rounded(), from: (height * 0.3).rounded(), to: (height * 0.85).rounded())
+    }
+
     /// The first and last of the rows a list shows within reach: the largest group of two or more elements that line
     /// up (same role, left edge, and width), top to bottom. A row under a bar is left out, so the fingers never touch
     /// down or lift on a bar button. `nil` when nothing lines up.

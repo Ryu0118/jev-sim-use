@@ -73,4 +73,14 @@ struct ActionCatalogTests {
         let others = OperationGroup.all.subtracting([group])
         #expect(!ActionCatalog.menu(for: snapshot, texts: texts, allowed: others).operations.contains(operation))
     }
+
+    @Test("offers pulling to refresh on iOS from 30% to 85% of the screen's height, and only with the scroll group")
+    func pullToRefresh() {
+        let screen = Fixtures.snapshot(entries: [Fixtures.entry(1, "Row", frame: ElementFrame(x: 0, y: 0, width: 402, height: 874))])
+        #expect(ActionCatalog.menu(for: screen, texts: []).operations.contains(.device(.pullToRefresh(x: 201, from: 262, to: 743))))
+        let names = { (menu: ActionMenu) in menu.operations.map(\.optionName) }
+        #expect(!names(ActionCatalog.menu(for: screen, texts: [], allowed: [.tap, .swipe])).contains("pull_to_refresh"))
+        let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: screen.entries, crashDialog: nil)
+        #expect(!names(ActionCatalog.menu(for: android, texts: [])).contains("pull_to_refresh"))
+    }
 }

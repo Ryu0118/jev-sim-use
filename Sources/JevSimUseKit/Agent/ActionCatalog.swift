@@ -59,9 +59,14 @@ enum ActionCatalog {
         operations += SimUseDeviceAction.available(on: snapshot.platform)
             .filter { !excluded.contains($0.optionName) && ($0 != .goBack || canGoBack) }
             .map(Operation.device)
-        // The two-finger selection was verified on iOS only.
-        if snapshot.platform == SimUseContract.Platform.ios, let rows = snapshot.rowRun {
-            operations.append(.device(.selectRows(from: rows.first, to: rows.last)))
+        // The two-finger selection and the pull to refresh were verified on iOS only.
+        if snapshot.platform == SimUseContract.Platform.ios {
+            if let rows = snapshot.rowRun {
+                operations.append(.device(.selectRows(from: rows.first, to: rows.last)))
+            }
+            if let pull = snapshot.refreshPull {
+                operations.append(.device(pull))
+            }
         }
         operations += [.wait, .done, .blocked]
         operations = operations.filter(allowed.allows)
