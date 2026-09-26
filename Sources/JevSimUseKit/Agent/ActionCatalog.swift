@@ -46,7 +46,7 @@ enum ActionCatalog {
         }
         if !texts.isEmpty, !fields.isEmpty {
             operations.append(.enterText)
-            // Only a field that holds text has something to replace; elsewhere the option would only split typing.
+            // Only a field that holds text (or shows its placeholder as a value) has something to replace.
             if entries.filter(isEditable).contains(where: { !($0.value ?? "").isEmpty }) {
                 operations.append(.replaceText)
             }
