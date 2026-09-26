@@ -199,10 +199,12 @@ goal_scroll() {
     check "the Privacy & Security screen shows" heading_is "Privacy & Security"
 }
 
-# Typing a named text into the search field, then Return.
+# Typing a named text into the search field, then Return. The goal names the search as one task: "enter the query into
+# the search field, then press Return" made Jev answer BLOCKED over typing at step 1 in 3 of 5 runs. A Return pressed
+# before typing is the known placeholder limit in CLAUDE.md.
 goal_search() {
     open_settings || return 1
-    jsu run "In Settings, enter the query into the search field, then press Return" -t query=Keyboard \
+    jsu run "Search Settings for the query, then press Return" -t query=Keyboard \
         -d "$DEVICE" --max-steps 6 --actions tap,type,return
     check "exit status 0" status_is run 0
     check "the search field holds the query" screen_has '(.role == "TextField" or .role == "SearchField")
