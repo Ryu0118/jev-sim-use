@@ -10,7 +10,8 @@ extension UISnapshot {
     ///
     /// Bars (a tab bar, toolbar, navigation bar, or another named group) are drawn over the content that scrolls
     /// beneath them, so content never covers an element inside one: a history row scrolled under the tab bar had its
-    /// frame over a tab's centre, and the tab was wrongly treated as covered. A tab is known by its trait rather than
+    /// frame over a tab's centre, and the tab was wrongly treated as covered. A named group can also be scrolling
+    /// content under a shallower header, so an element outside it still covers it when shallower. A tab is known by its trait rather than
     /// its band: sim-use puts an unlabelled tab bar in the bottom band, which the rows scrolled under it share.
     ///
     /// On iOS a top bar's background reaches from the screen's top edge down to its items, but only the items are in
@@ -23,11 +24,14 @@ extension UISnapshot {
         let bar = entry.region.flatMap { Self.barKinds.contains($0.kind) || $0.kind == Self.labelledGroupKind ? $0 : nil }
         return (entries ?? []).first { other in
             guard let frame = other.frame, frame != target, !frame.contains(target) else { return false }
-            if let bar, other.region != bar {
+            let shallower = (other.depth ?? 0) < (entry.depth ?? 0)
+            // Content outside the bar or group scrolls beneath it, but a shallower element is drawn over it: a
+            // calendar's timeline is a labelled group, and an event row scrolled under the week strip was tapped on
+            // the strip's date header three times.
+            if let bar, other.region != bar, !shallower {
                 return false
             }
             let isChild = target.contains(frame) && (other.depth ?? 0) > (entry.depth ?? 0)
-            let shallower = (other.depth ?? 0) < (entry.depth ?? 0)
             let underTopBar = shallower && platform == SimUseContract.Platform.ios
                 && other.region.map { Self.topBarKinds.contains($0.kind) } == true && center.y < frame.y
             let floatsOver = shallower && (frame.overlaps(target) || underTopBar)
