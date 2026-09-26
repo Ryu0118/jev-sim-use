@@ -36,7 +36,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Unit tests (`swift test`, in CI with build and lint) guard concrete failure modes the code must not regress to: bugs
   seen in real runs and invariants such as the stale alias, the confirming read, and a false DONE.
 - `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
-- Remove a test only when the failure mode it guards is still guarded elsewhere.
+- Paths the E2E never runs (setup, version checks, skill install, config, sessions) need unit tests.
 
 ## Architecture
 
