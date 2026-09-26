@@ -105,7 +105,7 @@ struct JevStepPlannerTests {
         #expect(abs(plan.support - 0.87) < 0.0001)
     }
 
-    @Test("a tap on the field Jev would replace adds up with replacing, but appending and replacing do not pool")
+    @Test("appending and replacing both type the text, so their support adds up and the more probable one runs")
     func tapThenReplace() throws {
         let field = Fixtures.entry(13, "Title", role: "TextField", value: "Old title")
         let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [field]), texts: [InputText(name: "title", value: "New")])
@@ -116,11 +116,16 @@ struct JevStepPlannerTests {
             ).replacingOccurrences(of: #""replace_text":0.5}"#, with: probabilities)
             return try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
         }
+        let text = InputText(name: "title", value: "New")
         let tapped = try plan(#""replace_text":0.5,"tap":0.3,"enter_text":0.2}"#)
-        #expect(tapped.action == .enterText(field: 13, label: "Title", text: InputText(name: "title", value: "New"), replacing: true))
-        #expect(abs(tapped.support - 0.8) < 0.0001)
-        let split = try plan(#""replace_text":0.5,"enter_text":0.45}"#)
-        #expect(abs(split.support - 0.5) < 0.0001)
+        #expect(tapped.action == .enterText(field: 13, label: "Title", text: text, replacing: true))
+        #expect(abs(tapped.support - 1.0) < 0.0001)
+        // An empty title on a form whose other field held text split 0.53 / 0.43 and stopped below 0.55.
+        let split = try plan(#""enter_text":0.53,"replace_text":0.43,"blocked":0.04}"#)
+        #expect(split.action == .enterText(field: 13, label: "Title", text: text, replacing: false))
+        #expect(abs(split.support - 0.96) < 0.0001)
+        let replacing = try plan(#""replace_text":0.62,"enter_text":0.3,"blocked":0.08}"#)
+        #expect(replacing.action == .enterText(field: 13, label: "Title", text: text, replacing: true))
     }
 
     @Test("gates a reversible element action on the element, since how to touch it splits between gestures")

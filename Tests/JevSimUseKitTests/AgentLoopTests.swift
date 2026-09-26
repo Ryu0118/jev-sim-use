@@ -15,6 +15,14 @@ struct AgentLoopTests {
         ).run().outcome
     }
 
+    @Test("types a text again over a field that already holds exactly it, instead of appending a second copy")
+    func retypeReplaces() async throws {
+        let title = InputText(name: "title", value: "Team sync")
+        let driver = FakeDriver(outlines: ["A", "B"], entries: [Fixtures.entry(1, "Team sync", role: "TextField", value: "Team sync")])
+        _ = try await run(driver, [StepPlan(action: .enterText(field: 1, label: "Title", text: title), confidence: 0.9, costUSD: 0), .done()])
+        #expect(driver.performedActions == ["tap @1", "paste --replace Team sync"])
+    }
+
     @Test("hands over instead of repeating an action that did not change the screen")
     func noRepeat() async throws {
         let driver = FakeDriver(outlines: ["A"])

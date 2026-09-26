@@ -28,16 +28,15 @@ extension JevStepPlanner {
             )
         }
         // Tapping the field Jev would type into is only the first half of typing (enter_text taps it too): when the
-        // tap target and the field target agree, the two operations are one intent and their probabilities add up.
-        // Appending and replacing stay apart: they leave different text behind.
+        // tap target and the field target agree, the tap and both kinds of typing are one intent and add up; the more
+        // probable kind of typing runs.
         if operation == .tap || operation.typesText, menu.operations.contains(.enterText),
            let element = try? choice(elementQuestion, in: response).value,
            element == (try? choice(fieldQuestion, in: response).value)
         {
-            let typing = operation.typesText ? operation : menu.operations.filter(\.typesText)
-                .max { (probabilities[$0.optionName] ?? 0) < (probabilities[$1.optionName] ?? 0) } ?? .enterText
-            operation = typing
-            operationSupport = [Operation.tap, typing].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
+            let typing = menu.operations.filter(\.typesText)
+            operation = typing.max { (probabilities[$0.optionName] ?? 0) < (probabilities[$1.optionName] ?? 0) } ?? .enterText
+            operationSupport = ([Operation.tap] + typing).reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
         let (action, targetFactors) = try compose(operation, response: response, menu: menu)
         // A missing answer or one of another type must not stop the step: `nil` keeps a tap irreversible.
