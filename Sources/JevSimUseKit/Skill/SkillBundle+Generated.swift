@@ -96,7 +96,12 @@ extension SkillBundle {
             - When the app is slow to show a result (a saved item reaching its list), write the wait into the step: "wait until
               the memo titled with the title text appears, then tap it". Jev can wait, but only chooses to when the goal says so
               or the screen is visibly loading.
-            - End with the finished state as a sentence Jev can check on screen. Exit 0 is still a claim; read the screen.
+            - End with the finished state as a sentence Jev can check on screen, and one that is not already true where the run
+              starts: a route that ended on the tab it started from was judged done before its first step. Exit 0 is still a
+              claim; read the screen.
+            - Name what to tap by the text on screen ("tap the memo Pick up the parcel"); keep `-t` for text to type. A step that
+              pointed at "the memo titled with the title text" left Jev at 0.3-0.5, the same step with the title written out at
+              0.92.
             - Give the run room: allow about two actions per numbered step with `--max-steps` (the default is 15).
 
             These apply to both forms:
