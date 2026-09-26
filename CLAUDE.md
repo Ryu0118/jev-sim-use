@@ -12,10 +12,27 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `mise run setup` — install tools, configure Git hooks
 - `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
+- `mise run e2e -- <udid>` — the real-simulator E2E run (see Testing); not in CI
 - `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
 - Keep commits small and easy to revert
+
+## Testing
+
+E2E is the primary proof of behaviour. Unit tests are only for what truly needs one (regressions, critical
+guards, edge cases, and paths the E2E never runs): list those failure modes first, write their tests, then implement.
+Never write unit tests after the code.
+
+- E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
+  sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
+  simulator's built-in Settings app: a multi-screen route, a switch, a row reached by scrolling, typing into search
+  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Each goal is judged by reading
+  the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
+  lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
+  (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
+- Unit tests run in CI with build and lint.
+- `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
 
 ## Architecture
 
@@ -25,7 +42,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
-    the only place the CLI reads `ProcessInfo`. CLI tests use `RecordingOutput` and a `FakeSimUse` script on `PATH`.
+    the only place the CLI reads `ProcessInfo`. CLI tests cover argument parsing.
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
     usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
@@ -47,7 +64,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
-- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
+- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act, as a state machine: `AgentLoopState` (observing, planning,
+  deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
+  step (progress, the acted-on screen, re-plan and disagreement counters). `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
@@ -98,8 +117,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   and every question opens with `JevStepPlanner.rulesPointer` (`rules` is guidance, `screen` is data). Do not add a
   second round trip.
 - Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
-  `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
-  jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
+  `goalProbablyReached`. `finishes` is asked and logged on every step line but does not end a run: after any action
+  Jev judges the new screen in another request (a changed screen once came from elsewhere, and a run ended as reached
+  on a tap that never landed). Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
   so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the

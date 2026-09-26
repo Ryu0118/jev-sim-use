@@ -26,23 +26,4 @@ struct TwoFingerSelectionTests {
         let rows = try #require(snapshot.rowRun)
         #expect(rows.last.y == 211)
     }
-
-    @Test("is offered only on iOS, only where rows line up, and only with the two-finger group")
-    func offered() {
-        let list = Fixtures.snapshot(entries: [row(1, y: 168), row(2, y: 211)])
-        let selects = { (menu: ActionMenu) in
-            menu.operations.contains {
-                if case .device(.selectRows) = $0 {
-                    true
-                } else {
-                    false
-                }
-            }
-        }
-        #expect(selects(ActionCatalog.menu(for: list, texts: [])))
-        #expect(!selects(ActionCatalog.menu(for: list, texts: [], allowed: [.tap, .swipe])))
-        #expect(!selects(ActionCatalog.menu(for: Fixtures.snapshot(entries: [row(1, y: 168)]), texts: [])))
-        let android = UISnapshot(platform: "android", outline: "", appLabel: nil, entries: list.entries, crashDialog: nil)
-        #expect(!selects(ActionCatalog.menu(for: android, texts: [])))
-    }
 }

@@ -40,6 +40,7 @@ Language-level conventions for JevSimUse. Architecture, layering, Runners, depen
 
 ## Testing
 
+- Write a new isolated test as the list of ways the code can fail, before the code (see Testing in `CLAUDE.md`); a test that only restates the implementation does not belong.
 - Use Swift Testing only (`import Testing`, `@Test`, `@Suite`, `#expect`, `#require`). Do not use XCTest.
 - Import the module under test with `@testable import JevSimUseKit`.
 - Test functions use lowerCamelCase names, never a `test` prefix, underscores, or backtick phrases. Put the human-readable sentence in `@Test("…")`, and make it add information beyond the function name. `@Suite` descriptions must describe behavior, not repeat the type name.

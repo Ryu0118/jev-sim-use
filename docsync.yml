@@ -16,7 +16,7 @@ rules:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: c2b252dde4f8a508826bc31d94bcfb42d78a29494ea2e1008795fd4ff63f592f
+  checksum: 058b5cf9175f4b803b1b6e1b3dc5389d2573ff3cb0889528bd56e309b1497999
 - name: rules-lint-and-format
   sources:
   - .swiftformat
