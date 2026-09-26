@@ -12,8 +12,10 @@ and it taps its way there on its own. Each step sends the screen's visible label
 ## Features
 
 - ⚡ **Ultrafast navigation** — one small Jev request per step instead of an LLM reasoning turn per tap
-- ⏯️ **Resumable sessions** — a run that stops leaves a session you or your agent can inspect, add notes to, and resume
-- 🔒 **Local text** — values passed with `-t` are typed into fields but never sent to Jev
+- 🔗 **Built on sim-use** — `exec` runs any sim-use command on the same device, so navigating and exact checks share one tool
+- 🤝 **Hand-off with your agent** — when unsure it stops with a session; your agent reads the screen, adds notes, and resumes
+- 🛑 **Stops instead of guessing** — low-confidence taps, deletions, and leaving the app hand over rather than act
+- 📱 **iOS Simulator and Android** — the same goals and commands on both
 
 ## Installation
 
