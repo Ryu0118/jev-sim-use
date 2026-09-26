@@ -90,10 +90,12 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   screen-level action, `done`, `blocked`), speculative target choices (`element_target` shared by tap and gestures;
   `field_target` and `text_to_enter` when typing is possible), and noul `finishes` ("if the chosen operation works,
   is the whole goal satisfied?"). Code reads only the target that matches the chosen operation. Asking operation and
-  target apart keeps a scroll or DONE from competing with every element for probability. Every question carries the
-  same rules, since target questions cannot see the operation answer. `PlanningRules` builds them from the step's
-  offered operations: sentences about scrolling, going back, waiting, toggling, or typing are left out when Jev cannot
-  choose that operation (the full menu gives the full text). Do not add a second round trip.
+  target apart keeps a scroll or DONE from competing with every element for probability. `PlanningRules` builds the
+  rules from the step's offered operations: sentences about scrolling, going back, waiting, toggling, or typing are left
+  out when Jev cannot choose that operation (the full menu gives the full text). Target questions cannot see the
+  operation answer and the request has no shared instructions field, so the rules travel once as the state's `rules`
+  and every question opens with `JevStepPlanner.rulesPointer` (`rules` is guidance, `screen` is data). Do not add a
+  second round trip.
 - Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
   `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
   jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
@@ -130,7 +132,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   out of the first request (`PlanRequest.includesHints`), so an app that hints every control does not grow every
   step. When a step would hand over (low support or BLOCKED) and the screen has a hint, the loop asks once more with
   elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
-- State (`PlanningState`) is named JSON: `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
+- State (`PlanningState`) is named JSON: `rules`, `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
   effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
   agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen

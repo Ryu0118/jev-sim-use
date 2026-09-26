@@ -10,6 +10,12 @@ package struct JevStepPlanner: StepPlanning {
     static let textQuestion = "text_to_enter"
     static let finishesQuestion = "finishes"
 
+    /// Opens every question. The rules, built by `PlanningRules` from the step's offered operations, travel once as the
+    /// state's `rules`: target questions cannot see the operation answer, and swift-jev's request has no shared
+    /// instructions field, so repeating them in each question sent them three to five times per request. `rules` is
+    /// guidance, unlike the screen text it warns about.
+    static let rulesPointer = "Follow `rules`, which say how to decide; `screen` is the data to judge."
+
     /// How many times a request is sent when the connection fails.
     static let transportAttempts = 3
 
@@ -40,20 +46,17 @@ package struct JevStepPlanner: StepPlanning {
         }
     }
 
-    /// Every question carries the same rules, since target questions cannot see the operation answer.
+    /// Every question opens with `rulesPointer`; the rules themselves travel once in the state.
     static func questions(for menu: ActionMenu) throws -> JevQuestionSet {
-        let rules = PlanningRules(operations: menu.operations).text
         var questions = try [
             operationQuestion: Question(
-                instructions: "\(rules)\n\nWhich operation should run now?",
+                instructions: "\(rulesPointer) Which operation should run now?",
                 kind: .choice(menu.operations.map { ChoiceOption($0.optionName, $0.optionDescription) }),
             ),
             finishesQuestion: Question(
                 instructions: """
-                \(rules)
-
-                Suppose the single best operation for this step runs now and works. Will every part of `goal` then \
-                be satisfied?
+                \(rulesPointer) Suppose the single best operation for this step runs now and works. Will every \
+                part of `goal` then be satisfied?
                 """,
                 kind: .noul(
                     whenTrue: "That one operation completes what `goal` still needs; nothing else is required after it.",
@@ -63,7 +66,6 @@ package struct JevStepPlanner: StepPlanning {
         ]
         if !menu.elements.isEmpty {
             questions[elementQuestion] = try targetQuestion(
-                rules,
                 "Suppose the operation acts on one element: a tap, press and hold, swipe, zoom, or rotation. "
                     + "Which element in `screen.elements` should it act on? Options are element ids.",
                 menu.elements,
@@ -71,24 +73,21 @@ package struct JevStepPlanner: StepPlanning {
         }
         if menu.operations.contains(.enterText) {
             questions[fieldQuestion] = try targetQuestion(
-                rules,
                 "Suppose the operation types text. Which field in `screen.elements` should receive it? Do not "
                     + "choose a field that already holds the needed text. Options are element ids.",
                 menu.fields,
             )
             questions[textQuestion] = try Question(
-                instructions: "\(rules)\n\nSuppose the operation types text. Which of the named texts belongs there?",
+                instructions: "\(rulesPointer) Suppose the operation types text. Which of the named texts belongs there?",
                 kind: .choice(menu.texts.map { ChoiceOption($0.name, "The text the user named \"\($0.name)\"") }),
             )
         }
         return try JevQuestionSet(questions)
     }
 
-    private static func targetQuestion(
-        _ rules: String, _ instructions: String, _ targets: [ElementTarget],
-    ) throws -> Question {
+    private static func targetQuestion(_ instructions: String, _ targets: [ElementTarget]) throws -> Question {
         try Question(
-            instructions: "\(rules)\n\n\(instructions) Another question decides the operation.",
+            instructions: "\(rulesPointer) \(instructions) Another question decides the operation.",
             kind: .choice(targets.map { ChoiceOption($0.optionName, nil) }),
         )
     }
