@@ -49,15 +49,21 @@ case_dir=""
 stub_pid=""
 URL=""
 
-# Starts the stub Jev server for the case's scenario and waits for its port.
+# Starts the stub Jev server for the case's scenario and waits for its port: up to 60 s, since a cold CI runner
+# starting every case's Python at once took longer than 5 s.
 start_stub() {
     "$E2E/stub-jev" "$case_dir/scenario.json" "$case_dir/jev" 2>"$case_dir/jev/server.log" &
     stub_pid=$!
-    for _ in $(seq 1 250); do
+    for _ in $(seq 1 3000); do
         [[ -f $case_dir/jev/port ]] && break
+        kill -0 "$stub_pid" 2>/dev/null || break
         sleep 0.02
     done
-    [[ -f $case_dir/jev/port ]] || return 1
+    if [[ ! -f $case_dir/jev/port ]]; then
+        echo "FAIL  setup: the stub Jev server did not start ($(tr '\n' ' ' <"$case_dir/jev/server.log"))" \
+            >>"$case_dir/checks.txt"
+        return 1
+    fi
     URL="http://127.0.0.1:$(cat "$case_dir/jev/port")"
 }
 
@@ -566,6 +572,8 @@ run_case() {
     echo "| $name | $result | $total | $seconds | ${failures:--} |" >"$case_dir/summary-row.md"
 }
 
+# The first Python start on a fresh machine is slow; pay it once before the cases start theirs in parallel.
+python3 -c pass
 for name in "${selected[@]}"; do
     run_case "$name" &
 done

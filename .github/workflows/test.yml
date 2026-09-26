@@ -95,4 +95,5 @@ jobs:
         with:
           name: e2e-artifacts
           path: .e2e/
+          include-hidden-files: true
           if-no-files-found: ignore
