@@ -81,9 +81,9 @@ extension AgentLoop {
             if let back = snapshot.entries?.first(where: { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }) {
                 try await driver.tap(alias: back.aliases.alias, on: snapshot)
             } else {
-                try await driver.perform(.goBack, platform: snapshot.platform)
+                try await driver.perform(.goBack, in: snapshot.space)
             }
-        case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
+        case let .device(deviceAction): try await driver.perform(deviceAction, in: snapshot.space)
         case let .enterText(field, _, text, replacing):
             try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value, replacing: replacing)
         case .wait: try await pause()

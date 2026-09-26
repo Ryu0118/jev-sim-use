@@ -40,12 +40,12 @@ package struct SimUseClient: DeviceDriving {
                 arguments: [SimUseContract.Command.ui], detail: "element @\(alias) has no frame to aim \(gesture.rawValue) at",
             )
         }
-        return try await run(gesture.arguments(alias: alias, frame: frame))
+        return try await run(gesture.arguments(alias: alias, frame: frame, in: snapshot.space))
     }
 
     /// Runs the sim-use gesture or button for `action`.
-    package func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String] {
-        try await run(action.arguments(platform: platform))
+    package func perform(_ action: SimUseDeviceAction, in space: ScreenSpace) async throws -> [String] {
+        try await run(action.arguments(in: space))
     }
 
     /// Runs `sim-use paste`, which accepts Unicode on iOS where `type` does not.
@@ -65,24 +65,25 @@ package struct SimUseClient: DeviceDriving {
     /// Taps `entry` by coordinates: a switch or value row on its trailing control, anything else at its centre.
     package func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
         guard let frame = entry.frame else { return try await tapInPlace(alias: entry.aliases.alias, on: snapshot) }
-        return try await tap(point(on: entry, frame: frame, platform: snapshot.platform), on: snapshot.platform)
+        return try await tap(point(on: entry, frame: frame, in: snapshot.space), on: snapshot.platform)
     }
 
     private func tapInPlace(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
         else { return try await tap([SimUseContract.Command.tap, "@\(alias)"], on: snapshot.platform) }
-        return try await tap(point(on: entry, frame: frame, platform: snapshot.platform), on: snapshot.platform)
+        return try await tap(point(on: entry, frame: frame, in: snapshot.space), on: snapshot.platform)
     }
 
     /// The `tap` arguments for a coordinate tap on `entry`. On iOS a switch (51 pt) or colour well (28 pt) sits at the
     /// row's trailing edge, and both answered only a short hold there. The same hold at a switch row's centre flipped
     /// nothing (0 of 11 on two switches), so the trailing offset stays.
-    private func point(on entry: UIEntry, frame: ElementFrame, platform: String) -> [String] {
-        let trailing = platform == SimUseContract.Platform.ios && (entry.isToggle || entry.isValueRow)
+    private func point(on entry: UIEntry, frame: ElementFrame, in space: ScreenSpace) -> [String] {
+        let trailing = space.platform == SimUseContract.Platform.ios && (entry.isToggle || entry.isValueRow)
         let x = trailing ? max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18)) : frame.center.x
         let hold = trailing ? [SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds] : []
-        return [SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)"] + hold
+        let point = space.native(x: x, y: frame.center.y)
+        return [SimUseContract.Command.tap, SimUseContract.Tap.x, "\(point.x)", SimUseContract.Tap.y, "\(point.y)"] + hold
     }
 
     /// Scrolls `entry` into reach, reads the screen until the scroll has stopped (a tap on a list still coasting
@@ -91,7 +92,7 @@ package struct SimUseClient: DeviceDriving {
     /// When the element is not found, or is still out of reach, it throws `targetNotRevealed` so the run records the
     /// scroll alone (a floating button that hid itself as the list moved had been recorded as tapped).
     private func reveal(_ entry: UIEntry, by scroll: SimUseDeviceAction, in snapshot: UISnapshot) async throws -> [String] {
-        var disappeared = try await perform(scroll, platform: snapshot.platform)
+        var disappeared = try await perform(scroll, in: snapshot.space)
         var fresh = try await observe()
         disappeared += fresh.disappearedApps
         for _ in 0 ..< Self.revealSettleReads {

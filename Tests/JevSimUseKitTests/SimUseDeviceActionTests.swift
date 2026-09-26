@@ -23,7 +23,7 @@ struct SimUseDeviceActionTests {
          .pullToRefresh(x: 201, from: 262, to: 743), "ios", ["swipe", "--from", "201.0,262.0", "--to", "201.0,743.0", "--duration", "0.3"]),
     ] as [(String, SimUseDeviceAction, String, [String])])
     func arguments(_: String, action: SimUseDeviceAction, platform: String, expected: [String]) {
-        #expect(action.arguments(platform: platform) == expected)
+        #expect(action.arguments(in: ScreenSpace(platform: platform)) == expected)
     }
 
     @Test("gates Escape like an irreversible tap, since it closed a form holding typed text without asking")

@@ -18,11 +18,13 @@ package struct UISnapshot: Decodable, Sendable, Hashable {
     package let crashDialog: CrashDialog?
     /// The screen's bounds in the same space as element frames, when sim-use reports them.
     package var screen: ElementFrame?
+    /// sim-use's reading of the screen's orientation, such as `portrait` or `landscape-left`.
+    package var orientation: String?
 }
 
 extension UISnapshot {
     private enum CodingKeys: String, CodingKey {
-        case platform, outline, appLabel, entries, crashDialog, raw, screen
+        case platform, outline, appLabel, entries, crashDialog, raw, screen, orientation
     }
 
     package init(from decoder: any Decoder) throws {
@@ -39,6 +41,7 @@ extension UISnapshot {
             },
             crashDialog: container.decodeIfPresent(CrashDialog.self, forKey: .crashDialog),
             screen: container.decodeIfPresent(ElementFrame.self, forKey: .screen),
+            orientation: container.decodeIfPresent(String.self, forKey: .orientation),
         )
     }
 }

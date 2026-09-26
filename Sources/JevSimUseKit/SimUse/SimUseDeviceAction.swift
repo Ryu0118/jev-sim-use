@@ -38,9 +38,10 @@ package enum SimUseDeviceAction: Sendable, Hashable {
         ] + keys + HardwareButton.available(on: platform).map(SimUseDeviceAction.press)
     }
 
-    /// The sim-use arguments for this action on `platform`.
-    func arguments(platform: String) -> [String] {
+    /// The sim-use arguments for this action on the screen `space` describes.
+    func arguments(in space: ScreenSpace) -> [String] {
         typealias Gesture = SimUseContract.Gesture
+        let platform = space.platform
         let gesture = SimUseContract.Command.gesture
         return switch self {
         // sim-use names presets by finger direction: `scroll-up` pages down, `scroll-left` shows what is right.
@@ -63,12 +64,12 @@ package enum SimUseDeviceAction: Sendable, Hashable {
                 : SimUseContract.Command.iosKey + [SimUseContract.Key.returnKeycode]
         case .pressEscape: SimUseContract.Command.iosKey + [SimUseContract.Key.escapeKeycode]
         case let .selectRows(first, last):
-            SimUseContract.MultiTouch.arguments(centerX: first.center.x, from: first.center.y, to: last.center.y)
+            SimUseContract.MultiTouch.arguments(centerX: first.center.x, from: first.center.y, to: last.center.y, in: space)
         // The vertical scroll preset (about 210 pt over 1.5 s) and an element swipe (80% of a 44 pt row) only showed
         // the refresh control's pull progress; half the screen in 0.3 s held it open and refreshing.
         case let .pullToRefresh(x, from, to):
-            [SimUseContract.Command.swipe, SimUseContract.Swipe.from, "\(x),\(from)", SimUseContract.Swipe.to, "\(x),\(to)",
-             SimUseContract.Swipe.duration, SimUseContract.Swipe.refreshSeconds]
+            SimUseContract.Swipe.arguments(from: space.native(x: x, y: from), to: space.native(x: x, y: to))
+                + [SimUseContract.Swipe.duration, SimUseContract.Swipe.refreshSeconds]
         }
     }
 }

@@ -12,8 +12,8 @@ package protocol DeviceDriving: Sendable {
     func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String]
     /// Performs `gesture` on the element with alias `@alias` in `snapshot`, the latest observation.
     func perform(_ gesture: ElementGesture, alias: Int, on snapshot: UISnapshot) async throws -> [String]
-    /// Performs a device-level action on `platform`.
-    func perform(_ action: SimUseDeviceAction, platform: String) async throws -> [String]
+    /// Performs a device-level action on the screen `space` describes.
+    func perform(_ action: SimUseDeviceAction, in space: ScreenSpace) async throws -> [String]
     /// Pastes `text` into the focused field, in place of its content when `replacing`. Paste handles Unicode on iOS,
     /// unlike `type`.
     func paste(_ text: String, replacing: Bool) async throws -> [String]

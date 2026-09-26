@@ -38,7 +38,7 @@ final class ScriptedDriver: DeviceDriving {
         record("\(gesture.rawValue) @\(alias)")
     }
 
-    func perform(_ action: SimUseDeviceAction, platform _: String) async throws -> [String] {
+    func perform(_ action: SimUseDeviceAction, in _: ScreenSpace) async throws -> [String] {
         record("\(action)")
     }
 
