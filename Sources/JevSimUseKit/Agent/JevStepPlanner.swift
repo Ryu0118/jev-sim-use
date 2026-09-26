@@ -10,6 +10,7 @@ package struct JevStepPlanner: StepPlanning {
     static let textQuestion = "text_to_enter"
     static let finishesQuestion = "finishes"
     static let irreversibleQuestion = "irreversible"
+    static let satisfiedQuestion = "satisfied"
 
     /// Opens every question. The rules, built by `PlanningRules` from the step's offered operations, travel once as the
     /// state's `rules`: target questions cannot see the operation answer, and swift-jev's request has no shared
@@ -62,6 +63,18 @@ package struct JevStepPlanner: StepPlanning {
                 kind: .noul(
                     whenTrue: "That one operation completes what `goal` still needs; nothing else is required after it.",
                     whenFalse: "More operations are needed after it, or `goal` is already satisfied without it.",
+                ),
+            ),
+            // DONE shares the operation question with the operation that would finish the goal, so its probability
+            // says how close the step is, not whether the goal is met: after typing a query Jev chose done 0.58 over
+            // press_return 0.33 and the run ended without Return. This asks only the latter, in the same request.
+            satisfiedQuestion: Question(
+                instructions: """
+                \(rulesPointer) Is every part of `goal` already satisfied, so that no operation is still needed?
+                """,
+                kind: .noul(
+                    whenTrue: "`screen`, with `history` for what earlier steps did, shows every part of `goal` done.",
+                    whenFalse: "Some part of `goal` still needs an operation.",
                 ),
             ),
         ]

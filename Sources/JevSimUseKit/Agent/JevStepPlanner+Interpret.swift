@@ -11,8 +11,22 @@ extension JevStepPlanner {
         guard menu.operations.contains(where: { $0.optionName == operationAnswer.value }) else {
             throw PlanningError.unknownChoice(operationAnswer.value)
         }
-        let probabilities = operationAnswer.probabilities
+        // A missing answer or one of another type keeps DONE on the operation answer alone, as before the question.
+        let satisfied = try? response.answers.noul(named: satisfiedQuestion)
+        var probabilities = operationAnswer.probabilities
+        if let satisfied, satisfied.value < 0.5 {
+            probabilities = notDone(probabilities, satisfied: satisfied.value)
+        }
         var (operation, operationSupport) = pooledOperation(probabilities, among: menu.operations)
+        if operation == .done, let satisfied {
+            return try StepPlan(
+                action: .done, confidence: probabilities[Operation.done.optionName] ?? 0, support: satisfied.value,
+                finishes: response.answers.noul(named: finishesQuestion),
+                alternatives: alternatives(to: .done, in: probabilities),
+                factors: [StepPlan.Factor(name: "satisfied", value: satisfied.value)],
+                costUSD: response.usage.estimatedCostUSD, model: response.model,
+            )
+        }
         // Tapping the field Jev would type into is only the first half of typing (enter_text taps it too): when the
         // tap target and the field target agree, the two operations are one intent and their probabilities add up.
         // Appending and replacing stay apart: they leave different text behind.
@@ -42,22 +56,40 @@ extension JevStepPlanner {
             }
         }
         let factors = [StepPlan.Factor(name: "operation", value: operationSupport)] + targetFactors
-        let alternatives = probabilities
-            .filter { $0.key != operation.optionName && $0.value >= 0.05 }
-            .sorted { $0.value > $1.value }
-            .prefix(2)
-            .map { StepPlan.Alternative(name: $0.key, probability: $0.value) }
         return try StepPlan(
             action: action,
             confidence: probabilities[operation.optionName] ?? 0,
             support: factors.map(\.value).min() ?? 0,
             finishes: response.answers.noul(named: finishesQuestion),
             irreversible: irreversible,
-            alternatives: Array(alternatives),
+            alternatives: alternatives(to: operation, in: probabilities),
             factors: factors,
             costUSD: response.usage.estimatedCostUSD,
             model: response.model,
         )
+    }
+
+    /// The operation probabilities once Jev judged the goal not yet satisfied. DONE keeps only the share of its
+    /// probability that the satisfied answer backs; the rest goes to the other operations in proportion to theirs, so
+    /// an operation DONE was not competing with keeps its probability.
+    static func notDone(_ probabilities: [String: Double], satisfied: Double) -> [String: Double] {
+        let done = Operation.done.optionName
+        let doneProbability = probabilities[done] ?? 0
+        let rest = 1 - doneProbability
+        // Jev put everything on DONE yet judged the goal unmet: nothing else is on offer, so the step hands over.
+        guard rest > 0 else { return [Operation.blocked.optionName: 1 - satisfied, done: satisfied] }
+        var adjusted = probabilities.mapValues { $0 + doneProbability * (1 - satisfied) * $0 / rest }
+        adjusted[done] = doneProbability * satisfied
+        return adjusted
+    }
+
+    /// The two most probable other operations, for the progress line.
+    static func alternatives(to operation: Operation, in probabilities: [String: Double]) -> [StepPlan.Alternative] {
+        probabilities
+            .filter { $0.key != operation.optionName && $0.value >= 0.05 }
+            .sorted { $0.value > $1.value }
+            .prefix(2)
+            .map { StepPlan.Alternative(name: $0.key, probability: $0.value) }
     }
 
     /// The probability of every element whose label holds the goal's quoted term that the chosen one holds.

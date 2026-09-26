@@ -196,7 +196,7 @@ struct JevStepPlannerTests {
         let planRequest = request(texts: [])
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: planRequest.menu))
         let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
-        #expect(Set(questions.keys) == ["operation", "element_target", "finishes", "irreversible"])
+        #expect(Set(questions.keys) == ["operation", "element_target", "finishes", "irreversible", "satisfied"])
         for (name, question) in questions {
             let instructions = try #require(question["instructions"] as? String)
             #expect(instructions.hasPrefix(JevStepPlanner.rulesPointer), "\(name) does not point at the rules")
