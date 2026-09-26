@@ -16,7 +16,7 @@ rules:
   - .mise.toml
   doc: CLAUDE.md
   message: .mise.toml changed; review the command list in CLAUDE.md.
-  checksum: 058b5cf9175f4b803b1b6e1b3dc5389d2573ff3cb0889528bd56e309b1497999
+  checksum: 23d7e714f6928770a16e95a5b059db189fa7e219abedd5085ca9de64e5d0b731
 - name: rules-lint-and-format
   sources:
   - .swiftformat
@@ -46,6 +46,6 @@ rules:
   - Sources/JevSimUseCLI/ExitStatus.swift
   - Sources/JevSimUseKit/Agent/AgentOutcome.swift
   doc: skills/jev-sim-use/SKILL.md
-  message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
-    then run `mise run generate-skill`.
+  message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md
+    (the next build embeds it).
   checksum: 1f7148595aee62dda717489cc7ea83bc6f6a38b4da7e201f8bf5dc000d1b3405
