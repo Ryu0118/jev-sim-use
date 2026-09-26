@@ -154,7 +154,7 @@ struct JevStepPlannerTests {
         #expect(AgentEvent.planned(step: 1, plan: plan).description.contains("[operation 0.97, field 0.65, text 0.90]"))
     }
 
-    @Test("the rules travel once, in the state, and every question points at them")
+    @Test("the step rules travel once, in the state, and every question points at them")
     func sharedRules() throws {
         let planRequest = request(texts: [])
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: planRequest.menu))
@@ -166,7 +166,7 @@ struct JevStepPlannerTests {
             #expect(!instructions.contains("no visible effect"), "\(name) repeats the rules")
         }
         let state = try JSONSerialization.jsonObject(with: JSONEncoder().encode(PlanningState(planRequest))) as? [String: Any]
-        #expect(state?["rules"] as? String == JevStepPlanner.rules)
+        #expect(state?["rules"] as? String == PlanningRules(operations: planRequest.menu.operations).text)
     }
 }
 
