@@ -60,16 +60,26 @@ package struct SimUseClient: DeviceDriving {
         return try await run([SimUseContract.Command.paste], operands: [text])
     }
 
+    /// Taps `entry` by coordinates: a switch or value row on its trailing control, anything else at its centre.
+    package func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
+        guard let frame = entry.frame else { return try await tapInPlace(alias: entry.aliases.alias, on: snapshot) }
+        return try await tap(point(on: entry, frame: frame, platform: snapshot.platform), on: snapshot.platform)
+    }
+
     private func tapInPlace(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
         else { return try await tap([SimUseContract.Command.tap, "@\(alias)"], on: snapshot.platform) }
-        // A UISwitch is 51 pt wide and a colour well 28 pt, both at the trailing edge of the row.
-        let x = max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18))
-        return try await tap([
-            SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)",
-            SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds,
-        ], on: snapshot.platform)
+        return try await tap(point(on: entry, frame: frame, platform: snapshot.platform), on: snapshot.platform)
+    }
+
+    /// The `tap` arguments for a coordinate tap on `entry`. On iOS a switch (51 pt) or colour well (28 pt) sits at the
+    /// row's trailing edge, and both answered only a short hold there.
+    private func point(on entry: UIEntry, frame: ElementFrame, platform: String) -> [String] {
+        let trailing = platform == SimUseContract.Platform.ios && (entry.isToggle || entry.isValueRow)
+        let x = trailing ? max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18)) : frame.center.x
+        let hold = trailing ? [SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds] : []
+        return [SimUseContract.Command.tap, SimUseContract.Tap.x, "\(x)", SimUseContract.Tap.y, "\(frame.center.y)"] + hold
     }
 
     /// Scrolls `entry` into reach, reads the screen until the scroll has stopped (a tap on a list still coasting

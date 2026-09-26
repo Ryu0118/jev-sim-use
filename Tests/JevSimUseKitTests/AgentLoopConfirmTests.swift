@@ -107,6 +107,41 @@ struct AgentLoopConfirmTests {
         #expect(outcome == .stalled(steps: 3))
     }
 
+    @Test("taps a bar item that stayed in place across the last action without waiting for the confirming reading")
+    func stableBarItem() async throws {
+        let tab = UIEntry(
+            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
+            region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 90, y: 795, width: 85, height: 54),
+        )
+        let home = Fixtures.snapshot(outline: "Home", entries: [button(1, "Next", y: 300), tab])
+        let detail = Fixtures.snapshot(outline: "Detail", entries: [Fixtures.entry(2, "Detail", role: "Heading"), tab])
+        // A confirming reading that would have sent the plan back: were it awaited, the next plan would be on it.
+        let moved = UIEntry(
+            aliases: ElementAliases(alias: 5), role: "RadioButton", label: "Map", states: [], value: nil, uniqueId: nil,
+            region: tab.region, frame: ElementFrame(x: 90, y: 760, width: 85, height: 54),
+        )
+        let sliding = Fixtures.snapshot(outline: "Detail sliding", entries: [moved])
+        let mapScreen = Fixtures.snapshot(outline: "Map", entries: [Fixtures.entry(3, "Map", role: "Heading"), tab])
+        let map = StepPlan(action: .tap(alias: 5, role: "RadioButton", label: "Map"), confidence: 0.95, costUSD: 0)
+        let planner = RecordingFakePlanner([.tapNext(), map, .blocked()])
+        let driver = ScriptedDriver(readings: [home, home, detail, sliding, mapScreen])
+        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        #expect(driver.performedActions.prefix(2) == ["tap @1", "tap @5"])
+        #expect(planner.outlines.prefix(3) == ["Home", "Detail", "Map"])
+    }
+
+    @Test("accepts DONE when the readings show the same elements and states in shifted places")
+    func doneWhileAnimating() async throws {
+        let planner = RecordingDonePlanner()
+        let (loop, _) = loop([
+            Fixtures.snapshot(outline: "Tabs moving", entries: [button(1, "Home", y: 800)]),
+            Fixtures.snapshot(outline: "Tabs settled", entries: [button(1, "Home", y: 795)]),
+        ], planner)
+        let outcome = try await loop.run().outcome
+        #expect(planner.outlines == ["Tabs moving"])
+        #expect(outcome == .goalReached(steps: 0))
+    }
+
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()
@@ -202,5 +237,24 @@ private final class LosingDriver: DeviceDriving {
 
     func paste(_: String) async throws -> [String] {
         []
+    }
+}
+
+/// Returns plans in order, repeating the last, and records each planned screen.
+private final class RecordingFakePlanner: StepPlanning {
+    private let plans: [StepPlan]
+    private let seen = Mutex<[String]>([])
+
+    init(_ plans: [StepPlan]) {
+        self.plans = plans
+    }
+
+    var outlines: [String] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        let count = seen.withLock { $0.append(request.snapshot.outline); return $0.count }
+        return plans[min(count - 1, plans.count - 1)]
     }
 }

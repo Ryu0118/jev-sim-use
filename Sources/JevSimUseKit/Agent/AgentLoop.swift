@@ -54,13 +54,30 @@ package struct AgentLoop: Sendable {
                 confirmation?.cancel()
                 throw error
             }
+            // A tap on a bar item that sat unchanged in the same place before and after the last action does not
+            // wait for the confirming reading: that item cannot be mid-transition. The reading still finishes before
+            // the next one starts, and only its report of apps that disappeared counts.
+            if overlapped, let target = stableBarTarget(of: plan, on: observation.snapshot, before: actedOn, progress: progress),
+               case let .act(action) = decide(on: plan, progress: progress)
+            {
+                let disappeared = try await driver.tapWhereShown(target, on: observation.snapshot)
+                let late = try await confirmation?.value
+                progress.recordAction(action, disappeared: disappeared + (late?.disappearedApps ?? []))
+                actedOn = observation.snapshot
+                staleReplans = 0
+                disagreements = 0
+                continue
+            }
             let fresh = try await confirmation?.value ?? observation
             if overlapped, !fresh.disappearedApps.isEmpty,
                let outcome = progress.record(fresh, stallLimit: configuration.stallLimit)
             {
                 return AgentRunResult(outcome: outcome, history: progress.history)
             }
+            // Readings agree when the same elements sit in the same places (values aside, as relative times tick), or
+            // show the same elements and states wherever they sit (a tab switch still animating the same content).
             let settled = fresh.snapshot.layout == observation.snapshot.layout
+                || fresh.snapshot.identity == observation.snapshot.identity
             if configuration.allowedOperations.allows(.device(.revealContentBelow)), let scan = ScanFirst.override(
                 plan, on: observation.snapshot, goal: configuration.goal, notes: configuration.notes,
                 alreadyScanned: progress.hasScannedCurrentTitle, tried: progress.ineffectiveActions,

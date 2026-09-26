@@ -7,6 +7,9 @@ package protocol DeviceDriving: Sendable {
     func observe() async throws -> ScreenObservation
     /// Taps the element with alias `@alias` in `snapshot`, the latest observation, in whatever way flips or presses it.
     func tap(alias: Int, on snapshot: UISnapshot) async throws -> [String]
+    /// Taps `entry` where `snapshot` shows it, by coordinates rather than by alias, so a screen read running at the
+    /// same time cannot change which element the tap resolves to.
+    func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String]
     /// Performs `gesture` on the element with alias `@alias` in `snapshot`, the latest observation.
     func perform(_ gesture: ElementGesture, alias: Int, on snapshot: UISnapshot) async throws -> [String]
     /// Performs a device-level action on `platform`.
@@ -26,5 +29,12 @@ package struct ScreenObservation: Sendable, Hashable {
     package init(snapshot: UISnapshot, disappearedApps: [String]) {
         self.snapshot = snapshot
         self.disappearedApps = disappearedApps
+    }
+}
+
+package extension DeviceDriving {
+    /// Taps by alias; drivers without an alias cache have nothing a concurrent read could change.
+    func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
+        try await tap(alias: entry.aliases.alias, on: snapshot)
     }
 }

@@ -141,6 +141,22 @@ extension AgentLoop {
         return nil
     }
 
+    /// The element `plan` taps when it can be tapped without waiting for the confirming reading: a confident tap on
+    /// a bar item (tab bar, toolbar, navigation bar) that `before`, the screen the last action was taken on, showed
+    /// unchanged in the same place, after an action whose effect showed. Such an item is not moving with the
+    /// transition, and a tap on the same label in the same place does the same thing either side of it.
+    func stableBarTarget(
+        of plan: StepPlan, on snapshot: UISnapshot, before: UISnapshot?, progress: AgentProgress,
+    ) -> UIEntry? {
+        guard case let .tap(alias, _, _) = plan.action, plan.support >= ActionPolicy.confidentSupport,
+              progress.history.last?.screenChanged == true, let before,
+              let entry = snapshot.entry(alias: alias), let region = entry.region,
+              UISnapshot.barKinds.contains(region.kind), snapshot.revealingScroll(for: entry) == nil,
+              snapshot.counterpart(of: alias, in: before) != nil
+        else { return nil }
+        return entry
+    }
+
     /// How many times one step is planned again because the confirming reading disagreed with the planned one, before
     /// the loop falls back to reading until two readings agree and planning without a confirming reading.
     static let disagreementLimit = 2
