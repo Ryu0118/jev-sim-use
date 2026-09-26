@@ -1,8 +1,9 @@
 import Foundation
 @testable import JevSimUseKit
+import Synchronization
 import Testing
 
-@Suite("A pop-up menu's full-screen dismiss button is not a target")
+@Suite("A pop-up menu's full-screen dismiss button is not a target, and Jev learns which control opened the menu")
 struct BackdropTests {
     static let screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
 
@@ -53,12 +54,18 @@ struct BackdropTests {
         #expect(map.backdrop == nil)
     }
 
-    @Test("the state leaves the backdrop out, and does not report the group it spans as covered by it")
-    func stateOmitsBackdrop() throws {
+    @Test("the state leaves the backdrop out and names the control that opened the menu")
+    func stateNamesOpener() throws {
         let menu = ActionCatalog.menu(for: Self.menu, texts: [])
-        let state = PlanningState(PlanRequest(goal: "Choose option B", snapshot: Self.menu, menu: menu, history: []))
+        var request = PlanRequest(goal: "Choose option B", snapshot: Self.menu, menu: menu, history: [])
+        #expect(PlanningState(request).screen.openedBy == nil)
+
+        request.openedBy = "Kind, option A"
+        let state = PlanningState(request)
         #expect(state.screen.elements.map(\.label) == ["Option A", "Option B", "Option C", nil])
         let json = try String(decoding: JSONEncoder().encode(state.screen), as: UTF8.self)
+        #expect(json.contains(#""opened_by":"Kind, option A""#))
+        // The empty group the backdrop spans is not reported as covered by it either.
         #expect(!json.contains("Dismiss menu"))
     }
 
@@ -85,5 +92,38 @@ struct BackdropTests {
         progress.recordAction(.tap(alias: 1, role: "Button", label: "Option A"), disappeared: [])
         _ = progress.record(open, stallLimit: 5)
         #expect(progress.menuOpener == nil)
+    }
+
+    @Test("the loop sends the opener to Jev while the menu shows")
+    func loopSendsOpener() async throws {
+        let form = Fixtures.snapshot(outline: "form", entries: [Fixtures.entry(7, "Kind, option A", role: "PopUpButton")])
+        let driver = ScriptedDriver(readings: [form, form, Self.menu])
+        let planner = RequestRecordingPlanner([
+            StepPlan(action: .tap(alias: 7, role: "PopUpButton", label: "Kind, option A"), confidence: 0.95, costUSD: 0),
+            .blocked(),
+        ])
+        _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
+        #expect(planner.openers == [nil, "Kind, option A"])
+    }
+}
+
+/// Returns plans in order, repeating the last, and records each request's `openedBy`.
+private final class RequestRecordingPlanner: StepPlanning {
+    private let plans: [StepPlan]
+    private let requests = Mutex<[String?]>([])
+
+    var openers: [String?] {
+        requests.withLock { $0 }
+    }
+
+    init(_ plans: [StepPlan]) {
+        self.plans = plans
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        requests.withLock { requests in
+            requests.append(request.openedBy)
+            return plans[min(requests.count - 1, plans.count - 1)]
+        }
     }
 }

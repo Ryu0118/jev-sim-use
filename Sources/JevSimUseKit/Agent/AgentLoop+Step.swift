@@ -11,6 +11,7 @@ extension AgentLoop {
             notes: configuration.notes,
         )
         request.includesHints = withHints
+        request.openedBy = snapshot.backdrop == nil ? nil : progress.menuOpener
         let plan = try await planner.plan(request)
         report(.planned(step: progress.nextStep, plan: plan))
         return plan

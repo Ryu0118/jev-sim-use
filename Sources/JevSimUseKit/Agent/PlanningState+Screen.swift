@@ -6,13 +6,21 @@ extension PlanningState {
         let title: String?
         /// The back button's label (the previous screen), present only when there is somewhere to go back to.
         let back: String?
+        /// The control whose tap opened the menu on screen.
+        let openedBy: String?
         let elements: [Element]
 
-        init(_ snapshot: UISnapshot, texts: [InputText] = [], hints: Bool = false) {
+        private enum CodingKeys: String, CodingKey {
+            case app, title, back, elements
+            case openedBy = "opened_by"
+        }
+
+        init(_ snapshot: UISnapshot, texts: [InputText] = [], hints: Bool = false, openedBy: String? = nil) {
             app = snapshot.appLabel
             let entries = snapshot.entries ?? []
             title = snapshot.title
             back = entries.first { $0.uniqueId == ActionCatalog.iOSBackButtonIdentifier }?.label
+            self.openedBy = openedBy
             // The backdrop is not a target, and listing it would still invite Jev to reason about dismissing the menu.
             let backdrop = snapshot.backdrop
             elements = entries.filter { $0 != backdrop }.map {
