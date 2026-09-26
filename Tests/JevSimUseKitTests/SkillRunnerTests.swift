@@ -48,4 +48,18 @@ struct SkillRunnerTests {
         #expect(try runner.run(.uninstall(target)) == .uninstalled(directory))
         #expect(!FileManager.default.fileExists(atPath: directory.path(percentEncoded: false)))
     }
+
+    @Test("looks up a bundled file by its path inside the skill directory, SKILL.md first")
+    func bundledFileLookup() throws {
+        #expect(SkillBundle.paths.first == SkillBundle.fileName)
+        #expect(try SkillBundle.contents(of: SkillBundle.fileName) == SkillBundle.markdown)
+        #expect(SkillBundle.paths.contains("references/troubleshooting.md"))
+    }
+
+    @Test("an unknown path fails with every bundled path listed")
+    func unknownBundledFile() {
+        #expect(throws: SkillError.unknownFile("nope.md", available: SkillBundle.paths)) {
+            try SkillBundle.contents(of: "nope.md")
+        }
+    }
 }
