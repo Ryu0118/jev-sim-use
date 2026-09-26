@@ -108,7 +108,8 @@ Never write unit tests after the code.
 - One request per step, the jev-ultrafast shape: choice `operation` (tap, each element gesture, `enter_text`, each
   screen-level action, `done`, `blocked`), speculative target choices (`element_target` shared by tap and gestures;
   `field_target` and `text_to_enter` when typing is possible), noul `finishes` ("if the chosen operation works,
-  is the whole goal satisfied?"), and, when a tap is offered, noul `irreversible` ("would tapping the element this step
+  is the whole goal satisfied?"), noul `satisfied` ("is every part of the goal already satisfied?"), and, when a tap is
+  offered, noul `irreversible` ("would tapping the element this step
   would choose lose data or state that going back cannot restore?"). Code reads only the target that matches the chosen operation. Asking operation and
   target apart keeps a scroll or DONE from competing with every element for probability. `PlanningRules` builds the
   rules from the step's offered operations: sentences about scrolling, going back, waiting, toggling, or typing are left
@@ -116,8 +117,13 @@ Never write unit tests after the code.
   operation answer and the request has no shared instructions field, so the rules travel once as the state's `rules`
   and every question opens with `JevStepPlanner.rulesPointer` (`rules` is guidance, `screen` is data). Do not add a
   second round trip.
-- Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
-  `goalProbablyReached`. `finishes` is asked and logged on every step line but does not end a run: after any action
+- Completion: DONE's support is the `satisfied` answer, not DONE's share of `operation`, where it competed with the
+  operation that finishes the goal (after typing a query: done 0.58, press_return 0.33, and the run exited 0 without
+  Return). When `satisfied` is below 0.5, DONE keeps only the share `satisfied` backs and the rest goes to the other
+  operations in proportion (`JevStepPlanner.notDone`), so the finishing operation runs; a response without the answer
+  is read as before. DONE with support >= `ActionPolicy.doneMinimum` (0.55) exits 0, below it stops as
+  `goalProbablyReached`. A screen that carries the goal's last named title one step early (a settings screen titled
+  like the list it leads to) still reads as satisfied: nothing on screen tells the two apart. `finishes` is asked and logged on every step line but does not end a run: after any action
   Jev judges the new screen in another request (a changed screen once came from elsewhere, and a run ended as reached
   on a tap that never landed). Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
