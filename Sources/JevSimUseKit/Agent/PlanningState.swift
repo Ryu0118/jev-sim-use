@@ -7,6 +7,9 @@ struct PlanningState: Encodable, Sendable {
     static let historyLimit = 20
     static let notesLimit = 10
 
+    /// How to decide, which every question points at; see `JevStepPlanner.rules`. JSONEncoder does not keep key
+    /// order, so this cannot be pinned before the data.
+    let rules: String
     let goal: String
     let notes: [String]
     let platform: String
@@ -14,6 +17,7 @@ struct PlanningState: Encodable, Sendable {
     let history: [Step]
 
     init(_ request: PlanRequest) {
+        rules = JevStepPlanner.rules
         goal = request.goal
         notes = Array(request.notes.suffix(Self.notesLimit))
         platform = request.snapshot.platform
