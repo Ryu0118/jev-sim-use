@@ -80,15 +80,20 @@ Never write unit tests after the code.
   with a `[n] took …s (read …, jev …, act …)` line: the loop's own waits, which never overlap, so the confirming read
   under Jev's request counts only for the wait after Jev answered. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
-- `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
-  `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
-  alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
+- `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `skills/jev-sim-use/` is the only
+  copy (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes alongside it): the
+  `EmbedSkill` build tool plugin (`BuildPlugins/`, run through the `EmbedSkillTool` executable) generates
+  `SkillBundle.files` from it into the build directory on every build, SKILL.md first and the references sorted, each
+  file's bytes in a raw string (a file holding the terminator fails the build). Releases ship the executable alone,
+  so there is no resource bundle. Editing the Markdown is enough; `SkillEmbeddingTests` checks the plugin's output
+  against the directory. The plugin targets set `path:` because `plugins/` is the agent plugin (and, on a
+  case-insensitive disk, SwiftPM's default `Plugins`). CLI:
   `jev-sim-use skill install|uninstall|print [<path>]` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
 - Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
   `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are
   symlinks to `skills/jev-sim-use`. `release.yml` bumps all manifest versions; `install.sh` is the curl installer.
   The docsync rule `skill-cli` ties SKILL.md to the CLI options and `AgentOutcome`: after changing them, update
-  SKILL.md, run `mise run generate-skill`, then `docsync update-checksum`.
+  SKILL.md, then `docsync update-checksum`.
 
 ## sim-use contract (verified against v0.14.0)
 
@@ -279,4 +284,7 @@ pop-up menu", "the dismiss button") and keep raw logs local.
 ## Release
 
 `.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
+It builds the universal binary with `scripts/build-release.sh` (`--build-system swiftbuild`: Swift 6.3's default
+build system cannot resolve the EmbedSkill plugin in a multi-arch build), which CI's `Universal Release Build` job
+also runs on every change.
 Keep `THIRD_PARTY_LICENSES` in sync when dependencies change.
