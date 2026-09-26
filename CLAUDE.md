@@ -191,6 +191,13 @@ Read these before writing or reviewing code. They are the source of truth (`.cla
 
 Access policy: use `package` for anything shared across modules in this package; `public` only for symbols consumed outside it.
 
+## Public writing
+
+Commits, PR titles and bodies, issues, review comments, code, tests, and docs are public. Never name or describe
+the private apps, simulators, or devices a goal was tried on: no app names, simulator names, UI labels, screen text,
+item titles, or goal wording copied from them. Describe them generically ("a test app on an iOS simulator", "the type
+pop-up menu", "the dismiss button") and keep raw logs local.
+
 ## Release
 
 `.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
