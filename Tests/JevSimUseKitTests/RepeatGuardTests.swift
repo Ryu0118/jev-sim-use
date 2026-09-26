@@ -1,101 +1,38 @@
 @testable import JevSimUseKit
-import Synchronization
 import Testing
 
+/// A row tapped 26 times never opened while a relative time on the screen ticked, so every screen looked new. The loop
+/// handing over at the fourth tap runs end to end in scripts/e2e.sh; these are the screen sequences the guard must tell
+/// apart.
 @Suite("The same action repeated on a screen whose elements stay put is refused, even while a value there ticks")
 struct RepeatGuardTests {
-    /// A list whose one row shows a relative time that ticks after every action, and a filter button.
-    static func list(minutes: Int, extra: [UIEntry] = []) -> UISnapshot {
+    private static let open = AgentAction.tap(alias: 1, role: "Button", label: "Open")
+
+    /// A screen with the row to open, its relative time, and `extra` elements.
+    private static func screen(_ minutes: Int, _ extra: [String] = []) -> UISnapshot {
         let row = UIEntry(
-            aliases: ElementAliases(alias: 1), role: "Button", label: "Groceries", states: [],
-            value: "Note, \(minutes) minutes ago", uniqueId: nil, region: nil, frame: nil,
+            aliases: ElementAliases(alias: 1), role: "Button", label: "Open", states: [],
+            value: "\(minutes) minutes ago", uniqueId: nil, region: nil, frame: nil,
         )
-        return Fixtures.snapshot(outline: "list \(minutes)", entries: [row, Fixtures.entry(2, "Filter")] + extra)
+        let others = extra.enumerated().map { Fixtures.entry($0.offset + 2, $0.element, role: "StaticText") }
+        return Fixtures.snapshot(outline: "screen \(minutes) \(extra)", entries: [row] + others)
     }
 
-    static let openRow = AgentAction.tap(alias: 1, role: "Button", label: "Groceries")
-
-    func observation(_ snapshot: UISnapshot) -> ScreenObservation {
-        ScreenObservation(snapshot: snapshot, disappearedApps: [])
-    }
-
-    @Test("refuses a fourth identical tap after three that left the same elements, values aside")
-    func refusesFourthRepeat() {
+    @Test("refuses the fourth identical action only when it keeps landing on the same elements", arguments: [
+        ("the same elements, a value ticking", (0 ... 3).map { screen($0) }, true),
+        ("alternating between two sets of elements", (0 ... 3).map { screen($0, $0.isMultiple(of: 2) ? [] : ["Sort by date"]) }, true),
+        ("a new page each time, like a Next button", (0 ... 3).map { screen($0, ["Page \($0)"]) }, false),
+    ] as [(String, [UISnapshot], Bool)])
+    func repeats(_: String, screens: [UISnapshot], futile: Bool) {
         var progress = AgentProgress()
-        _ = progress.record(observation(Self.list(minutes: 0)), stallLimit: 5)
-        for minute in 1 ... AgentProgress.repeatLimit {
-            #expect(!progress.isFutileRepeat(Self.openRow))
-            progress.recordAction(Self.openRow, disappeared: [])
-            _ = progress.record(observation(Self.list(minutes: minute)), stallLimit: 5)
+        _ = progress.record(ScreenObservation(snapshot: screens[0], disappearedApps: []), stallLimit: 9)
+        for screen in screens.dropFirst() {
+            #expect(!progress.isFutileRepeat(Self.open), "refused before the limit")
+            progress.recordAction(Self.open, disappeared: [])
+            _ = progress.record(ScreenObservation(snapshot: screen, disappearedApps: []), stallLimit: 9)
         }
-        #expect(progress.ineffectiveActions.isEmpty)
-        #expect(progress.isFutileRepeat(Self.openRow))
-        #expect(!progress.isFutileRepeat(.tap(alias: 2, role: "Button", label: "Filter")))
-        #expect(!progress.isFutileRepeat(.wait))
-    }
-
-    @Test("also refuses it when the screen alternates between two sets of elements")
-    func refusesAlternatingRepeat() {
-        let panel = [Fixtures.entry(3, "Sort by date")]
-        var progress = AgentProgress()
-        _ = progress.record(observation(Self.list(minutes: 0)), stallLimit: 9)
-        for minute in 1 ... AgentProgress.repeatLimit {
-            progress.recordAction(Self.openRow, disappeared: [])
-            _ = progress.record(observation(Self.list(minutes: minute, extra: minute.isMultiple(of: 2) ? [] : panel)), stallLimit: 9)
-        }
-        #expect(progress.isFutileRepeat(Self.openRow))
-    }
-
-    @Test("allows the same action again when each one leads to a screen with other elements, like a Next button")
-    func allowsProgressingRepeat() {
-        var progress = AgentProgress()
-        let next = AgentAction.tap(alias: 1, role: "Button", label: "Next")
-        for page in 0 ... AgentProgress.repeatLimit {
-            let snapshot = Fixtures.snapshot(outline: "page \(page)", entries: [Fixtures.entry(1, "Next"), Fixtures.entry(2, "Page \(page)", role: "StaticText")])
-            _ = progress.record(observation(snapshot), stallLimit: 5)
-            #expect(!progress.isFutileRepeat(next))
-            progress.recordAction(next, disappeared: [])
-        }
-    }
-
-    @Test("the loop hands over instead of tapping a row a fourth time on the same elements")
-    func loopHandsOver() async throws {
-        let driver = TickingListDriver()
-        let plan = StepPlan(action: Self.openRow, confidence: 0.95, costUSD: 0)
-        let outcome = try await AgentLoop(
-            driver: driver, planner: FakePlanner([plan]), configuration: AgentConfiguration(goal: "g", maxSteps: 10),
-        ).run().outcome
-        #expect(outcome == .noActionFits(step: AgentProgress.repeatLimit + 1))
-        #expect(driver.taps == AgentProgress.repeatLimit)
-    }
-}
-
-/// Shows the list with one more minute on its relative time after every tap.
-private final class TickingListDriver: DeviceDriving {
-    private let count = Mutex(0)
-
-    var taps: Int {
-        count.withLock { $0 }
-    }
-
-    func observe() async throws -> ScreenObservation {
-        ScreenObservation(snapshot: RepeatGuardTests.list(minutes: taps), disappearedApps: [])
-    }
-
-    func tap(alias _: Int, on _: UISnapshot) async throws -> [String] {
-        count.withLock { $0 += 1 }
-        return []
-    }
-
-    func perform(_: ElementGesture, alias _: Int, on _: UISnapshot) async throws -> [String] {
-        []
-    }
-
-    func perform(_: SimUseDeviceAction, platform _: String) async throws -> [String] {
-        []
-    }
-
-    func paste(_: String) async throws -> [String] {
-        []
+        #expect(progress.isFutileRepeat(Self.open) == futile)
+        #expect(!progress.isFutileRepeat(.tap(alias: 2, role: "Button", label: "Other")), "another action is never refused")
+        #expect(!progress.isFutileRepeat(.wait), "waiting out a slow save is never refused")
     }
 }

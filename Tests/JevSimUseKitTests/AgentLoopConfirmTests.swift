@@ -2,17 +2,10 @@
 import Synchronization
 import Testing
 
+/// The fake sim-use in scripts/e2e.sh always shows a settled screen; these are the readings taken mid-transition that
+/// misled the loop in real runs.
 @Suite("A plan is checked against a reading taken while Jev planned")
 struct AgentLoopConfirmTests {
-    private func button(_ alias: Int, _ label: String, y: Double) -> UIEntry {
-        Fixtures.entry(alias, label, frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
-    }
-
-    private func loop(_ readings: [UISnapshot], _ planner: some StepPlanning) -> (AgentLoop, ScriptedDriver) {
-        let driver = ScriptedDriver(readings: readings)
-        return (AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")), driver)
-    }
-
     @Test("does not tap a stale alias when the confirming reading shows the next screen")
     func staleAlias() async throws {
         let planner = TapLabelPlanner("Save")
@@ -54,32 +47,20 @@ struct AgentLoopConfirmTests {
         #expect(planner.outlines.dropFirst().allSatisfy { $0 != "Home 10:00" })
     }
 
-    @Test("does not report the goal reached from a reading the confirming one contradicts")
-    func doneOnChangingScreen() async throws {
+    @Test("claims DONE only from a reading the confirming one agrees with", arguments: [
+        ("a confirming reading of another screen sends DONE back to be planned on it",
+         Fixtures.snapshot(outline: "Mid"), Fixtures.snapshot(outline: "Final"), ["Mid", "Final"]),
+        ("only a value changed, such as a relative time", Fixtures.snapshot(outline: "List 3 s", entries: [row("3 s ago")]),
+         Fixtures.snapshot(outline: "List 4 s", entries: [row("4 s ago")]), ["List 3 s"]),
+        ("the same elements and states in shifted places, as tabs still animating",
+         Fixtures.snapshot(outline: "Tabs moving", entries: [tab(800)]),
+         Fixtures.snapshot(outline: "Tabs settled", entries: [tab(795)]), ["Tabs moving"]),
+    ] as [(String, UISnapshot, UISnapshot, [String])])
+    func done(_: String, planned: UISnapshot, confirming: UISnapshot, plannedOn: [String]) async throws {
         let planner = RecordingDonePlanner()
-        let (loop, _) = loop([
-            Fixtures.snapshot(outline: "Mid"), Fixtures.snapshot(outline: "Final"),
-        ], planner)
+        let (loop, _) = loop([planned, confirming], planner)
         let outcome = try await loop.run().outcome
-        #expect(planner.outlines == ["Mid", "Final"])
-        #expect(outcome == .goalReached(steps: 0))
-    }
-
-    @Test("accepts DONE when only a value changed between the readings, such as a relative time")
-    func tickingValue() async throws {
-        let planner = RecordingDonePlanner()
-        func row(_ age: String) -> UIEntry {
-            UIEntry(
-                aliases: ElementAliases(alias: 1), role: "Button", label: "Groceries", states: ["value=\"\(age)\""],
-                value: age, uniqueId: nil, region: nil, frame: ElementFrame(x: 16, y: 300, width: 370, height: 44),
-            )
-        }
-        let (loop, _) = loop([
-            Fixtures.snapshot(outline: "List 3 s", entries: [row("3 s ago")]),
-            Fixtures.snapshot(outline: "List 4 s", entries: [row("4 s ago")]),
-        ], planner)
-        let outcome = try await loop.run().outcome
-        #expect(planner.outlines == ["List 3 s"])
+        #expect(planner.outlines == plannedOn)
         #expect(outcome == .goalReached(steps: 0))
     }
 
@@ -130,24 +111,32 @@ struct AgentLoopConfirmTests {
         #expect(planner.outlines.prefix(3) == ["Home", "Detail", "Map"])
     }
 
-    @Test("accepts DONE when the readings show the same elements and states in shifted places")
-    func doneWhileAnimating() async throws {
-        let planner = RecordingDonePlanner()
-        let (loop, _) = loop([
-            Fixtures.snapshot(outline: "Tabs moving", entries: [button(1, "Home", y: 800)]),
-            Fixtures.snapshot(outline: "Tabs settled", entries: [button(1, "Home", y: 795)]),
-        ], planner)
-        let outcome = try await loop.run().outcome
-        #expect(planner.outlines == ["Tabs moving"])
-        #expect(outcome == .goalReached(steps: 0))
-    }
-
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()
         let (loop, _) = loop((1 ... 9).map { Fixtures.snapshot(outline: "Frame \($0)") }, planner)
         _ = try await loop.run()
         #expect(planner.outlines == ["Frame 1", "Frame 2", "Frame 6"])
+    }
+
+    private func button(_ alias: Int, _ label: String, y: Double) -> UIEntry {
+        Fixtures.entry(alias, label, frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
+    }
+
+    private func loop(_ readings: [UISnapshot], _ planner: some StepPlanning) -> (AgentLoop, ScriptedDriver) {
+        let driver = ScriptedDriver(readings: readings)
+        return (AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")), driver)
+    }
+
+    private static func row(_ age: String) -> UIEntry {
+        UIEntry(
+            aliases: ElementAliases(alias: 1), role: "Button", label: "Groceries", states: ["value=\"\(age)\""],
+            value: age, uniqueId: nil, region: nil, frame: ElementFrame(x: 16, y: 300, width: 370, height: 44),
+        )
+    }
+
+    private static func tab(_ y: Double) -> UIEntry {
+        Fixtures.entry(1, "Home", frame: ElementFrame(x: 16, y: y, width: 370, height: 44))
     }
 }
 
