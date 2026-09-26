@@ -120,7 +120,8 @@ These apply to both forms:
 
 ## Read the result, then verify it
 
-stdout is the outcome line; stderr shows each step. When the goal was not reached, `Session: <id>` follows.
+stdout is the outcome line; stderr shows each step, closed by a line saying where its time went (screen reads, the
+Jev request, the action). When the goal was not reached, `Session: <id>` follows.
 
 | Exit | Meaning | What to do |
 |---|---|---|
@@ -147,7 +148,8 @@ Stop reasons on exit 1:
 When a stop is not obvious, read [references/troubleshooting.md](references/troubleshooting.md) (or
 `jev-sim-use skill print references/troubleshooting.md`): it maps the usual causes (rows exposed as loose text,
 look-alike buttons, unlabelled sliders, prompts sim-use cannot see, hidden controls, slow submits) to the note or fix
-that resolves each, and lists what to rule out before blaming the run.
+that resolves each, explains the timing lines and what to do when screen reads are slow (a hung sim-use daemon), and
+lists what to rule out before blaming the run.
 
 ## Supervise the session instead of starting over
 
@@ -210,4 +212,4 @@ Without this skill installed, print a reference with `jev-sim-use skill print re
 
 - [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
 - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious,
-  or before planning a long flow on an unfamiliar app.
+  when a run is slow, or before planning a long flow on an unfamiliar app.
