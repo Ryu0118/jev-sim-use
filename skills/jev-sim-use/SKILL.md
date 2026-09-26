@@ -103,8 +103,7 @@ These apply to both forms:
 
 - Pass every string to type as `-t name=value`. Jev never writes text; it sees only the name and picks the field whose
   label fits, so name strings by what they are (`email`, `password`, `query`, `title`). Values never leave the
-  machine. After typing, elements that show a text carry its name, so "the memo titled with the title text" is
-  findable.
+  machine.
 - When the goal creates something through a form with a save or submit button, say "and save it" (or give Save its
   own step). Typed text in an open form is not saved, and Jev does not count it as done. When the app saves by itself
   (stopping a recording, toggling a setting), describe the finished state instead ("the recording is stopped and
@@ -145,8 +144,8 @@ Stop reasons on exit 1:
 - **app crashed or disappeared**: relaunch the app before resuming.
 
 When a stop is not obvious, read [references/troubleshooting.md](references/troubleshooting.md): it maps the usual
-causes (rows exposed as loose text, look-alike buttons, unlabelled sliders, prompts sim-use cannot see, slow
-submits) to the note or fix that resolves each.
+causes (rows exposed as loose text, look-alike buttons, unlabelled sliders, prompts sim-use cannot see, hidden
+controls, slow submits) to the note or fix that resolves each, and lists what to rule out before blaming the run.
 
 ## Supervise the session instead of starting over
 
@@ -167,8 +166,8 @@ jev-sim-use session resume                # same goal, notes, and history; exits
 - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
 - Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
 - Prefer `tell` and `resume` to acting by hand, so the session keeps a record of what worked. Act by hand with sim-use
-  through `exec` for what Jev is not offered or what fails the same way twice (see the tool-limits lesson in
-  [references/lessons.md](references/lessons.md)); `resume` starts from whatever screen is showing.
+  through `exec` for what Jev is not offered or what fails the same way twice (see "Before blaming the run" in
+  [references/troubleshooting.md](references/troubleshooting.md)); `resume` starts from whatever screen is showing.
 - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
   success in another one; a hand-over only costs a note.
 - Commands take a session id; without one they use the most recent session. `session list` shows them all.
@@ -180,8 +179,9 @@ session; an unfinished one expires a week after it last changed.
 
 Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
 has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
-buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. Tapping a Delete control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85,
-because going back cannot undo them. Anything else sim-use can do is left to you through `exec`.
+buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. Tapping a Delete
+control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85, because going back cannot undo
+them. Anything else sim-use can do is left to you through `exec`.
 
 ## Options
 
@@ -191,7 +191,7 @@ because going back cannot undo them. Anything else sim-use can do is left to you
 | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
-| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
+| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
 ## Privacy
 
@@ -203,6 +203,5 @@ screens with data that may not leave the machine.
 ## More
 
 - [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
-- [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious.
-- [references/lessons.md](references/lessons.md): what driving real apps taught about goals, verification, and app
-  accessibility; read before planning a long or unfamiliar flow.
+- [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious,
+  or before planning a long flow on an unfamiliar app.

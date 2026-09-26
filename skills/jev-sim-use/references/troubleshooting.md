@@ -30,21 +30,41 @@ jev-sim-use names it from the text above it, but sim-use drags do not move Swift
 alert), most cells of a colour grid, a popover's close button. Take a screenshot with sim-use and act on it by
 coordinates, as its skill describes.
 
-**A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Tap it
-with sim-use using a short hold (see its skill for how).
-
-**Place words** ("home", "settings", "search", "back"). Jev reads them as the app's own first (a tab, screen, or
-button by that name) and as the device's only when the app has none. Say "the device's Home Screen" if you mean to
-leave the app; sim-use cannot open it again.
-
-**Creating something.** Say "and save it". Typed text is not saved, and Jev does not treat it as done.
+**An element that is listed but does nothing when tapped.** Some apps hide a control visually while keeping it in the
+accessibility tree (a floating button that hides while its list is scrolled). Take a screenshot with sim-use to see
+what is really on screen, bring the control back (scroll the list to the top), and resume. Switches and value rows
+(colour wells, pickers) need no help: jev-sim-use taps their trailing control with the short hold they require.
 
 **Search.** A search field that acts on Return is fine; Jev can press Return. A results screen without a heading
 often ends as "probably reached"; read the screen to confirm.
 
-**Slow submits.** After an action that changes nothing, the run keeps reading for up to 2 s. A sign-up or save that
-takes longer can be pressed twice; check the result before resuming.
+**Slow submits.** After an action the run keeps reading for up to 2 s while the screen has not changed, and before
+handing over it waits up to 5 s more for the screen to move on. It does not repeat an action that changed nothing on
+the same screen, but a submit that only shows a spinner has changed the screen; if the stop reason mentions the
+submit screen, check whether it went through before resuming.
 
 **Interruptions.** Rating requests, tracking prompts, notification permission, password-save alerts, and promo
 banners can appear seconds after launch and derail a run midway. Clear them before starting, and after launching
 an app give it a few seconds before the first run.
+
+## Before blaming the run
+
+These came from classifying every failure across repeated runs against several apps.
+
+**The app's accessibility sets the ceiling.** Most stubborn failures were rows exposed as loose text, images labelled
+with asset names, unlabelled sliders, and look-alike buttons without hints. Screen-reader users hit the same walls,
+and fixing the app removed failures no goal wording could.
+
+**Recognise tool limits quickly.** sim-use cannot drag a SwiftUI slider, see a prompt drawn by another process, or
+read most cells of a colour grid. When the same action fails the same way twice, do that step by hand with sim-use
+through `exec` (by coordinates if needed) and resume. Retrying variations wastes the most time of anything.
+
+**Check whether the data allows what you expect.** An option can be absent for a reason in the data: a colouring by
+altitude appeared only for records with altitude changes, which a simulated route never has.
+
+**Set up the start state deliberately.** Start comparable runs from the same screen with the same data. Launching
+through `simctl` does not pass the environment an Xcode scheme sets (debug tokens, test credentials); pass it with
+`SIMCTL_CHILD_<NAME>=…`.
+
+**Keep test data traceable.** Use a staging backend and throwaway addresses (`…@example.com`) for sign-up flows, write
+down every account and record created, and never exercise sign-up or purchase flows against production.

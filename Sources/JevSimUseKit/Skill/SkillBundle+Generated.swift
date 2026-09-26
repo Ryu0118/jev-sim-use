@@ -111,8 +111,7 @@ extension SkillBundle {
 
             - Pass every string to type as `-t name=value`. Jev never writes text; it sees only the name and picks the field whose
               label fits, so name strings by what they are (`email`, `password`, `query`, `title`). Values never leave the
-              machine. After typing, elements that show a text carry its name, so "the memo titled with the title text" is
-              findable.
+              machine.
             - When the goal creates something through a form with a save or submit button, say "and save it" (or give Save its
               own step). Typed text in an open form is not saved, and Jev does not count it as done. When the app saves by itself
               (stopping a recording, toggling a setting), describe the finished state instead ("the recording is stopped and
@@ -153,8 +152,8 @@ extension SkillBundle {
             - **app crashed or disappeared**: relaunch the app before resuming.
 
             When a stop is not obvious, read [references/troubleshooting.md](references/troubleshooting.md): it maps the usual
-            causes (rows exposed as loose text, look-alike buttons, unlabelled sliders, prompts sim-use cannot see, slow
-            submits) to the note or fix that resolves each.
+            causes (rows exposed as loose text, look-alike buttons, unlabelled sliders, prompts sim-use cannot see, hidden
+            controls, slow submits) to the note or fix that resolves each, and lists what to rule out before blaming the run.
 
             ## Supervise the session instead of starting over
 
@@ -175,8 +174,8 @@ extension SkillBundle {
             - Remove a wrong note with `forget`; a correction added on top still leaves the wrong fact in front of Jev.
             - Look at the screen it stopped on (read it with sim-use through `exec`) before adding a note.
             - Prefer `tell` and `resume` to acting by hand, so the session keeps a record of what worked. Act by hand with sim-use
-              through `exec` for what Jev is not offered or what fails the same way twice (see the tool-limits lesson in
-              [references/lessons.md](references/lessons.md)); `resume` starts from whatever screen is showing.
+              through `exec` for what Jev is not offered or what fails the same way twice (see "Before blaming the run" in
+              [references/troubleshooting.md](references/troubleshooting.md)); `resume` starts from whatever screen is showing.
             - Add the missing fact rather than lowering `--min-confidence`. A lowered bar once let a run leave the app and report
               success in another one; a hand-over only costs a note.
             - Commands take a session id; without one they use the most recent session. `session list` shows them all.
@@ -188,8 +187,9 @@ extension SkillBundle {
 
             Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
             has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
-            buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. Tapping a Delete control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85,
-            because going back cannot undo them. Anything else sim-use can do is left to you through `exec`.
+            buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. Tapping a Delete
+            control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85, because going back cannot undo
+            them. Anything else sim-use can do is left to you through `exec`.
 
             ## Options
 
@@ -199,7 +199,7 @@ extension SkillBundle {
             | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
             | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
             | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
-            | `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
+            | `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
             ## Privacy
 
@@ -211,79 +211,8 @@ extension SkillBundle {
             ## More
 
             - [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
-            - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious.
-            - [references/lessons.md](references/lessons.md): what driving real apps taught about goals, verification, and app
-              accessibility; read before planning a long or unfamiliar flow.
-
-            """#####,
-        ),
-        (
-            "references/lessons.md",
-            #####"""
-            # Lessons from driving real apps with jev-sim-use
-
-            These come from running the same goals round after round against several third-party iOS apps and classifying every
-            failure. They apply to agent-driven UI work generally, not only to this tool.
-
-            ## Success is a claim until the screen proves it
-
-            Exit 0 means Jev judged the goal reached. Twice that judgment was wrong: once on a detail screen inside the tab it
-            was asked to return to, once after a run wandered into another app and finished a same-named item there. Check the
-            end state by reading the screen before building on it, and read it after the app settles: a saved item can take a second
-            or two to appear in a list, so read, wait about two seconds, and judge the second reading.
-
-            ## Ambiguity causes more wrong successes than weak judgment
-
-            Every wrong success traced back to a goal that allowed two readings: "home" (the app's tab or the device's Home
-            Screen), "edit" (the editor or an AI assistant), "post a record" (open the item or add a new one). Jev resolves
-            ambiguity plausibly, not necessarily as you meant. Name the end state in the app's own terms, and say which feature
-            when two look alike.
-
-            ## A hand-over is cheap; a wrong action is not
-
-            Lowering `--min-confidence` to push a stuck run through once let it press the Home button, leave the app, and report
-            success in another app. Scrolls and back cost a step when wrong; a tap on the wrong control or leaving the app can
-            cost the whole run, or change data. When a run stops, add the missing fact with `tell` rather than lowering the bar.
-
-            ## The app's accessibility bounds what any agent can do
-
-            Most of the stubborn failures were not the model's: tappable rows exposed as loose text, images labelled with asset
-            names, sliders labelled with their raw position, look-alike buttons without hints. Screen-reader users hit the same
-            walls. Fixing the app (one element per tappable row, a button trait, real labels, values with units, hints for
-            look-alike controls) helped both, and removed failures that no prompt wording could.
-
-            ## Spell out long routes; do not make the agent discover them
-
-            Uncertainty compounds: ten steps at 90% each succeed about a third of the time. A flow such as create, edit,
-            favourite, convert, and complete, written as an end state, stalled at a different step on each attempt. The same flow
-            written as numbered steps with the screens' own labels ran through in about a minute with high support at almost
-            every step: each step left one obvious choice instead of a search. When a flow is long, give the route; when it has
-            checkpoints worth verifying, also run it as a few goals and check each end state before starting the next.
-
-            ## Recognise tool limits quickly
-
-            Some things sim-use cannot do on a simulator: drag a SwiftUI slider, see a prompt drawn by another process, read most
-            cells of a colour grid, or trust an instant tap on every control. When the same action fails the same way twice,
-            treat it as a limit: do that step by hand or with a coordinate tap, then continue. Retrying variations wastes the
-            most time of anything.
-
-            ## Check whether the data allows what you expect to see
-
-            An option or screen that a goal expects can be absent for a reason in the data, not in the tool: a colouring by
-            altitude appeared only for records with altitude changes, which a simulated route never has. When the expected UI is
-            missing, look at what the app needs to show it before retrying or blaming the agent.
-
-            ## Set up the start state deliberately
-
-            Runs are only comparable when they start from the same screen with the same data. Launch the app, wait a few
-            seconds, clear late prompts, and remove data left by earlier runs. Provide what the app reads from the device, such as
-            a simulated location or route for apps that record movement. Launching through `simctl` does not pass the
-            environment an Xcode scheme sets (debug tokens, test credentials); pass it with `SIMCTL_CHILD_<NAME>=…`.
-
-            ## Keep test data traceable
-
-            Use a staging backend and throwaway addresses (`…@example.com`) for sign-up flows, and write down every account
-            created so it can be removed later. Never exercise sign-up or purchase flows against production.
+            - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious,
+              or before planning a long flow on an unfamiliar app.
 
             """#####,
         ),
@@ -344,24 +273,44 @@ extension SkillBundle {
             alert), most cells of a colour grid, a popover's close button. Take a screenshot with sim-use and act on it by
             coordinates, as its skill describes.
 
-            **A tap that changes nothing on a row that opens a sheet or a picker.** Some controls ignore an instant tap. Tap it
-            with sim-use using a short hold (see its skill for how).
-
-            **Place words** ("home", "settings", "search", "back"). Jev reads them as the app's own first (a tab, screen, or
-            button by that name) and as the device's only when the app has none. Say "the device's Home Screen" if you mean to
-            leave the app; sim-use cannot open it again.
-
-            **Creating something.** Say "and save it". Typed text is not saved, and Jev does not treat it as done.
+            **An element that is listed but does nothing when tapped.** Some apps hide a control visually while keeping it in the
+            accessibility tree (a floating button that hides while its list is scrolled). Take a screenshot with sim-use to see
+            what is really on screen, bring the control back (scroll the list to the top), and resume. Switches and value rows
+            (colour wells, pickers) need no help: jev-sim-use taps their trailing control with the short hold they require.
 
             **Search.** A search field that acts on Return is fine; Jev can press Return. A results screen without a heading
             often ends as "probably reached"; read the screen to confirm.
 
-            **Slow submits.** After an action that changes nothing, the run keeps reading for up to 2 s. A sign-up or save that
-            takes longer can be pressed twice; check the result before resuming.
+            **Slow submits.** After an action the run keeps reading for up to 2 s while the screen has not changed, and before
+            handing over it waits up to 5 s more for the screen to move on. It does not repeat an action that changed nothing on
+            the same screen, but a submit that only shows a spinner has changed the screen; if the stop reason mentions the
+            submit screen, check whether it went through before resuming.
 
             **Interruptions.** Rating requests, tracking prompts, notification permission, password-save alerts, and promo
             banners can appear seconds after launch and derail a run midway. Clear them before starting, and after launching
             an app give it a few seconds before the first run.
+
+            ## Before blaming the run
+
+            These came from classifying every failure across repeated runs against several apps.
+
+            **The app's accessibility sets the ceiling.** Most stubborn failures were rows exposed as loose text, images labelled
+            with asset names, unlabelled sliders, and look-alike buttons without hints. Screen-reader users hit the same walls,
+            and fixing the app removed failures no goal wording could.
+
+            **Recognise tool limits quickly.** sim-use cannot drag a SwiftUI slider, see a prompt drawn by another process, or
+            read most cells of a colour grid. When the same action fails the same way twice, do that step by hand with sim-use
+            through `exec` (by coordinates if needed) and resume. Retrying variations wastes the most time of anything.
+
+            **Check whether the data allows what you expect.** An option can be absent for a reason in the data: a colouring by
+            altitude appeared only for records with altitude changes, which a simulated route never has.
+
+            **Set up the start state deliberately.** Start comparable runs from the same screen with the same data. Launching
+            through `simctl` does not pass the environment an Xcode scheme sets (debug tokens, test credentials); pass it with
+            `SIMCTL_CHILD_<NAME>=…`.
+
+            **Keep test data traceable.** Use a staging backend and throwaway addresses (`…@example.com`) for sign-up flows, write
+            down every account and record created, and never exercise sign-up or purchase flows against production.
 
             """#####,
         ),
