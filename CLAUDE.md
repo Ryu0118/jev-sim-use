@@ -20,11 +20,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 
 ## Testing
 
-1. Do not write unit tests after writing the code.
-2. Make E2E tests the primary means of verification: prove that complex features work, and produce verifiable
-   artifacts.
-3. When something must be tested in isolation, first write down every way it can fail, then write the code (tests
-   first).
+E2E is the primary proof of behaviour. Unit tests are only for what truly needs one (regressions, critical
+guards, edge cases, and paths the E2E never runs): list those failure modes first, write their tests, then implement.
+Never write unit tests after the code.
 
 - E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
   sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
@@ -33,10 +31,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
   lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
   (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
-- Unit tests (`swift test`, in CI with build and lint) guard concrete failure modes the code must not regress to: bugs
-  seen in real runs and invariants such as the stale alias, the confirming read, and a false DONE.
+- Unit tests run in CI with build and lint.
 - `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
-- Paths the E2E never runs (setup, version checks, skill install, config, sessions) need unit tests.
 
 ## Architecture
 
