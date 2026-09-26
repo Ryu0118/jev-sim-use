@@ -1,16 +1,28 @@
 /// Replacing a hung sim-use daemon; the policy is `SimUseDaemonWatchdog`'s.
 extension SimUseClient {
     /// Reads through the daemon within the watchdog's deadline. Past it, the read is cancelled, the daemon stopped, and
-    /// the screen read outside it. Only the deadline triggers this: an error envelope, such as a device that is gone,
-    /// comes back within a quarter second and is thrown as it is, and so is any failure of the read outside the daemon.
+    /// the screen read outside it; with no replacement left, the read is waited out up to the watchdog's cap. Only the
+    /// time triggers this: an error envelope, such as a device that is gone, comes back within a quarter second and is
+    /// thrown as it is, and so is any failure of the read outside the daemon.
     func watchedRead() async throws -> ScreenObservation {
-        if let reading = try await read(within: watchdog.deadline) {
-            watchdog.noteReading(of: reading.snapshot.appLabel)
-            return reading
+        if watchdog.canRecover {
+            if let reading = try await read(within: watchdog.deadline) {
+                watchdog.noteReading(of: reading.snapshot.appLabel)
+                return reading
+            }
+            if let (lastApp, left) = watchdog.claimRecovery() {
+                return try await replaceDaemon(lastApp: lastApp, left: left)
+            }
         }
-        guard let (lastApp, left) = watchdog.claimRecovery() else {
-            throw SimUseError.readTimedOut(deviceID: device.deviceId, seconds: watchdog.deadline / .seconds(1))
+        guard let reading = try await read(within: watchdog.cap) else {
+            throw SimUseError.readTimedOut(deviceID: device.deviceId, seconds: watchdog.cap / .seconds(1))
         }
+        watchdog.noteReading(of: reading.snapshot.appLabel)
+        return reading
+    }
+
+    /// Stops the hung daemon and reads the screen outside it.
+    private func replaceDaemon(lastApp: String?, left: Int) async throws -> ScreenObservation {
         let stopped = try await stopDaemon()
         var reading = try await read(environment: SimUseContract.noDaemonEnvironment)
         watchdog.noteReading(of: reading.snapshot.appLabel)

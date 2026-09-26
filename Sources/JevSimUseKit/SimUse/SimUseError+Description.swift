@@ -38,7 +38,7 @@ extension SimUseError: CustomStringConvertible {
         case let .readTimedOut(deviceID, seconds):
             """
             `sim-use ui` gave no answer within \(seconds.formatted()) s, after its daemon had already been replaced \
-            \(SimUseDaemonWatchdog.recoveryLimit) times in this run. The sim-use daemon for this device is probably hung: \
+            \(SimUseDaemonWatchdog.recoveryLimit) times in this run. The sim-use daemon for this device has stopped answering: \
             check `jev-sim-use exec daemon status`, stop it with `jev-sim-use exec daemon stop --device \(deviceID)`, then \
             `jev-sim-use session resume`.
             """
