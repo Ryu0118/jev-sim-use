@@ -85,6 +85,9 @@ package enum SimUseContract {
     enum Swipe {
         static let from = "--from"
         static let to = "--to"
+        static let duration = "--duration"
+        /// Fast enough for a pull to refresh; the scroll preset's 1.5 s is not.
+        static let refreshSeconds = "0.3"
     }
 
     /// Gesture presets, named by finger direction: `scroll-up` pages down.

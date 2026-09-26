@@ -19,6 +19,8 @@ struct SimUseDeviceActionTests {
         ("Return on Android, which has no key verb, is a typed newline", .pressReturn, "android", ["type", "\n"]),
         ("Escape on iOS is HID key 41, which `ios key --help` does not list", .pressEscape, "ios", ["ios", "key", "41"]),
         ("Siri is the plain press it is described as", .press(.siri), "ios", ["button", "siri"]),
+        ("pulling to refresh is one fast, long swipe down: the slow scroll preset and a row's swipe fell short of the threshold",
+         .pullToRefresh(x: 201, from: 262, to: 743), "ios", ["swipe", "--from", "201.0,262.0", "--to", "201.0,743.0", "--duration", "0.3"]),
     ] as [(String, SimUseDeviceAction, String, [String])])
     func arguments(_: String, action: SimUseDeviceAction, platform: String, expected: [String]) {
         #expect(action.arguments(platform: platform) == expected)

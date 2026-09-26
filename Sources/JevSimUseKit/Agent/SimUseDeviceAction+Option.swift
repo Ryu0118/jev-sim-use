@@ -12,6 +12,7 @@ extension SimUseDeviceAction {
         case .pressReturn: "press_return"
         case .pressEscape: "press_escape"
         case .selectRows: "select_rows_with_two_fingers"
+        case .pullToRefresh: "pull_to_refresh"
         }
     }
 
@@ -47,6 +48,9 @@ extension SimUseDeviceAction {
         case .selectRows:
             "Drag two fingers down the list shown, from its first row to its last, to select all those rows at once "
                 + "(multiple selection); in selection mode a tap then adds or removes one row"
+        case .pullToRefresh:
+            "Pull the list at the top of the screen down to refresh it and load new content; only when `goal` asks to "
+                + "refresh or reload, not to look for an item above, which scrolling up does"
         }
     }
 
@@ -68,6 +72,7 @@ extension SimUseDeviceAction {
         case .pressReturn: "Press Return"
         case .pressEscape: "Press Escape"
         case .selectRows: "Select the list's rows with two fingers"
+        case .pullToRefresh: "Pull the list down to refresh it"
         }
     }
 
@@ -81,6 +86,8 @@ extension SimUseDeviceAction {
         case .pressEscape: .irreversible
         // Selecting changes nothing until an action runs on the selection.
         case .selectRows: .reversible
+        // A refresh reloads what the list shows and changes nothing in it, like a scroll.
+        case .pullToRefresh: .harmless
         // Leaving the app cannot be undone: sim-use has no launch verb.
         case .press: .leavesApp
         }

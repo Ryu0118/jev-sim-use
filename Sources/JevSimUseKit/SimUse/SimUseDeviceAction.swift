@@ -22,6 +22,9 @@ package enum SimUseDeviceAction: Sendable, Hashable {
     /// Drag two fingers down a list from its first shown row to its last, which starts multiple selection in UIKit
     /// lists. It targets no element: asked for one, Jev named the button whose menu also selects rows.
     case selectRows(from: ElementFrame, to: ElementFrame)
+    /// Pull a list down from its top to refresh it: one swipe from `from` to `to` at `x`, fast enough to pass the
+    /// refresh threshold.
+    case pullToRefresh(x: Double, from: Double, to: Double)
 
     /// Every action sim-use supports on `platform`. Escape needs `ios key`, which Android lacks. Backspace, Tab, the
     /// arrow keys, and Cmd+A are not offered: focus, the caret, and a selection do not show in `sim-use ui`. Backspace
@@ -61,6 +64,11 @@ package enum SimUseDeviceAction: Sendable, Hashable {
         case .pressEscape: SimUseContract.Command.iosKey + [SimUseContract.Key.escapeKeycode]
         case let .selectRows(first, last):
             SimUseContract.MultiTouch.arguments(centerX: first.center.x, from: first.center.y, to: last.center.y)
+        // The vertical scroll preset (about 210 pt over 1.5 s) and an element swipe (80% of a 44 pt row) only showed
+        // the refresh control's pull progress; half the screen in 0.3 s held it open and refreshing.
+        case let .pullToRefresh(x, from, to):
+            [SimUseContract.Command.swipe, SimUseContract.Swipe.from, "\(x),\(from)", SimUseContract.Swipe.to, "\(x),\(to)",
+             SimUseContract.Swipe.duration, SimUseContract.Swipe.refreshSeconds]
         }
     }
 }
