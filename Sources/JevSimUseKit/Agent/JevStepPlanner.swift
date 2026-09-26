@@ -85,6 +85,9 @@ package struct JevStepPlanner: StepPlanning {
                 menu.elements,
             )
         }
+        // The "no" side names what an app can undo (closing, cancelling a clean edit, archiving, clearing a favorite):
+        // described only as "toggles", those scored 0.39-0.65 and faced the irreversible bar; named, 0.12-0.31, while
+        // deletes and discard confirmations stayed at 0.76-0.85.
         // Whether a tap can be undone is judged from what the control does, so a label in any language is read the
         // same way; like `finishes`, it is about the step's own choice and costs no extra round trip.
         if menu.operations.contains(.tap) {
@@ -94,8 +97,11 @@ package struct JevStepPlanner: StepPlanning {
                 `goal` wants what that tap does. Would the tap lose data or state that going back cannot restore?
                 """,
                 kind: .noul(
-                    whenTrue: "The tap destroys, discards, or irrevocably commits something going back does not undo.",
-                    whenFalse: "Going back or another tap undoes it, or it only opens, selects, toggles, or navigates.",
+                    whenTrue: "The tap deletes (even into a trash), erases, discards typed changes, sends, pays, or "
+                        + "otherwise commits something going back does not undo.",
+                    whenFalse: "The app can undo it: it opens, closes, dismisses, cancels or leaves an edit that has "
+                        + "no typed changes, selects, navigates, archives, or sets or clears a mark or setting that can "
+                        + "be set again, such as adding to or removing from favorites, a flag, or a toggle.",
                 ),
             )
         }
