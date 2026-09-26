@@ -13,11 +13,12 @@ package struct SkillRunner: Sendable {
     }
 
     /// Performs `operation`.
+    /// - Throws: `SkillError.unknownFile` when `.print` names a path the bundle does not have.
     package func run(_ operation: SkillOperation) throws -> SkillOutcome {
         switch operation {
         case let .install(target, force): try install(into: directory(for: target), force: force)
         case let .uninstall(target): try uninstall(from: directory(for: target))
-        case .print: .contents(SkillBundle.markdown)
+        case let .print(path): try .contents(SkillBundle.contents(of: path ?? SkillBundle.fileName))
         }
     }
 

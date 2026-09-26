@@ -6,8 +6,9 @@ package enum SkillOperation: Sendable, Equatable {
     case install(SkillTarget, force: Bool)
     /// Removes the skill from `target`.
     case uninstall(SkillTarget)
-    /// Returns the skill's contents without touching the file system.
-    case print
+    /// Returns a bundled file's contents without touching the file system: the file at this path inside the skill
+    /// directory (e.g. `references/troubleshooting.md`), or SKILL.md when it is `nil`.
+    case print(String?)
 }
 
 /// Where the skill lives: a known client's skills directory, or an explicit one.

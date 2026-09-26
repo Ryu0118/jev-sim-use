@@ -6,7 +6,10 @@ struct SkillCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "skill",
         abstract: "Install the jev-sim-use agent skill so AI agents delegate navigation to it.",
-        discussion: "Uses the same client directories as `sim-use init`: ~/.claude/skills or ~/.agents/skills.",
+        discussion: """
+        Uses the same client directories as `sim-use init`: ~/.claude/skills or ~/.agents/skills. Without an installed \
+        skill, `skill print` shows SKILL.md and `skill print references/<file>.md` the files it links to.
+        """,
         subcommands: [Install.self, Uninstall.self, Print.self],
     )
 }
