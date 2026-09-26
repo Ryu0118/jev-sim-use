@@ -61,4 +61,29 @@ struct BackdropTests {
         let json = try String(decoding: JSONEncoder().encode(state.screen), as: UTF8.self)
         #expect(!json.contains("Dismiss menu"))
     }
+
+    @Test("the opener is the last tap that changed the screen, and is forgotten after any later action")
+    func progressTracksOpener() {
+        let form = ScreenObservation(snapshot: Fixtures.snapshot(outline: "form"), disappearedApps: [])
+        let open = ScreenObservation(snapshot: Self.menu, disappearedApps: [])
+        var progress = AgentProgress()
+        _ = progress.record(form, stallLimit: 5)
+        progress.recordAction(.tap(alias: 7, role: "PopUpButton", label: "Kind, option A"), disappeared: [])
+        _ = progress.record(open, stallLimit: 5)
+        #expect(progress.menuOpener == "Kind, option A")
+
+        progress.recordAction(.wait, disappeared: [])
+        _ = progress.record(open, stallLimit: 5)
+        #expect(progress.menuOpener == nil)
+    }
+
+    @Test("a tap that left the screen as it was does not become the opener")
+    func unchangedTapIsNoOpener() {
+        let open = ScreenObservation(snapshot: Self.menu, disappearedApps: [])
+        var progress = AgentProgress()
+        _ = progress.record(open, stallLimit: 5)
+        progress.recordAction(.tap(alias: 1, role: "Button", label: "Option A"), disappeared: [])
+        _ = progress.record(open, stallLimit: 5)
+        #expect(progress.menuOpener == nil)
+    }
 }

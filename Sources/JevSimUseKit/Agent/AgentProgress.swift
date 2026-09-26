@@ -12,6 +12,8 @@ struct AgentProgress: Sendable {
     private var revisitCount = 0
     private var currentTitle: String?
     private var lastTapLabel: String?
+    /// The label of the last tap, when it changed the screen: what opened a menu that is now showing.
+    private(set) var menuOpener: String?
     /// Elements tapped on a screen (by title) that led to another screen: branches already explored. Coming back to
     /// that title means the branch did not finish the goal, and the scroll position there may differ, so the
     /// identity-keyed `triedActions` cannot catch a second visit.
@@ -67,6 +69,9 @@ struct AgentProgress: Sendable {
             exploredBranches[previousTitle, default: []].insert(label)
         }
         currentTitle = title
+        if let label = lastTapLabel, currentOutline != outline {
+            menuOpener = label
+        }
         lastTapLabel = nil
         let revisited = triedActions[outline] != nil || currentOutline == outline
         revisitCount = revisited ? revisitCount + 1 : 0
@@ -78,6 +83,7 @@ struct AgentProgress: Sendable {
         history.append(HistoryEntry(step: nextStep, action: action.description, screenChanged: nil))
         steps += 1
         lastActionName = action.optionName
+        menuOpener = nil
         if case let .tap(_, _, label) = action {
             lastTapLabel = label
         }
