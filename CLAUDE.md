@@ -18,6 +18,30 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
 - Keep commits small and easy to revert
 
+## Testing
+
+- Do not write unit tests after writing the code.
+- End-to-end tests are the primary way to verify: they prove that complex features work and leave artifacts anyone
+  can check.
+- When something must be tested in isolation, first write down every way it can fail, then write the code. The test
+  is that list, parameterized with `@Test(arguments:)` where it fits.
+
+Where each kind runs:
+
+- `mise run e2e` (`scripts/e2e.sh`; part of `mise run check` and CI): the release binary against
+  `scripts/e2e/fake-sim-use`, a scripted screen state machine on `PATH` that records every call with its arguments
+  and `SIM_USE_NO_DAEMON`, and `scripts/e2e/stub-jev`, a local server that answers from a scripted list and keeps every
+  request body. Scenarios are `scripts/e2e/cases/*.json`. Each case checks the exit status, stdout, the stderr step
+  lines, the recorded sim-use calls, the request bodies, and the session files, and keeps them under
+  `.e2e/<timestamp>/<case>/` (gitignored). A new command, option, outcome, or guard gets a case.
+- `swift test`: isolated tests, only where the failure modes are enumerable: parsers (versions, arguments, envelopes),
+  thresholds and support arithmetic, screen identity and cover logic, the repeat and stall guards, the backdrop and
+  status-bar filters, and the loop's handling of readings taken mid-transition, which a scripted screen never shows.
+  The CLI test target covers argument parsing only; command output and exit statuses are end-to-end checks.
+- `scripts/e2e-simulator.sh` (manual, not in CI; spends real API calls): the release binary drives Apple's Settings app
+  on a booted iOS simulator through the real sim-use and Jev, and each case is judged by reading the screen afterwards.
+- `mise run contract-test`: the installed sim-use against `SimUseContract`.
+
 ## Architecture
 
 - `JevSimUse` (executable, binary `jev-sim-use`): `@main` only; starts `JevSimUseCommand`.

@@ -74,8 +74,12 @@ conventions live in `swift-coding.md`; lint-enforced details in `lint-and-format
 
 ## Tests
 
-- Kit Runners are tested with fakes (`Fake*`, `Recording*`, `Failing*`, `Stub*`) injected through the initializer;
-  CLI commands are tested through the CLI test target with a recording output.
+The policy is the Testing section of `CLAUDE.md`: end-to-end cases first (`mise run e2e`), isolated tests only for
+enumerable failure modes, written as that list before the code.
+
+- Isolated Kit tests inject fakes (`Fake*`, `Recording*`, `Failing*`, `Stub*`) through the initializer. A command's
+  output and exit status are checked end to end; the CLI test target covers argument parsing only.
 - Unit tests do not use the network or the developer's home directory; file-system tests use a temporary directory.
 - Anything that needs a real external tool (a simulator, `sim-use`, a live API) is an integration or contract test in
-  its own clearly named target or task, not part of the default unit run.
+  its own clearly named target or task (`mise run contract-test`, `scripts/e2e-simulator.sh`), not part of the default
+  unit run.

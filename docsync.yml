@@ -49,3 +49,11 @@ rules:
   message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md,
     then run `mise run generate-skill`.
   checksum: 49fd7b3312c30219dc74b27b8fc16cbe2d3f2ce2ac3a0ad370018dc8b42f15ac
+- name: claude-e2e
+  sources:
+  - scripts/e2e.sh
+  - scripts/e2e/fake-sim-use
+  - scripts/e2e/stub-jev
+  doc: CLAUDE.md
+  message: The end-to-end harness changed; review the Testing section in CLAUDE.md.
+  checksum: 6b0b2e58e81cb45309a7354ca41381f997bf39ee26fee726ab834aeb29ab6dd5
