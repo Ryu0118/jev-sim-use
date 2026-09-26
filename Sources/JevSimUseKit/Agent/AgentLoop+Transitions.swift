@@ -112,10 +112,10 @@ extension AgentLoop {
         context.resampled = true
         report(.resampling(step: context.progress.nextStep))
         let progress = context.progress
-        let plan = try await context.timing.add(to: \.jev) {
+        let second: StepPlan = try await context.timing.add(to: \.jev) {
             try await plan(for: step.observation.snapshot, progress: progress, withHints: hinted)
         }
-        guard case let .act(action) = decide(on: plan, progress: context.progress) else { return .finished(outcome) }
+        guard case let .act(action) = decide(on: second, progress: context.progress) else { return .finished(outcome) }
         return try await act(action, after: step, context: &context)
     }
 
