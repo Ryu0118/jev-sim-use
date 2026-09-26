@@ -119,9 +119,10 @@ struct AgentProgress: Sendable {
         return revisitCount >= stallLimit ? .stalled(steps: steps) : nil
     }
 
-    mutating func recordAction(_ action: AgentAction, disappeared: [String]) {
+    mutating func recordAction(_ action: AgentAction, disappeared: [String], timing: StepTiming? = nil) {
         history.append(HistoryEntry(
-            step: nextStep, action: action.description, screenChanged: nil, effectMayNotShow: action.effectMayNotShow ? true : nil,
+            step: nextStep, action: action.description, screenChanged: nil,
+            effectMayNotShow: action.effectMayNotShow ? true : nil, timing: timing,
         ))
         steps += 1
         lastActionName = action.optionName

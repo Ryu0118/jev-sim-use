@@ -20,7 +20,7 @@ extension SimUseError {
     var isSetupProblem: Bool {
         switch self {
         case .notInstalled, .unreadableVersion, .outdated, .noDevice, .multipleDevices, .hardwareKeyboardRequired: true
-        case .commandFailed, .malformedOutput, .targetNotRevealed: false
+        case .commandFailed, .malformedOutput, .readTimedOut, .targetNotRevealed: false
         }
     }
 }

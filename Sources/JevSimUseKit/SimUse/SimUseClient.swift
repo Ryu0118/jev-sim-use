@@ -5,21 +5,20 @@
 package struct SimUseClient: DeviceDriving {
     /// The device every command targets.
     package let device: SimUseDevice
-    private let invoker: SimUseInvoker
+    let invoker: SimUseInvoker
+    let watchdog: SimUseDaemonWatchdog
 
-    init(device: SimUseDevice, invoker: SimUseInvoker) {
+    init(device: SimUseDevice, invoker: SimUseInvoker, watchdog: SimUseDaemonWatchdog = SimUseDaemonWatchdog()) {
         self.device = device
         self.invoker = invoker
+        self.watchdog = watchdog
     }
 
-    /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. The raw tree is kept because only it carries
-    /// iOS accessibility hints; it tripled the payload (5 to 16 KB) without slowing the read.
+    /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. On iOS a read that outlasts the watchdog's
+    /// deadline replaces the hung daemon (see `SimUseDaemonWatchdog`); Android read times were never measured, so
+    /// Android reads have no deadline.
     package func observe() async throws -> ScreenObservation {
-        let envelope = try await invoker.invoke([SimUseContract.Command.ui] + deviceArguments, as: UISnapshot.self)
-        guard let snapshot = envelope.data else {
-            throw SimUseError.malformedOutput(arguments: [SimUseContract.Command.ui], detail: "the envelope has no data")
-        }
-        return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
+        device.platform == SimUseContract.Platform.ios ? try await watchedRead() : try await read()
     }
 
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped on
@@ -66,6 +65,18 @@ package struct SimUseClient: DeviceDriving {
     package func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
         guard let frame = entry.frame else { return try await tapInPlace(alias: entry.aliases.alias, on: snapshot) }
         return try await tap(point(on: entry, frame: frame, platform: snapshot.platform), on: snapshot.platform)
+    }
+
+    /// One `ui` read, with `environment` added. The raw tree is kept because only it carries iOS accessibility hints;
+    /// it tripled the payload (5 to 16 KB) without slowing the read.
+    func read(environment: [String: String] = [:]) async throws -> ScreenObservation {
+        let envelope = try await invoker.invoke(
+            [SimUseContract.Command.ui] + deviceArguments, environment: environment, as: UISnapshot.self,
+        )
+        guard let snapshot = envelope.data else {
+            throw SimUseError.malformedOutput(arguments: [SimUseContract.Command.ui], detail: "the envelope has no data")
+        }
+        return ScreenObservation(snapshot: snapshot, disappearedApps: envelope.process?.disappearedBundleIDs ?? [])
     }
 
     private func tapInPlace(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
@@ -130,7 +141,7 @@ package struct SimUseClient: DeviceDriving {
         return envelope.data?.visible ?? false
     }
 
-    private var deviceArguments: [String] {
+    var deviceArguments: [String] {
         [SimUseContract.deviceFlag, device.deviceId]
     }
 

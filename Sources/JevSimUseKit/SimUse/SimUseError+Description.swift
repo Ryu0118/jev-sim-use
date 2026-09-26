@@ -35,6 +35,13 @@ extension SimUseError: CustomStringConvertible {
             """
         case let .malformedOutput(arguments, detail):
             "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
+        case let .readTimedOut(deviceID, seconds):
+            """
+            `sim-use ui` gave no answer within \(seconds.formatted()) s, after its daemon had already been replaced \
+            \(SimUseDaemonWatchdog.recoveryLimit) times in this run. The sim-use daemon for this device has stopped answering: \
+            check `jev-sim-use exec daemon status`, stop it with `jev-sim-use exec daemon stop --device \(deviceID)`, then \
+            `jev-sim-use session resume`.
+            """
         case let .targetNotRevealed(scroll, _):
             "The element to tap was not found after \(scroll.summary.lowercased()) to reveal it."
         }

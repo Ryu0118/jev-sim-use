@@ -4,10 +4,11 @@ extension AgentLoop {
     func observe(pending: ScreenObservation?, context: inout AgentLoopContext) async throws -> AgentLoopState {
         try Task.checkCancellation()
         // Falling back discards a pending reading: it was one of the readings that kept disagreeing.
+        let (actedOn, settled) = (context.actedOn, !context.overlapped)
         let observation = if let pending, context.overlapped {
             pending
         } else {
-            try await observeAfterAction(on: context.actedOn, settled: !context.overlapped)
+            try await context.timing.add(to: \.read) { try await observeAfterAction(on: actedOn, settled: settled) }
         }
         if let outcome = context.progress.record(observation, stallLimit: configuration.stallLimit) {
             return .finished(outcome)
@@ -23,8 +24,9 @@ extension AgentLoop {
         // planning, which cost a whole read on every step.
         let confirmation = overlapped ? Task { try await driver.observe() } : nil
         let plan: StepPlan
+        let progress = context.progress
         do {
-            plan = try await self.plan(for: observation.snapshot, progress: context.progress)
+            plan = try await context.timing.add(to: \.jev) { try await self.plan(for: observation.snapshot, progress: progress) }
         } catch {
             confirmation?.cancel()
             throw error
@@ -36,12 +38,15 @@ extension AgentLoop {
            let target = stableBarTarget(of: plan, on: observation.snapshot, before: context.actedOn, progress: context.progress),
            case let .act(action) = decide(on: plan, progress: context.progress)
         {
-            let disappeared = try await driver.tapWhereShown(target, on: observation.snapshot)
-            let late = try await confirmation?.value
-            context.acted(action, disappeared: disappeared + (late?.disappearedApps ?? []), on: observation.snapshot)
+            let disappeared = try await context.timing.add(to: \.act) {
+                try await driver.tapWhereShown(target, on: observation.snapshot)
+            }
+            let late = try await context.timing.add(to: \.read) { try await confirmation?.value }
+            acted(action, disappeared: disappeared + (late?.disappearedApps ?? []), on: observation.snapshot, context: &context)
             return .observing(pending: nil)
         }
-        let fresh = try await confirmation?.value ?? observation
+        // Only the wait after Jev answered counts: the rest of the confirming read ran under Jev's request.
+        let fresh = try await context.timing.add(to: \.read) { try await confirmation?.value } ?? observation
         // The confirming reading follows the planned one with no action between: what changed is changing on its own.
         if confirmation != nil {
             context.progress.noteReading(fresh.snapshot)
@@ -61,7 +66,10 @@ extension AgentLoop {
         var decision = decide(on: step.plan, progress: context.progress)
         if shouldRetryWithHints(decision, on: step.observation.snapshot) {
             report(.retryingWithHints(step: context.progress.nextStep))
-            let hinted = try await plan(for: step.observation.snapshot, progress: context.progress, withHints: true)
+            let progress = context.progress
+            let hinted = try await context.timing.add(to: \.jev) {
+                try await plan(for: step.observation.snapshot, progress: progress, withHints: true)
+            }
             decision = decide(on: hinted, progress: context.progress)
         }
         return switch decision {
@@ -80,7 +88,7 @@ extension AgentLoop {
         // scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the screen moved on
         // (jev-ultrafast checks freshness the same way), a bounded number of times per step.
         if context.staleReplans < Self.staleReplanLimit, outcome.isHandOver,
-           let again = try await reading(changedFrom: step.fresh.snapshot)
+           let again = try await context.timing.add(to: \.read, { try await reading(changedFrom: step.fresh.snapshot) })
         {
             context.staleReplans += 1
             return .observing(pending: again)
@@ -93,7 +101,9 @@ extension AgentLoop {
         let target = if step.overlapped {
             confirmed(action, planned: step.observation.snapshot, fresh: step.fresh.snapshot, progress: context.progress)
         } else {
-            try await isStillCurrent(step.observation.snapshot, progress: context.progress) ? action : nil
+            try await context.timing.add(to: \.read) { [progress = context.progress] in
+                try await isStillCurrent(step.observation.snapshot, progress: progress)
+            } ? action : nil
         }
         guard let target else {
             context.disagreements += step.overlapped ? 1 : 0
@@ -105,8 +115,14 @@ extension AgentLoop {
         {
             return .finished(outcome)
         }
-        let (performed, disappeared) = try await perform(target, on: step.fresh.snapshot)
-        context.acted(performed, disappeared: disappeared, on: step.fresh.snapshot)
+        let (performed, disappeared) = try await context.timing.add(to: \.act) { try await perform(target, on: step.fresh.snapshot) }
+        acted(performed, disappeared: disappeared, on: step.fresh.snapshot, context: &context)
         return .observing(pending: nil)
+    }
+
+    /// Records the action that ended a step and reports where the step's time went.
+    private func acted(_ action: AgentAction, disappeared: [String], on snapshot: UISnapshot, context: inout AgentLoopContext) {
+        let (step, timing) = context.acted(action, disappeared: disappeared, on: snapshot)
+        report(.timed(step: step, timing: timing))
     }
 }
