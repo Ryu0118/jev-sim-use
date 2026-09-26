@@ -50,7 +50,8 @@ Where each kind runs:
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
-    the only place the CLI reads `ProcessInfo`. CLI tests use `RecordingOutput` and a `FakeSimUse` script on `PATH`.
+    the only place the CLI reads `ProcessInfo`. CLI tests cover argument parsing; `scripts/e2e.sh` runs the commands
+    end to end.
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
     usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
