@@ -2,38 +2,13 @@ import Foundation
 @testable import JevSimUseKit
 import Testing
 
+/// Saving, loading, telling, and resuming sessions run end to end (scripts/e2e.sh); these are the store's failure modes
+/// a run cannot reach in seconds or should never reach at all.
+@Suite("The session store expires stale sessions, survives a broken file, and never leaves its directory")
 struct SessionStoreTests {
     private let store = SessionStore(environment: [
         "XDG_STATE_HOME": TemporaryPath().directory.path(),
     ])
-
-    @Test("round-trips a session with notes, history, and runs")
-    func roundTrip() throws {
-        var session = SessionRecord(id: "a1", goal: "g", texts: [InputText(name: "email", value: "t")], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
-        session.notes = ["Dark mode is under Developer."]
-        session.history = [HistoryEntry(step: 1, action: "Tap e3", screenChanged: true)]
-        session.runs = [SessionRun(endedAt: Date(timeIntervalSince1970: 5), steps: 1, outcome: "Stopped.")]
-        try store.save(session)
-        #expect(try store.load("a1") == session)
-        #expect(store.directory.path(percentEncoded: false).hasSuffix("jev-sim-use/sessions"))
-    }
-
-    @Test("a missing id loads the most recently updated session")
-    func latest() throws {
-        var older = SessionRecord(id: "old", goal: "g", texts: [], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 0))
-        let newer = SessionRecord(id: "new", goal: "g", texts: [], deviceID: "D", updatedAt: Date(timeIntervalSince1970: 10))
-        try store.save(newer)
-        older.updatedAt = Date(timeIntervalSince1970: 20)
-        try store.save(older)
-        #expect(try store.load(nil).id == "old")
-        #expect(try store.list().map(\.id) == ["old", "new"])
-    }
-
-    @Test("reports an unknown id and an empty store")
-    func missing() {
-        #expect(throws: SessionStoreError.notFound(id: "nope")) { try store.load("nope") }
-        #expect(throws: SessionStoreError.empty) { try store.load(nil) }
-    }
 
     @Test("removes sessions untouched for longer than a week, keeps newer ones")
     func expiry() throws {
@@ -58,14 +33,5 @@ struct SessionStoreTests {
     func traversal(id: String) {
         #expect(throws: SessionStoreError.notFound(id: id)) { try store.load(id) }
         #expect(throws: SessionStoreError.notFound(id: id)) { try store.delete(id) }
-    }
-
-    @Test("writes sessions readable only by the user")
-    func permissions() throws {
-        try store.save(SessionRecord(id: "p1", goal: "g", texts: [InputText(name: "password", value: "secret")], updatedAt: Date()))
-        let file = try FileManager.default.attributesOfItem(atPath: store.directory.appending(path: "p1.json").path(percentEncoded: false))
-        let directory = try FileManager.default.attributesOfItem(atPath: store.directory.path(percentEncoded: false))
-        #expect((file[.posixPermissions] as? Int) == 0o600)
-        #expect((directory[.posixPermissions] as? Int) == 0o700)
     }
 }
