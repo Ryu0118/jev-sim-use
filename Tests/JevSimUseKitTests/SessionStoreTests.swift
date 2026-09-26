@@ -29,6 +29,22 @@ struct SessionStoreTests {
         #expect(!FileManager.default.fileExists(atPath: broken.path(percentEncoded: false)))
     }
 
+    @Test("reads a session saved before steps were timed, and shows it without timings")
+    func sessionWithoutTimings() throws {
+        let old = #"""
+        {"id":"old1","goal":"g","texts":[],"deviceID":"d","notes":["n"],"updatedAt":"2026-09-01T00:00:00Z",
+        "history":[{"step":1,"action":"tap Next","screen_changed":true}],
+        "runs":[{"endedAt":"2026-09-01T00:00:00Z","steps":1,"outcome":"Stalled"}]}
+        """#
+        try FileManager.default.createDirectory(at: store.directory, withIntermediateDirectories: true)
+        FileManager.default.createFile(
+            atPath: store.directory.appending(path: "old1.json").path(percentEncoded: false), contents: Data(old.utf8),
+        )
+        let session = try store.load("old1")
+        #expect(session.history.map(\.timing) == [nil])
+        #expect(session.runs.map(\.timing) == [nil])
+    }
+
     @Test("refuses ids that could leave the sessions directory", arguments: ["../../etc/x", "a/b", "..", ""])
     func traversal(id: String) {
         #expect(throws: SessionStoreError.notFound(id: id)) { try store.load(id) }
