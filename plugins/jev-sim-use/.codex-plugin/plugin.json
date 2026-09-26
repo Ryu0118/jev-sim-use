@@ -1,6 +1,6 @@
 {
   "name": "jev-sim-use",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Teaches agents to reach simulator screens with one jev-sim-use command instead of driving sim-use tap by tap.",
   "author": {
     "name": "Ryu0118"
