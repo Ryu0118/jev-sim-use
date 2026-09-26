@@ -67,7 +67,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
-- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
+- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act, as a state machine: `AgentLoopState` (observing, planning,
+  deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
+  step (progress, the acted-on screen, re-plan and disagreement counters). `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
