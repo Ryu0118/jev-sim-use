@@ -23,11 +23,13 @@ extension JevStepPlanner {
             operationSupport = [Operation.tap, .enterText].reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
         }
         var (action, targetFactors) = try compose(operation, response: response, menu: menu)
+        // A missing answer or one of another type must not stop the step: `nil` keeps a tap irreversible.
+        let irreversible = try? response.answers.noul(named: irreversibleQuestion)
         // Opening a memo split Jev between tap 0.46, long_press 0.28, and swipe_left 0.22 on a row it picked at 0.65:
         // sure what to act on, unsure how. Every element gesture shares that target, and a reversible one is undone by
         // going back, so the element is what the gate checks (jev-use gates only the target); the most probable
-        // gesture still runs. A destructive tap keeps its own probability.
-        if operation.actsOnElement, action.risk != .irreversible {
+        // gesture still runs. A tap Jev did not clearly judge undoable keeps its own probability.
+        if operation.actsOnElement, StepPlan.risk(of: action, irreversible: irreversible) != .irreversible {
             let onElement = menu.operations.filter(\.actsOnElement).reduce(0) { $0 + (probabilities[$1.optionName] ?? 0) }
             operationSupport = max(operationSupport, onElement)
             if let pooled = try goalTermSupport(of: action, in: response, menu: menu, goal: goal),
@@ -47,6 +49,7 @@ extension JevStepPlanner {
             confidence: probabilities[operation.optionName] ?? 0,
             support: factors.map(\.value).min() ?? 0,
             finishes: response.answers.noul(named: finishesQuestion),
+            irreversible: irreversible,
             alternatives: Array(alternatives),
             factors: factors,
             costUSD: response.usage.estimatedCostUSD,

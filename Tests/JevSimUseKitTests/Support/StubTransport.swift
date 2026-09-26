@@ -22,17 +22,20 @@ final class StubTransport: JevTransport {
     }
 
     /// A response choosing `operation`, plus other choice answers in `extra` (question, choice, confidence).
+    /// `irreversible` answers that noul; `nil` leaves it out, as a server that does not answer it would.
     static func answer(
         operation: String,
         confidence: Double = 0.9,
         finishes: Double = 0.1,
+        irreversible: Double? = nil,
         extra: [(question: String, choice: String, confidence: Double)] = [],
     ) -> String {
         let choices = ([("operation", operation, confidence)] + extra).map { question, choice, confidence in
             #""\#(question)":{"type":"choice","choice":"\#(choice)","probabilities":{"\#(choice)":\#(confidence)},"confidence":\#(confidence)}"#
         }
+        let irreversibleAnswer = irreversible.map { #""irreversible":{"type":"noul","noul":\#($0)},"# } ?? ""
         return #"{"model":"jev-latest","answers":{"finishes":{"type":"noul","noul":\#(finishes)},"#
-            + choices.joined(separator: ",") + #"},"usage":{"input_tokens":1000,"output_tokens":10}}"#
+            + irreversibleAnswer + choices.joined(separator: ",") + #"},"usage":{"input_tokens":1000,"output_tokens":10}}"#
     }
 
     /// A planner that sends every request to this transport.

@@ -9,8 +9,6 @@ enum ActionCatalog {
     static let iOSBackButtonIdentifier = "BackButton"
     /// Screen and section titles: tapping one does nothing, and offering them pulled Jev toward the current title.
     static let titleRoles: Set = ["Heading"]
-    /// Words on controls that destroy data; tapping one needs the bar for actions going back cannot undo.
-    static let destructiveWords = ["削除", "消去", "Delete", "Remove", "Erase"]
     /// Roles that accept typed text.
     static let editableRoles = ["TextField", "SearchField", "TextArea", "EditText"]
 
@@ -64,10 +62,6 @@ enum ActionCatalog {
             operations: operations, elements: actsOnElements ? Array(elements) : [],
             fields: operations.contains(.enterText) ? Array(fields) : [], texts: texts,
         )
-    }
-
-    static func isDestructive(_ label: String) -> Bool {
-        destructiveWords.contains { label.localizedCaseInsensitiveContains($0) }
     }
 
     static func isEditable(_ entry: UIEntry) -> Bool {
