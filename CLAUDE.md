@@ -68,7 +68,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
-  operation to run, which target it would use, and whether it would finish the goal.
+  operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
   alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
@@ -108,8 +108,9 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
 - One request per step, the jev-ultrafast shape: choice `operation` (tap, each element gesture, `enter_text`, each
   screen-level action, `done`, `blocked`), speculative target choices (`element_target` shared by tap and gestures;
-  `field_target` and `text_to_enter` when typing is possible), and noul `finishes` ("if the chosen operation works,
-  is the whole goal satisfied?"). Code reads only the target that matches the chosen operation. Asking operation and
+  `field_target` and `text_to_enter` when typing is possible), noul `finishes` ("if the chosen operation works,
+  is the whole goal satisfied?"), and, when a tap is offered, noul `irreversible` ("would tapping the element this step
+  would choose lose data or state that going back cannot restore?"). Code reads only the target that matches the chosen operation. Asking operation and
   target apart keeps a scroll or DONE from competing with every element for probability. `PlanningRules` builds the
   rules from the step's offered operations: sentences about scrolling, going back, waiting, toggling, or typing are left
   out when Jev cannot choose that operation (the full menu gives the full text). Target questions cannot see the
@@ -134,8 +135,12 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
-  irreversible (tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as jev-use gates
-  destructive picks; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
+  irreversible at least 0.6, as jev-use gates destructive picks. A tap is irreversible unless Jev's `irreversible`
+  answer is below 0.35 (`ActionPolicy.reversibleTapMaximum`, the undecided band's lower edge), so a label in any
+  language is judged by what the control does and a missing or unsure answer fails safe (`StepPlan.risk`); a stub server
+  that omits the key gets the irreversible bar for every tap. Opening and navigating taps scored 0.07-0.23 and deleting or
+  discarding 0.72-0.83; closing, cancelling an edit, archiving, or unfavouriting scored 0.39-0.65, so those face 0.6
+  and keep their own probability; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
   to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). The shared rules also say a word that could
   name a place in the app or on the device (home, settings, search, back) means the app's own first. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of

@@ -1,28 +1,54 @@
+import Jev
 @testable import JevSimUseKit
 import Testing
 
-/// The bar each kind of action must clear. The loop's hand-over at the destructive bar runs end to end in
-/// scripts/e2e.sh; this is the table itself, one row per risk.
-@Suite("Each kind of action needs the support its risk warrants")
 struct ActionPolicyTests {
-    @Test("sets the required support by risk", arguments: [
-        ("a tap uses the user's minimum", AgentAction.tap(alias: 1, role: "Button", label: "OK"), 0.9, 0.9),
-        ("typing is gated like a tap: text is cleared as easily and submits nothing",
-         .enterText(field: 1, label: "Name", text: InputText(name: "text", value: "hi")), 0.55, 0.55),
-        ("going back is harmless, so a high minimum is capped", .device(.goBack), 0.9, ActionPolicy.harmlessMaximum),
-        ("a low minimum still applies to harmless actions", .device(.goBack), 0.3, 0.3),
-        ("rotating only changes the view", .gesture(.rotateClockwise, alias: 1, role: "Image", label: "Map"), 0.6,
-         ActionPolicy.harmlessMaximum),
-        ("a short sideways swipe only reveals a row's actions", .gesture(.swipeLeft, alias: 1, role: "Cell", label: "x"), 0.3, 0.3),
-        ("a tap on a destructive control is irreversible", .tap(alias: 1, role: "Button", label: "削除"), 0.3,
-         ActionPolicy.irreversibleMinimum),
-        ("English destructive words count, inside longer labels too", .tap(alias: 1, role: "Button", label: "Delete List"), 0.3,
-         ActionPolicy.irreversibleMinimum),
-        ("pressing Home leaves the app, which sim-use cannot open again", .device(.press(.home)), 0.3,
-         ActionPolicy.leavesAppMinimum),
-        ("locking the device leaves the app too", .device(.press(.lock)), 0.3, ActionPolicy.leavesAppMinimum),
-    ] as [(String, AgentAction, Double, Double)])
-    func requiredSupport(_: String, action: AgentAction, minimum: Double, expected: Double) {
-        #expect(ActionPolicy(minimumSupport: minimum).requiredSupport(for: action) == expected)
+    @Test("uses the user's threshold for taps and caps it for harmless scrolls and back", arguments: [0.3, 0.6, 0.9])
+    func reversible(minimum: Double) {
+        let policy = ActionPolicy(minimumSupport: minimum)
+        #expect(policy.requiredSupport(for: AgentAction.device(.goBack).risk) == min(minimum, ActionPolicy.harmlessMaximum))
+        #expect(policy.requiredSupport(for: .reversible) == minimum)
+    }
+
+    @Test("gates typing like a tap, since text in a field can be cleared and submits nothing", arguments: [0.3, 0.55])
+    func typing(minimum: Double) {
+        let policy = ActionPolicy(minimumSupport: minimum)
+        let enter = AgentAction.enterText(field: 1, label: "Name", text: InputText(name: "text", value: "hi"))
+        #expect(policy.requiredSupport(for: enter.risk) == minimum)
+    }
+
+    @Test("demands more before leaving the app or locking the device", arguments: [
+        AgentAction.device(.press(.home)), .device(.press(.lock)),
+    ])
+    func leavingTheApp(action: AgentAction) {
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: action.risk) == ActionPolicy.leavesAppMinimum)
+    }
+
+    @Test(
+        "keeps a tap irreversible unless Jev clearly judged it undoable, since an unsure or missing answer is no proof",
+        arguments: [(nil, ActionRisk.irreversible), (0.9, .irreversible), (0.5, .irreversible), (0.35, .irreversible), (0.1, .reversible)],
+    )
+    func tapRisk(irreversible: Double?, risk: ActionRisk) {
+        let plan = StepPlan(
+            action: .tap(alias: 1, role: "Button", label: "x"), confidence: 0.9,
+            irreversible: irreversible.map { Probability(clamping: $0) }, costUSD: 0,
+        )
+        #expect(plan.risk == risk)
+    }
+
+    @Test("reads the irreversibility answer only for a tap; a short sideways swipe stays reversible")
+    func gestureIgnoresTapAnswer() {
+        let swipe = StepPlan(
+            action: .gesture(.swipeLeft, alias: 1, role: "Cell", label: "x"), confidence: 0.9,
+            irreversible: Probability(clamping: 0.9), costUSD: 0,
+        )
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: swipe.risk) == 0.3)
+        #expect(ActionPolicy(minimumSupport: 0.3).requiredSupport(for: .irreversible) == ActionPolicy.irreversibleMinimum)
+    }
+
+    @Test("treats zooming and rotating like scrolling: they only change the view")
+    func viewOnlyGestures() {
+        let rotate = AgentAction.gesture(.rotateClockwise, alias: 1, role: "Image", label: "Map")
+        #expect(ActionPolicy(minimumSupport: 0.6).requiredSupport(for: rotate.risk) == ActionPolicy.harmlessMaximum)
     }
 }

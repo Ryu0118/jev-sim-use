@@ -189,9 +189,10 @@ extension SkillBundle {
 
             Taps; long-press, swipes, pinch, and rotate on an element; scrolls in four directions; going back where the screen
             has a back button (iOS) or always (Android); a right-edge swipe; Return, to submit a search or form; and hardware
-            buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. Tapping a Delete
-            control needs at least 0.6 confidence and a hardware button (leaving the app) 0.85, because going back cannot undo
-            them. Anything else sim-use can do is left to you through `exec`.
+            buttons; and waiting a moment while the app loads or a saved item has not reached its list yet. A tap Jev judges
+            irreversible (deleting or discarding something, in any language) needs at least 0.6 confidence and a hardware button
+            (leaving the app) 0.85, because going back cannot undo them. Anything else sim-use can do is left to you through
+            `exec`.
 
             ## Options
 

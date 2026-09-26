@@ -36,6 +36,9 @@ package struct StepPlan: Sendable, Hashable {
     package var support: Double
     /// Probability that this action, if it works, completes the goal.
     package var finishes: Probability
+    /// Jev's probability that tapping the chosen element cannot be undone; `nil` when it was not asked or not
+    /// answered. Only a tap reads it.
+    package var irreversible: Probability?
     /// A runner-up operation and its probability.
     package struct Alternative: Sendable, Hashable {
         /// The operation's option name.
@@ -66,6 +69,7 @@ package struct StepPlan: Sendable, Hashable {
         confidence: Double,
         support: Double? = nil,
         finishes: Probability = Probability(clamping: 0),
+        irreversible: Probability? = nil,
         alternatives: [Alternative] = [],
         factors: [Factor] = [],
         costUSD: Double,
@@ -75,9 +79,24 @@ package struct StepPlan: Sendable, Hashable {
         self.confidence = confidence
         self.support = support ?? confidence
         self.finishes = finishes
+        self.irreversible = irreversible
         self.alternatives = alternatives
         self.factors = factors
         self.costUSD = costUSD
         self.model = model
+    }
+}
+
+extension StepPlan {
+    /// How costly the action is when wrong. A tap is irreversible unless Jev clearly judged it undoable.
+    package var risk: ActionRisk {
+        Self.risk(of: action, irreversible: irreversible)
+    }
+
+    static func risk(of action: AgentAction, irreversible: Probability?) -> ActionRisk {
+        guard case .tap = action, let irreversible, irreversible.value < ActionPolicy.reversibleTapMaximum else {
+            return action.risk
+        }
+        return .reversible
     }
 }

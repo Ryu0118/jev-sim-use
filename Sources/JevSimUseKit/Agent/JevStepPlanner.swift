@@ -9,6 +9,7 @@ package struct JevStepPlanner: StepPlanning {
     static let fieldQuestion = "field_target"
     static let textQuestion = "text_to_enter"
     static let finishesQuestion = "finishes"
+    static let irreversibleQuestion = "irreversible"
 
     /// Opens every question. The rules, built by `PlanningRules` from the step's offered operations, travel once as the
     /// state's `rules`: target questions cannot see the operation answer, and swift-jev's request has no shared
@@ -69,6 +70,20 @@ package struct JevStepPlanner: StepPlanning {
                 "Suppose the operation acts on one element: a tap, press and hold, swipe, zoom, or rotation. "
                     + "Which element in `screen.elements` should it act on? Options are element ids.",
                 menu.elements,
+            )
+        }
+        // Whether a tap can be undone is judged from what the control does, so a label in any language is read the
+        // same way; like `finishes`, it is about the step's own choice and costs no extra round trip.
+        if menu.operations.contains(.tap) {
+            questions[irreversibleQuestion] = try Question(
+                instructions: """
+                \(rulesPointer) Suppose this step taps the element in `screen.elements` it would choose, whether or not \
+                `goal` wants what that tap does. Would the tap lose data or state that going back cannot restore?
+                """,
+                kind: .noul(
+                    whenTrue: "The tap destroys, discards, or irrevocably commits something going back does not undo.",
+                    whenFalse: "Going back or another tap undoes it, or it only opens, selects, toggles, or navigates.",
+                ),
             )
         }
         if menu.operations.contains(.enterText) {

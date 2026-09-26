@@ -34,7 +34,9 @@ extension AgentAction {
     /// How costly the action is when wrong.
     var risk: ActionRisk {
         switch self {
-        case let .tap(_, _, label): ActionCatalog.isDestructive(label) ? .irreversible : .reversible
+        // Whether a tap destroys data depends on what the control does, in whatever language its label is; code
+        // cannot tell, so a tap is irreversible until Jev's answer lowers it (`StepPlan.risk`).
+        case .tap: .irreversible
         case let .gesture(gesture, _, _, _): gesture.risk
         case let .device(action): action.risk
         // Text in a field is cleared as easily as it is typed, and it submits nothing; jev-browser-use and jev-use

@@ -52,7 +52,7 @@ extension AgentLoop {
         {
             return .stop(.noActionFits(step: step))
         }
-        if plan.support < configuration.actionPolicy.requiredSupport(for: plan.action) {
+        if plan.support < configuration.actionPolicy.requiredSupport(for: plan.risk) {
             return .stop(.escalated(step: step, action: plan.action, confidence: plan.support))
         }
         if plan.support < ActionPolicy.confidentSupport {

@@ -3,25 +3,39 @@ import Jev
 @testable import JevSimUseKit
 import Synchronization
 
-/// Drops the first `droppedConnections` requests as a lost connection, then answers every request with `body`.
+/// Returns one canned HTTP response and keeps the request for inspection.
 final class StubTransport: JevTransport {
-    private let remaining: Mutex<Int>
-    private let body: String
+    private let response: JevHTTPResponse
+    private let requests = Mutex<[JevHTTPRequest]>([])
 
-    init(body: String, droppedConnections: Int = 0) {
-        remaining = Mutex(droppedConnections)
-        self.body = body
+    var lastRequestBody: String? {
+        requests.withLock { $0.last.flatMap { String(bytes: $0.body, encoding: .utf8) } }
     }
 
-    func send(_: JevHTTPRequest) async throws -> JevHTTPResponse {
-        let drop = remaining.withLock { remaining in
-            defer { remaining -= 1 }
-            return remaining > 0
+    init(status: Int = 200, body: String) {
+        response = JevHTTPResponse(status: status, headers: [:], body: Data(body.utf8))
+    }
+
+    func send(_ request: JevHTTPRequest) async throws -> JevHTTPResponse {
+        requests.withLock { $0.append(request) }
+        return response
+    }
+
+    /// A response choosing `operation`, plus other choice answers in `extra` (question, choice, confidence).
+    /// `irreversible` answers that noul; `nil` leaves it out, as a server that does not answer it would.
+    static func answer(
+        operation: String,
+        confidence: Double = 0.9,
+        finishes: Double = 0.1,
+        irreversible: Double? = nil,
+        extra: [(question: String, choice: String, confidence: Double)] = [],
+    ) -> String {
+        let choices = ([("operation", operation, confidence)] + extra).map { question, choice, confidence in
+            #""\#(question)":{"type":"choice","choice":"\#(choice)","probabilities":{"\#(choice)":\#(confidence)},"confidence":\#(confidence)}"#
         }
-        if drop {
-            throw URLError(.networkConnectionLost)
-        }
-        return JevHTTPResponse(status: 200, headers: [:], body: Data(body.utf8))
+        let irreversibleAnswer = irreversible.map { #""irreversible":{"type":"noul","noul":\#($0)},"# } ?? ""
+        return #"{"model":"jev-latest","answers":{"finishes":{"type":"noul","noul":\#(finishes)},"#
+            + irreversibleAnswer + choices.joined(separator: ",") + #"},"usage":{"input_tokens":1000,"output_tokens":10}}"#
     }
 
     /// A planner that sends every request to this transport.
