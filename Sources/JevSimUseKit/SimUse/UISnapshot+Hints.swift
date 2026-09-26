@@ -5,10 +5,13 @@ struct RawAccessibilityNode: Decodable {
     let frame: ElementFrame?
     /// iOS accessibility traits, such as `Button` or `StatusBarElement`.
     let traits: [String]?
+    /// Names of the actions an element offers besides activation, such as deleting a row.
+    let customActions: [String]?
     let children: [Self]?
 
     private enum CodingKeys: String, CodingKey {
         case label = "AXLabel"
+        case customActions = "custom_actions"
         case help, frame, traits, children
     }
 

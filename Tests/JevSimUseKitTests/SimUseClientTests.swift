@@ -18,12 +18,32 @@ struct SimUseClientTests {
 
     private static let row = ElementFrame(x: 30, y: 150, width: 340, height: 100)
 
+    /// A switch sim-use gave another role, known only by its iOS toggle trait.
+    private static var toggleTrait: UIEntry {
+        var entry = entry("Button", ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        entry.traits = ["Button", "Toggle"]
+        return entry
+    }
+
+    /// A list row or card that shows a value and offers custom actions (delete, favourite): an item, not a control.
+    private static func actionable(_ frame: ElementFrame) -> UIEntry {
+        var entry = entry("Button", value: "Open", frame)
+        entry.customActions = ["Delete"]
+        return entry
+    }
+
     @Test("aims each element action where the element answers it", arguments: [
         ("a switch: its trailing edge, held briefly", entry("CheckBox", ElementFrame(x: 36, y: 184, width: 330, height: 28)),
          ElementGesture?.none, ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
+        ("a control with the toggle trait, whatever its role: as a switch", toggleTrait, nil,
+         ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
         ("a full-width value row: its trailing control, held briefly",
          entry("Button", value: "Azure", ElementFrame(x: 32, y: 406, width: 338, height: 28)), nil,
          ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"]),
+        ("a wide list row with a value and custom actions: its alias", actionable(ElementFrame(x: 51, y: 408, width: 335, height: 20)),
+         nil, ["tap", "@9"]),
+        ("a tall card with a value and custom actions: its alias", actionable(ElementFrame(x: 16, y: 300, width: 370, height: 174)),
+         nil, ["tap", "@9"]),
         ("a narrow button with a value: its alias", entry("Button", value: "2026/09/25", ElementFrame(x: 253, y: 692, width: 110, height: 33)),
          nil, ["tap", "@9"]),
         ("a long press: the alias", entry("Button", row), .longPress, ["long-press", "@9"]),

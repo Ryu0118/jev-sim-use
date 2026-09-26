@@ -169,9 +169,11 @@ Never write unit tests after the code.
   irreversible at least 0.6, as jev-use gates destructive picks. A tap is irreversible unless Jev's `irreversible`
   answer is below 0.35 (`ActionPolicy.reversibleTapMaximum`, the undecided band's lower edge), so a label in any
   language is judged by what the control does and a missing or unsure answer fails safe (`StepPlan.risk`); a stub server
-  that omits the key gets the irreversible bar for every tap. Opening and navigating taps scored 0.07-0.23 and deleting or
-  discarding 0.72-0.83; closing, cancelling an edit, archiving, or unfavouriting scored 0.39-0.65, so those face 0.6
-  and keep their own probability; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
+  that omits the key gets the irreversible bar for every tap. The answer's "no" side names what an app can undo (closing,
+  cancelling a clean edit, archiving, clearing a favorite or other mark): opening, navigating, closing, cancelling a
+  clean edit, archiving, and (un)favouriting scored 0.07-0.31 over three passes, deleting and discard confirmations
+  0.76-0.85, and cancelling an edit with typed changes 0.53-0.62 (irreversible: an app may discard them unasked);
+  before the wording named them, the undoable ones scored up to 0.57; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
   to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). The shared rules also say a word that could
   name a place in the app or on the device (home, settings, search, back) means the app's own first. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
@@ -223,7 +225,9 @@ Never write unit tests after the code.
   screen looked new. Elements seen changing between the planned and the confirming reading, with no action between
   (`AgentProgress.noteReading`), tick on their own and are left out of those states; a counter whose value goes up
   with each tap keeps going, and a switch flipped back and forth hands over once its states repeat. `history` tells Jev each
-  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
+  step's effect ("screen changed" / "no visible effect"; for an action that can work without changing the screen,
+  `pull_to_refresh`, an unchanged screen reads "done; ... not a failure" (`PlanningState.Step.unseenEffect`): as "no
+  visible effect", a refresh that had run looked failed, and Jev pulled again and handed over in 2 of 6 runs). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
   former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
   name; it was removed because it matched strings in one script only, and measured runs (an item below the fold, in

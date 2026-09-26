@@ -3,14 +3,28 @@ import Foundation
 import Testing
 
 struct OcclusionTests {
-    @Test("content scrolled under the tab bar does not cover a tab, which the bar draws on top of it")
-    func tabOverContent() {
-        let tab = UIEntry(
+    @Test(
+        "content scrolled under the tab bar does not cover a tab, which the bar draws on top of it, in any band",
+        arguments: [ElementRegion(kind: "Group", label: "Tab Bar"), ElementRegion(kind: "Bottom", label: nil)],
+    )
+    func tabOverContent(region: ElementRegion) {
+        var tab = UIEntry(
             aliases: ElementAliases(alias: 51), role: "RadioButton", label: "History", states: [], value: nil, uniqueId: nil,
-            region: ElementRegion(kind: "Group", label: "Tab Bar"), frame: ElementFrame(x: 25, y: 795, width: 98, height: 54),
+            region: region, frame: ElementFrame(x: 25, y: 795, width: 98, height: 54), depth: 2,
         )
+        tab.traits = ["Button", "TabButton"]
         let time = entry(13, "10:35 - 10:37", ElementFrame(x: 50, y: 806, width: 105, height: 20), role: "StaticText")
-        #expect(Fixtures.snapshot(entries: [time, tab]).cover(of: tab) == nil)
+        // A grid image sits shallower than the tabs and would float over one.
+        let image = entry(14, "Photo", ElementFrame(x: 0, y: 760, width: 133, height: 133), role: "Image", band: "Bottom", depth: 1)
+        #expect(Fixtures.snapshot(entries: [time, image, tab]).cover(of: tab) == nil)
+    }
+
+    @Test("a segment of a segmented control, which lacks the tab trait, is still covered by what floats over it")
+    func segmentIsNotTab() {
+        var segment = entry(8, "Events", ElementFrame(x: 72, y: 780, width: 129, height: 48), role: "RadioButton", band: "Bottom")
+        segment.traits = ["Button", "Selected"]
+        let overlay = entry(9, "Menu", ElementFrame(x: 40, y: 760, width: 200, height: 60), band: "Bottom", depth: 1)
+        #expect(Fixtures.snapshot(entries: [segment, overlay]).cover(of: segment)?.label == "Menu")
     }
 
     private var row: UIEntry {

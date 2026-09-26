@@ -10,16 +10,17 @@ extension UISnapshot {
     ///
     /// Bars (a tab bar, toolbar, navigation bar, or another named group) are drawn over the content that scrolls
     /// beneath them, so content never covers an element inside one: a history row scrolled under the tab bar had its
-    /// frame over a tab's centre, and the tab was wrongly treated as covered.
+    /// frame over a tab's centre, and the tab was wrongly treated as covered. A tab is known by its trait rather than
+    /// its band: sim-use puts an unlabelled tab bar in the bottom band, which the rows scrolled under it share.
     ///
     /// On iOS a top bar's background reaches from the screen's top edge down to its items, but only the items are in
     /// the tree. A row scrolled up above a shallower top-band item (the inline title or back button) lies under that
     /// background, so it is covered even where it overlaps no item: a row with its centre in the status bar strip was
     /// tapped there, and nothing happened. Android reports clipped frames, so its rows never reach under a bar.
     func cover(of entry: UIEntry) -> UIEntry? {
-        guard let target = entry.frame else { return nil }
+        guard let target = entry.frame, !entry.isTabButton else { return nil }
         let center = target.center
-        let bar = entry.region.flatMap { Self.barKinds.contains($0.kind) ? $0 : nil }
+        let bar = entry.region.flatMap { Self.barKinds.contains($0.kind) || $0.kind == Self.labelledGroupKind ? $0 : nil }
         return (entries ?? []).first { other in
             guard let frame = other.frame, frame != target, !frame.contains(target) else { return false }
             if let bar, other.region != bar {
@@ -60,8 +61,12 @@ extension UISnapshot {
 }
 
 extension UISnapshot {
-    /// sim-use's region kinds for containers drawn over the scrolling content.
-    static let barKinds: Set = ["NavBar", "TabBar", "Toolbar", "Group"]
+    /// sim-use's region kinds for bars drawn over the scrolling content. iOS reports none of them: its tab bar items
+    /// carry the `TabButton` trait instead.
+    static let barKinds: Set = ["NavBar", "TabBar", "Toolbar"]
+
+    /// sim-use's region kind for a labelled container, such as a toolbar, but also a group of ordinary content.
+    static let labelledGroupKind = "Group"
 
     /// sim-use's region kinds at the top of the screen, where a navigation bar's items sit.
     static let topBarKinds: Set = ["Top", "NavBar"]
