@@ -46,6 +46,10 @@ enum ActionCatalog {
         }
         if !texts.isEmpty, !fields.isEmpty {
             operations.append(.enterText)
+            // Only a field that holds text has something to replace; elsewhere the option would only split typing.
+            if entries.filter(isEditable).contains(where: { !($0.value ?? "").isEmpty }) {
+                operations.append(.replaceText)
+            }
         }
         // iOS goes back by the left-edge swipe, which only a navigation stack answers; that stack shows a BackButton.
         // Without one, Jev chose go_back at 0.79-0.88 on a sheet and on a tab's root, and the swipe did nothing or
@@ -55,12 +59,16 @@ enum ActionCatalog {
         operations += SimUseDeviceAction.available(on: snapshot.platform)
             .filter { !excluded.contains($0.optionName) && ($0 != .goBack || canGoBack) }
             .map(Operation.device)
+        // The two-finger selection was verified on iOS only.
+        if snapshot.platform == SimUseContract.Platform.ios, let rows = snapshot.rowRun {
+            operations.append(.device(.selectRows(from: rows.first, to: rows.last)))
+        }
         operations += [.wait, .done, .blocked]
         operations = operations.filter(allowed.allows)
         let actsOnElements = operations.contains(where: \.actsOnElement)
         return ActionMenu(
             operations: operations, elements: actsOnElements ? Array(elements) : [],
-            fields: operations.contains(.enterText) ? Array(fields) : [], texts: texts,
+            fields: operations.contains(where: \.typesText) ? Array(fields) : [], texts: texts,
         )
     }
 

@@ -228,7 +228,7 @@ private final class SlowSecondReadDriver: DeviceDriving {
         []
     }
 
-    func paste(_: String) async throws -> [String] {
+    func paste(_: String, replacing _: Bool) async throws -> [String] {
         []
     }
 }
@@ -268,7 +268,7 @@ private final class CrashingReadDriver: DeviceDriving {
         []
     }
 
-    func paste(_: String) async throws -> [String] {
+    func paste(_: String, replacing _: Bool) async throws -> [String] {
         []
     }
 }

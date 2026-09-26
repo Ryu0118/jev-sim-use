@@ -17,8 +17,15 @@ struct SimUseDeviceActionTests {
         ("a hardware button by its sim-use name", .press(.sideButton), "ios", ["button", "side-button"]),
         ("Return on iOS is the HID key", .pressReturn, "ios", ["ios", "key", "40"]),
         ("Return on Android, which has no key verb, is a typed newline", .pressReturn, "android", ["type", "\n"]),
+        ("Escape on iOS is HID key 41, which `ios key --help` does not list", .pressEscape, "ios", ["ios", "key", "41"]),
+        ("Siri is the plain press it is described as", .press(.siri), "ios", ["button", "siri"]),
     ] as [(String, SimUseDeviceAction, String, [String])])
     func arguments(_: String, action: SimUseDeviceAction, platform: String, expected: [String]) {
         #expect(action.arguments(platform: platform) == expected)
+    }
+
+    @Test("gates Escape like an irreversible tap, since it closed a form holding typed text without asking")
+    func escapeRisk() {
+        #expect(SimUseDeviceAction.pressEscape.risk == .irreversible)
     }
 }

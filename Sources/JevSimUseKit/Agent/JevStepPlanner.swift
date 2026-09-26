@@ -86,7 +86,7 @@ package struct JevStepPlanner: StepPlanning {
                 ),
             )
         }
-        if menu.operations.contains(.enterText) {
+        if menu.operations.contains(where: \.typesText) {
             questions[fieldQuestion] = try targetQuestion(
                 "Suppose the operation types text. Which field in `screen.elements` should receive it? Do not "
                     + "choose a field that already holds the needed text. Options are element ids.",

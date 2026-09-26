@@ -7,8 +7,10 @@ package enum Operation: Sendable, Hashable {
     case tap
     /// A gesture on an element other than a tap.
     case gesture(ElementGesture)
-    /// Type one of the named texts into a field.
+    /// Type one of the named texts into a field, after what it already holds.
     case enterText
+    /// Replace what a field holds with one of the named texts.
+    case replaceText
     /// A screen-level action.
     case device(SimUseDeviceAction)
     /// Let the app catch up without touching the screen.
@@ -24,6 +26,7 @@ package enum Operation: Sendable, Hashable {
         case .tap: "tap"
         case let .gesture(gesture): gesture.rawValue
         case .enterText: "enter_text"
+        case .replaceText: "replace_text"
         case let .device(action): action.optionName
         case .wait: "wait"
         case .done: "done"
@@ -50,6 +53,11 @@ package enum Operation: Sendable, Hashable {
         }
     }
 
+    /// Whether the operation types one of the named texts into `field_target`.
+    var typesText: Bool {
+        self == .enterText || self == .replaceText
+    }
+
     /// The criteria Jev reads for this option.
     var optionDescription: String {
         switch self {
@@ -58,7 +66,13 @@ package enum Operation: Sendable, Hashable {
                 + "which enter_text does, and not for hunting an item `goal` names when no visible element is named in "
                 + "`goal`, which scrolling does"
         case let .gesture(gesture): gesture.optionDescription
-        case .enterText: "Type one of the named texts into a text field; it taps the field first, so the field needs no separate tap"
+        case .enterText:
+            "Type one of the named texts into an empty text field, or add it after the text the field already holds; "
+                + "it taps the field first, so the field needs no separate tap"
+        // Typing appends at the caret: changing a filled title this way kept the old words in front of the new ones.
+        case .replaceText:
+            "Type one of the named texts in place of all the text a field already holds, to change, rename, or "
+                + "correct what it says; it taps the field first"
         case let .device(action): action.optionDescription
         // Wording follows jev-ultrafast's WAIT rule. A saved memo reached its list about five seconds after the
         // editor closed; without a way to wait, Jev tapped the clock on the blank screen in between.

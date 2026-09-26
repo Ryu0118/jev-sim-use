@@ -11,10 +11,11 @@ package extension SimUseContract {
             Gesture.centerX, Gesture.centerY, Gesture.duration, "device-native portrait", deviceFlag,
         ]),
         (Command.button, HardwareButton.allCases.map(\.rawValue) + [Button.back, deviceFlag]),
-        (Command.paste, [deviceFlag, jsonFlag]),
+        (Command.paste, [Paste.replace, deviceFlag, jsonFlag]),
         (Command.keyboardState, [deviceFlag, jsonFlag]),
         (Command.longPress, [deviceFlag, jsonFlag]),
         (Command.swipe, [Swipe.from, Swipe.to, deviceFlag, jsonFlag]),
+        (MultiTouch.command, MultiTouch.flags + [MultiTouch.duration, deviceFlag, jsonFlag]),
         (Command.iosKey.joined(separator: " "), ["\(Key.returnKeycode) - Return", deviceFlag, jsonFlag]),
     ]
 }

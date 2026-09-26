@@ -73,17 +73,22 @@ struct SimUseClientTests {
             "paste": .json(#"{"ok":true,"data":{}}"#),
             "keyboard-state": .json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#),
         ])
-        _ = try await Self.client(runner).paste("-5")
+        _ = try await Self.client(runner).paste("-5", replacing: false)
         #expect(runner.recordedCalls.last == ["paste"] + Self.device + ["--json", "--", "-5"])
+        _ = try await Self.client(runner).paste("new", replacing: true)
+        #expect(runner.recordedCalls.last == ["paste", "--replace"] + Self.device + ["--json", "--", "new"])
     }
 
-    @Test("stops before pasting while only the software keyboard is up, since iOS would drop the paste silently")
-    func softKeyboard() async throws {
+    @Test(
+        "stops before pasting while only the software keyboard is up, since iOS would drop the paste silently",
+        arguments: [false, true],
+    )
+    func softKeyboard(replacing: Bool) async throws {
         let runner = FakeCommandRunner([
             "paste": .json(#"{"ok":true,"data":{}}"#),
             "keyboard-state": .json(#"{"ok":true,"data":{"visible":true,"platform":"ios"}}"#),
         ])
-        await #expect(throws: SimUseError.hardwareKeyboardRequired) { try await Self.client(runner).paste("text") }
+        await #expect(throws: SimUseError.hardwareKeyboardRequired) { try await Self.client(runner).paste("text", replacing: replacing) }
         #expect(runner.recordedCalls == [["keyboard-state"] + Self.device + ["--json"]])
     }
 }

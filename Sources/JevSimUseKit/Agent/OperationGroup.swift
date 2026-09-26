@@ -12,7 +12,9 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
     case swipe
     case pinch
     case rotate
+    case twoFinger = "two-finger"
     case buttons
+    case keys
     case wait
 
     /// Every group: the default when `--actions` is not given.
@@ -21,16 +23,18 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
     /// Whether `operation` belongs to this group.
     func contains(_ operation: Operation) -> Bool {
         switch (self, operation) {
-        case (.tap, .tap), (.type, .enterText): true
+        case (.tap, .tap), (.type, .enterText), (.type, .replaceText): true
         case let (.longPress, .gesture(gesture)): gesture == .longPress
         case let (.swipe, .gesture(gesture)): [.swipeLeft, .swipeRight, .swipeUp, .swipeDown].contains(gesture)
         case let (.pinch, .gesture(gesture)): [.pinchIn, .pinchOut].contains(gesture)
         case let (.rotate, .gesture(gesture)): [.rotateClockwise, .rotateCounterclockwise].contains(gesture)
+        case (.twoFinger, .device(.selectRows)): true
         case let (.scroll, .device(action)):
             [.revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft].contains(action)
         case let (.back, .device(action)): action == .goBack
         case let (.swipe, .device(action)): action == .swipeFromRightEdge
         case let (.return, .device(action)): action == .pressReturn
+        case (.keys, .device(.pressEscape)): true
         case (.buttons, .device(.press)), (.wait, .wait): true
         default: false
         }
