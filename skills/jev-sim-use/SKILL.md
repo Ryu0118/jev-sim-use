@@ -197,7 +197,25 @@ them. Anything else sim-use can do, such as Siri or other keys, is left to you t
 | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
-| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `two-finger`, `buttons`, `keys`, `wait`). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
+| `--actions` | all | Comma-separated operation groups Jev may choose from (below). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
+
+What each `--actions` group lets Jev do; leaving a group out removes all of it:
+
+| Group | Operations |
+|---|---|
+| `tap` | Tap an element |
+| `type` | Type a `-t` text into a field, after its text or in place of it |
+| `scroll` | Scroll in four directions; pull a list down to refresh it (iOS) |
+| `back` | Go back |
+| `return` | Press Return to submit a search or form |
+| `long-press` | Long-press an element |
+| `swipe` | Swipe an element in four directions; swipe from the right edge |
+| `pinch` | Pinch in or out on an element |
+| `rotate` | Rotate on an element |
+| `two-finger` | Drag two fingers down a list to select its rows (iOS) |
+| `buttons` | Press a hardware button (leaves the app) |
+| `keys` | Press Escape to close a menu, sheet, or dialog (iOS) |
+| `wait` | Wait a moment while the app loads or a saved item has not appeared yet |
 
 ## Privacy
 
