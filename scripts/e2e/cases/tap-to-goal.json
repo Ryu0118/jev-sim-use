@@ -3,22 +3,89 @@
   "screens": {
     "inbox": {
       "elements": [
-        {"role": "Heading", "label": "Inbox", "region": "Top", "frame": [16, 100, 370, 40]},
-        {"label": "Open details", "frame": [16, 200, 370, 44]},
-        {"label": "Compose", "frame": [16, 252, 370, 44]}
+        {
+          "role": "Heading",
+          "label": "Inbox",
+          "region": "Top",
+          "frame": [
+            16,
+            100,
+            370,
+            40
+          ]
+        },
+        {
+          "label": "Open details",
+          "frame": [
+            16,
+            200,
+            370,
+            44
+          ]
+        },
+        {
+          "label": "Compose",
+          "frame": [
+            16,
+            252,
+            370,
+            44
+          ]
+        }
       ],
-      "on": {"tap:Open details": "details"}
+      "on": {
+        "tap:Open details": "details"
+      }
     },
     "details": {
       "elements": [
-        {"label": "Inbox", "id": "BackButton", "region": "Top", "depth": 1, "frame": [16, 62, 44, 44]},
-        {"role": "Heading", "label": "Details", "region": "Top", "frame": [16, 100, 370, 40]},
-        {"role": "StaticText", "label": "Sample message body", "frame": [16, 200, 370, 44]}
+        {
+          "label": "Inbox",
+          "id": "BackButton",
+          "region": "Top",
+          "depth": 1,
+          "frame": [
+            16,
+            62,
+            44,
+            44
+          ]
+        },
+        {
+          "role": "Heading",
+          "label": "Details",
+          "region": "Top",
+          "frame": [
+            16,
+            100,
+            370,
+            40
+          ]
+        },
+        {
+          "role": "StaticText",
+          "label": "Sample message body",
+          "frame": [
+            16,
+            200,
+            370,
+            44
+          ]
+        }
       ]
     }
   },
   "answers": [
-    {"op": "tap", "p": 0.95, "target": "Open details", "finishes": 0.9},
-    {"op": "done", "p": 0.9}
+    {
+      "op": "tap",
+      "p": 0.95,
+      "target": "Open details",
+      "finishes": 0.9,
+      "tp": 0.8
+    },
+    {
+      "op": "done",
+      "p": 0.9
+    }
   ]
 }

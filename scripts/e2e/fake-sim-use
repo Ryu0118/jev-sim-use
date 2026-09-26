@@ -136,7 +136,8 @@ def main():
         outline = "\n".join([f"App: {screen.get('app', 'Sample')}  402x874"]
                             + [f"@{entry['aliases']['at']} {entry['role']} \"{entry['label']}\" {entry.get('value', '')}"
                                for entry in entries[1:]])
-        reply({"platform": "ios", "appLabel": screen.get("app", "Sample"), "outline": outline, "screen": SCREEN,
+        # orientation and lists stand for the keys sim-use adds between releases, which decoding must ignore.
+        reply({"platform": "ios", "orientation": "portrait", "lists": [], "appLabel": screen.get("app", "Sample"), "outline": outline, "screen": SCREEN,
                "entries": entries, "raw": raw_of(screen, entries)})
     if command == "keyboard-state":
         reply({"visible": screen.get("keyboard", False), "platform": "ios"})

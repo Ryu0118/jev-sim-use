@@ -91,6 +91,15 @@
       "op": "tap",
       "p": 0.9,
       "target": "Next"
+    },
+    {
+      "op": "tap",
+      "p": 0.9,
+      "target": "Next"
+    },
+    {
+      "op": "done",
+      "p": 0.9
     }
   ]
 }

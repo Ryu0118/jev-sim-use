@@ -184,20 +184,31 @@ common_run_checks() {
 case_tap_to_goal() {
     use_scenario tap-to-goal || return 1
     jsu config config set base-url "$URL"
-    jsu run run "Open the details screen"
+    jsu insecure config set base-url http://example.com
+    jsu list config list
+    jsu model config get model
+    jsu run "Open the details screen"
     check "config set exits 0" status_is config 0
+    check "config refuses a non-loopback http base URL" status_is insecure 64
+    check "config list prints the stored value" stdout_is list "base-url=$URL"
+    check "config get exits 1 for an unset key" status_is model 1
     check "exit status 0" status_is run 0
     check "stdout is the outcome alone" stdout_is run "Goal reached after 1 action(s)."
     check "stderr names the device and the endpoint from the config file" \
         stderr_has run "Device: E2E Phone (E2E-DEVICE); Jev: $URL/v1/systemone"
-    check "stderr logs the tap step" stderr_has run '[1] Tap the Button labelled "Open details" (support 0.95'
+    check "support is the weaker of operation and target" \
+        stderr_has run '[1] Tap the Button labelled "Open details" (support 0.80 [operation 0.95, element 0.80]'
     check "stderr logs the DONE step" stderr_has run "[2] Done (support 0.90"
     check "the only action is a tap by alias, outside the daemon" actions_are "tap @3  [no daemon]"
     check "Jev is asked again after the action it expected to finish the goal" request_count_is 2
     check "the request carries the goal" request_has 1 '.state.goal == "Open the details screen"'
+    # shellcheck disable=SC2016 # the backticks are part of the text the questions open with.
+    check "the rules travel once in the state and every question points at them" request_has 1 \
+        '(.state.rules | length > 0) and ([.questions[].instructions | startswith("Follow `rules`")] | all)'
     check "the heading is not offered as a target" request_has 1 '.questions.element_target.criteria | has("e2") | not'
     check "the second request records the tap's effect" request_has 2 '.state.history[0].result == "screen changed"'
-    check "the second request names the back button's screen" request_has 2 '.state.screen.back == "Inbox"'
+    check "the second request names the screen and where back leads" \
+        request_has 2 '.state.screen.title == "Details" and .state.screen.back == "Inbox"'
     check "reaching the goal deletes the session" sessions_are 0
     common_run_checks
 }
@@ -236,6 +247,8 @@ case_type_and_return() {
     check "stdout is the outcome alone" stdout_is run "Goal reached after 2 action(s)."
     check "the field is tapped, the value pasted after --, and Return pressed" actions_are \
         "tap @3  [no daemon]" "paste -- needle-4711" "ios key 40"
+    check "a typing step logs each answer its support depends on" \
+        stderr_has run "[1] Enter the query into \"Search\" (support 0.90 [operation 0.90, field 0.95, text 1.00]"
     check "the keyboard is checked before pasting" called_with keyboard-state --device "$DEVICE" --json
     check "--actions narrows the offered operations" request_has 1 \
         '[.questions.operation.criteria | keys[]] | sort == ["blocked", "done", "enter_text", "press_return", "tap"]'
@@ -267,6 +280,9 @@ case_hand_over_and_resume() {
     check "an unsure step acts on nothing" actions_are ""
     check "the session is kept" sessions_are 1
     [[ -n $id ]] || return 0
+    check "the session file is readable only by the user" \
+        test "$(stat -f %Lp "$case_dir/state/jev-sim-use/sessions/$id.json")" = 600
+    check "the sessions directory is private" test "$(stat -f %Lp "$case_dir/state/jev-sim-use/sessions")" = 700
 
     jsu list session list
     check "session list shows the session and its goal" stdout_has list "$id"
@@ -280,6 +296,9 @@ case_hand_over_and_resume() {
     jsu forget session forget "$id" -n 2
     check "tell and forget leave the one right note" stdout_has forget "  1. The profile is the Profile row on the home screen."
     check "the wrong note is gone" negate stdout_has forget "A wrong fact."
+    jsu nonote session forget "$id" -n 5
+    check "forgetting a note the session does not have exits 2" status_is nonote 2
+    check "and says how many there are" stderr_has nonote "No note 5: the session has 1."
 
     jsu resume session resume "$id" --base-url "$URL"
     check "the resumed run exits 0" status_is resume 0
@@ -300,6 +319,9 @@ case_unsure_done() {
     check "exit status 1: a DONE below the bar is not success" status_is run 1
     check "stdout says probably reached" stdout_has run \
         "Stopped after 0 action(s): the goal is probably reached (p=0.50), but not surely; check the screen."
+    jsu blocked run "Show the summary" --base-url "$URL"
+    check "BLOCKED hands over at once" stdout_has blocked \
+        "Stopped at step 1: no offered action advances the goal on this screen."
     check "nothing is done" actions_are ""
     common_run_checks
 }
@@ -351,6 +373,10 @@ case_step_limit() {
     check "exit status 1" status_is run 1
     check "stdout gives the limit" stdout_has run "Stopped: the step limit of 1 was reached."
     check "one action runs" actions_are "tap @3  [no daemon]"
+    jsu resume session resume --max-steps 1 --base-url "$URL"
+    check "a resumed run gets a fresh step budget" stdout_is resume "Goal reached after 1 action(s)."
+    check "and numbers its steps after the earlier run's" stderr_has resume '[2] Tap the Button labelled "Next"'
+    check "Jev sees the earlier run's history" request_has 3 '.state.history[0].step == 1'
     common_run_checks
 }
 
@@ -372,6 +398,8 @@ case_menu_backdrop() {
     check "exit status 0" status_is run 0
     check "the menu's dismiss backdrop is neither a target nor in the state" \
         negate grep -qF "Dismiss menu" "$case_dir/jev/requests/2.json"
+    check "no opener or menu rule before a menu shows" request_has 1 \
+        '(.state.screen | has("opened_by") | not) and (.state.rules | contains("opened_by") | not)'
     check "the state names the control that opened the menu" request_has 2 \
         '(.state.screen.opened_by == "Kind, option A") and (.state.rules | contains("opened_by"))'
     check "the opener, then the item, are tapped" actions_are "tap @3  [no daemon]" "tap @5  [no daemon]"
@@ -412,9 +440,34 @@ printed() {
     diff <(cat "$1" && echo) "$case_dir/$2.stdout.txt"
 }
 
+# Whether `--help` (wrapped to the terminal width) contains `$1` once its lines are joined.
+help_mentions() {
+    tr '\n' ' ' <"$case_dir/help.stdout.txt" | tr -s ' ' | grep -qF -- "$1"
+}
+
 case_skill() {
-    local file
-    mkdir -p "$case_dir"
+    local file skills="$case_dir/home/.agents/skills/jev-sim-use"
+    mkdir -p "$case_dir/home"
+    jsu help --help
+    check "root help points AI agents at the skill" help_mentions "\`jev-sim-use skill print\` prints it; \`jev-sim-use skill install --client claude|agents\`"
+    jsu install skill install --client agents
+    check "install reports where it wrote the skill" stdout_is install "Installed the skill at $skills"
+    check "install writes SKILL.md" diff "$ROOT/skills/jev-sim-use/SKILL.md" "$skills/SKILL.md"
+    check "install writes the references" diff -r "$ROOT/skills/jev-sim-use/references" "$skills/references"
+    jsu again skill install --client agents
+    check "installing over a skill without --force fails" negate status_is again 0
+    check "and says to pass --force" stderr_has again "Pass --force to overwrite it."
+    echo old >"$skills/references/retired.md"
+    jsu force skill install --client agents --force
+    check "a forced install succeeds" status_is force 0
+    check "and removes files an older skill left" test ! -e "$skills/references/retired.md"
+    jsu claude skill install --client claude
+    check "the claude client installs under ~/.claude/skills" test -f "$case_dir/home/.claude/skills/jev-sim-use/SKILL.md"
+    jsu uninstall skill uninstall --client agents
+    check "uninstall reports the removed directory" stdout_is uninstall "Removed the skill from $skills"
+    check "and removes it" test ! -e "$skills"
+    jsu absent skill uninstall --client agents
+    check "uninstalling again says nothing is installed" stdout_is absent "No skill installed at $skills"
     jsu main skill print
     check "skill print writes SKILL.md" printed "$ROOT/skills/jev-sim-use/SKILL.md" main
     for file in "$ROOT"/skills/jev-sim-use/references/*.md; do
@@ -439,6 +492,13 @@ case_setup_errors() {
     check "no sim-use action and no request ran" actions_are ""
     check "no request was sent" request_count_is 0
 
+    jsu nosession session resume --base-url "$URL"
+    check "resuming with no sessions exits 2" status_is nosession 2
+    check "and says how to start one" stderr_has nosession "No sessions yet."
+    jsu unknown run "Open the details screen" -d E2E-MISSING --base-url "$URL"
+    check "an unknown --device fails" negate status_is unknown 0
+    check "it reads the full device list before giving up" called_with devices --json
+
     jq '.version = "v0.9.0"' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
     jsu outdated run "Open the details screen" --base-url "$URL"
     check "an outdated sim-use exits 2" status_is outdated 2
@@ -448,10 +508,15 @@ case_setup_errors() {
     jsu several run "Open the details screen" --base-url "$URL"
     check "two devices without --device exit 2" status_is several 2
     check "and list both" stderr_has several "E2E-OTHER"
+    jq '.devices = []' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    jsu none run "Open the details screen" --base-url "$URL"
+    check "no device exits 2" status_is none 2
 
-    jq '.version = "v0.15.0"' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
+    jq '.version = "v0.15.0" | .devices = [{"deviceId": "E2E-DEVICE", "kind": "simulator", "name": "One",
+        "platform": "ios", "state": "Booted"}, {"deviceId": "00008110-E2E", "kind": "physical", "name": "Phone",
+        "platform": "ios", "state": "Booted"}]' "$E2E/cases/tap-to-goal.json" >"$case_dir/scenario.json"
     jsu newer run "Open the details screen" --base-url "$URL"
-    check "a newer sim-use still runs" status_is newer 0
+    check "a newer sim-use still runs, on the only simulator beside a physical iPhone" status_is newer 0
     check "with a warning" stderr_has newer "Warning: sim-use 0.15.0 is newer than the tested 0.14.0."
 }
 
