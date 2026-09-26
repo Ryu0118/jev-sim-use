@@ -22,6 +22,9 @@ package struct UIEntry: Decodable, Sendable, Hashable {
     /// The accessibility hint: what activating the element does. sim-use fills it on Android; on iOS `UISnapshot`
     /// copies it from the raw tree's `help`.
     package var hint: String?
+    /// iOS accessibility traits (such as `TabButton`), which name what an element is in any language. `UISnapshot`
+    /// copies them from the raw tree; `nil` when no raw node matched, as on Android.
+    package var traits: [String]?
 
     /// Roles sim-use gives on / off controls. They report `"1"` / `"0"` as their value.
     static let toggleRoles: Set = ["CheckBox", "Switch", "Toggle"]

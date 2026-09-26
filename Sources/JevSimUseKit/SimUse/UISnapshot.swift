@@ -33,7 +33,10 @@ extension UISnapshot {
             platform: container.decode(String.self, forKey: .platform),
             outline: container.decode(String.self, forKey: .outline),
             appLabel: container.decodeIfPresent(String.self, forKey: .appLabel),
-            entries: entries.map { Self.withHints(Self.withoutStatusBar($0, from: raw), from: raw) },
+            entries: entries.map { entries in
+                let shown = Self.withoutStatusBar(entries, from: raw)
+                return Self.withRawAttributes(Self.withHints(shown, from: raw), from: raw)
+            },
             crashDialog: container.decodeIfPresent(CrashDialog.self, forKey: .crashDialog),
             screen: container.decodeIfPresent(ElementFrame.self, forKey: .screen),
         )
