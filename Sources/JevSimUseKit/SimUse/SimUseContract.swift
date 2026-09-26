@@ -18,6 +18,9 @@ package enum SimUseContract {
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 
+    /// The advisory kind sim-use attaches when it could not confirm the screen's orientation and assumed one.
+    static let orientationFallback = "orientation_calibration_fallback"
+
     /// Values of the `platform` field in sim-use's JSON.
     enum Platform {
         static let ios = "ios"
