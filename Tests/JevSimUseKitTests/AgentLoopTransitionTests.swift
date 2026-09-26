@@ -16,6 +16,46 @@ struct AgentLoopTransitionTests {
         #expect(outcome == .noActionFits(step: 1))
     }
 
+    @Test("asks a hand-over on an unchanged screen once more with the same request, and acts when the new plan clears the bar")
+    func resampleActs() async throws {
+        let planner = SequencePlanner([.blocked(), .tapNext(), .done()])
+        let driver = ScriptedDriver(outlines: ["A", "A", "A", "A", "B", "B"])
+        let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run().outcome
+        #expect(driver.performedActions == ["tap @1"])
+        #expect(planner.requests.prefix(2).map(\.outline) == ["A", "A"])
+        #expect(outcome == .goalReached(steps: 1))
+    }
+
+    @Test("resamples at most once per step, and again after an action", arguments: [false, true])
+    func resampleOncePerStep(actsFirst: Bool) async throws {
+        let plans: [StepPlan] = actsFirst ? [.blocked(), .tapNext(), .blocked()] : [.blocked()]
+        let planner = SequencePlanner(plans)
+        let driver = ScriptedDriver(outlines: actsFirst ? ["A", "A", "A", "B"] : ["A"])
+        let outcome = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run().outcome
+        #expect(planner.requests.map(\.outline) == (actsFirst ? ["A", "A", "B", "B"] : ["A", "A"]))
+        #expect(outcome == .noActionFits(step: actsFirst ? 2 : 1))
+    }
+
+    @Test("never turns a hand-over into a claimed success: a DONE only on the resample keeps the hand-over")
+    func resampleDoneKeepsHandOver() async throws {
+        let planner = SequencePlanner([.blocked(), .done()])
+        let outcome = try await AgentLoop(
+            driver: ScriptedDriver(outlines: ["A"]), planner: planner, configuration: AgentConfiguration(goal: "g"),
+        ).run().outcome
+        #expect(outcome == .noActionFits(step: 1))
+    }
+
+    @Test("resamples with hints when the hint retry ran, so a step makes at most three requests")
+    func resampleAfterHints() async throws {
+        var hinted = Fixtures.entry(1, "Next")
+        hinted.hint = "Opens the next page"
+        let snapshot = Fixtures.snapshot(outline: "A", entries: [hinted, Fixtures.entry(0, "A", role: "Heading")])
+        let planner = SequencePlanner([.blocked()])
+        _ = try await AgentLoop(driver: ScriptedDriver(readings: [snapshot]), planner: planner, configuration: AgentConfiguration(goal: "g"))
+            .run()
+        #expect(planner.requests.map(\.hints) == [false, true, true])
+    }
+
     @Test("cancels the confirming read when planning fails")
     func cancelsConfirmation() async {
         let driver = SlowSecondReadDriver()
@@ -212,5 +252,26 @@ private final class CrashingReadDriver: DeviceDriving {
 
     func paste(_: String, replacing _: Bool) async throws -> [String] {
         []
+    }
+}
+
+/// Returns plans in order (repeating the last) and records each request's screen and whether it carried hints.
+private final class SequencePlanner: StepPlanning {
+    private let plans: [StepPlan]
+    private let seen = Mutex<[(outline: String, hints: Bool)]>([])
+
+    init(_ plans: [StepPlan]) {
+        self.plans = plans
+    }
+
+    var requests: [(outline: String, hints: Bool)] {
+        seen.withLock { $0 }
+    }
+
+    func plan(_ request: PlanRequest) async throws -> StepPlan {
+        seen.withLock { seen in
+            seen.append((request.snapshot.outline, request.includesHints))
+            return plans[min(seen.count - 1, plans.count - 1)]
+        }
     }
 }

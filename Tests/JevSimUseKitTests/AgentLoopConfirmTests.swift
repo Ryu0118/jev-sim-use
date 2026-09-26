@@ -15,7 +15,7 @@ struct AgentLoopConfirmTests {
         ], planner)
         _ = try await loop.run()
         #expect(driver.performedActions.isEmpty)
-        #expect(planner.outlines == ["Form", "List"])
+        #expect(planner.outlines == ["Form", "List", "List"])
     }
 
     @Test("plans again when the target moved between the readings, as in a scroll still coasting")

@@ -64,7 +64,9 @@ extension AgentLoop {
     /// Turns the plan, asked again with hints when it would hand over, into a stop or an action.
     func decideStep(_ step: PlannedStep, context: inout AgentLoopContext) async throws -> AgentLoopState {
         var decision = decide(on: step.plan, progress: context.progress)
+        var hinted = false
         if shouldRetryWithHints(decision, on: step.observation.snapshot) {
+            hinted = true
             report(.retryingWithHints(step: context.progress.nextStep))
             let progress = context.progress
             let hinted = try await context.timing.add(to: \.jev) {
@@ -73,13 +75,14 @@ extension AgentLoop {
             decision = decide(on: hinted, progress: context.progress)
         }
         return switch decision {
-        case let .stop(outcome): try await stop(with: outcome, after: step, context: &context)
+        case let .stop(outcome): try await stop(with: outcome, after: step, hinted: hinted, context: &context)
         case let .act(action): try await act(action, after: step, context: &context)
         }
     }
 
-    /// Ends the run with `outcome`, unless the readings disagree or the screen moves on before a hand-over.
-    func stop(with outcome: AgentOutcome, after step: PlannedStep, context: inout AgentLoopContext) async throws
+    /// Ends the run with `outcome`, unless the readings disagree, the screen moves on before a hand-over, or the
+    /// hand-over's one resample (asked with hints when `hinted`) acts.
+    func stop(with outcome: AgentOutcome, after step: PlannedStep, hinted: Bool, context: inout AgentLoopContext) async throws
         -> AgentLoopState
     {
         // DONE on a screen still changing could claim a goal the settled screen does not show.
@@ -93,9 +96,27 @@ extension AgentLoop {
         if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
             return .finished(crash)
         }
-        guard changed else { return .finished(outcome) }
+        guard changed else { return try await resample(outcome, after: step, hinted: hinted, context: &context) }
         context.staleReplans += 1
         return .observing(pending: again)
+    }
+
+    /// Asks the request behind a hand-over on an unchanged screen once more, and acts on the new plan when it clears
+    /// the bar. Jev answered byte-identical requests with BLOCKED anywhere from 0.09 to 0.53, so one sample decided
+    /// too many hand-overs. At most once per step, and only ever toward an action: a DONE that only the second sample
+    /// gives, or another stop, keeps the first hand-over.
+    func resample(_ outcome: AgentOutcome, after step: PlannedStep, hinted: Bool, context: inout AgentLoopContext) async throws
+        -> AgentLoopState
+    {
+        guard !context.resampled else { return .finished(outcome) }
+        context.resampled = true
+        report(.resampling(step: context.progress.nextStep))
+        let progress = context.progress
+        let plan = try await context.timing.add(to: \.jev) {
+            try await plan(for: step.observation.snapshot, progress: progress, withHints: hinted)
+        }
+        guard case let .act(action) = decide(on: plan, progress: context.progress) else { return .finished(outcome) }
+        return try await act(action, after: step, context: &context)
     }
 
     /// Takes `action` on the confirming reading, or plans again when its target is no longer where it was planned.

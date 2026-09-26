@@ -4,6 +4,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     case planned(step: Int, plan: StepPlan)
     /// The step would hand over, so it is asked again with the screen's accessibility hints.
     case retryingWithHints(step: Int)
+    /// The step would hand over on a screen that did not move on, so the same request is asked once more.
+    case resampling(step: Int)
     /// `action` is about to run although confidence is in the confirm band.
     case lowConfidence(step: Int, confidence: Double)
     /// `step` ended, by acting or by stopping, and `timing` says where its time went.
@@ -20,6 +22,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
                 + plan.alternatives.map { "; also \($0.name) \(Self.format($0.probability))" }.joined() + ")"
         case let .retryingWithHints(step):
             "[\(step)] unsure; asking again with the screen's accessibility hints"
+        case let .resampling(step):
+            "[\(step)] about to hand over on an unchanged screen; asking the same request once more"
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
         case let .timed(step, timing):

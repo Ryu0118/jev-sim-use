@@ -155,12 +155,12 @@ struct AgentLoopSettleTests {
             driver: ScriptedDriver(outlines: outlines), planner: waiting,
             configuration: AgentConfiguration(goal: "g", unchangedWait: .milliseconds(1200)),
         ).run()
-        #expect(waiting.outlines == ["Form", "Home"])
+        #expect(waiting.outlines == ["Form", "Home", "Home"])
         let hasty = TapOncePlanner()
         _ = try await AgentLoop(
             driver: ScriptedDriver(outlines: outlines), planner: hasty, configuration: AgentConfiguration(goal: "g"),
         ).run()
-        #expect(hasty.outlines == ["Form", "Form"])
+        #expect(hasty.outlines == ["Form", "Form", "Form"])
     }
 
     @Test("plans again instead of handing over when the screen moved on while Jev decided to stop")
@@ -181,7 +181,7 @@ struct AgentLoopSettleTests {
             driver: ScriptedDriver(outlines: ["Form", "Form", "Form", "Form", "Home", "Home", "Home"]), planner: planner,
             configuration: AgentConfiguration(goal: "g"),
         ).run()
-        #expect(planner.outlines == ["Form", "Form", "Home"])
+        #expect(planner.outlines == ["Form", "Form", "Home", "Home"])
     }
 
     @Test("plans a hand-over again on the confirming reading when that reading shows a newer screen")
@@ -192,6 +192,6 @@ struct AgentLoopSettleTests {
             planner: planner,
             configuration: AgentConfiguration(goal: "g"),
         ).run()
-        #expect(planner.outlines == ["Old", "New"])
+        #expect(planner.outlines == ["Old", "New", "New"])
     }
 }

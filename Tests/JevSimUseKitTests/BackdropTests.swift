@@ -87,7 +87,7 @@ struct BackdropTests {
             .blocked(),
         ])
         _ = try await AgentLoop(driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g")).run()
-        #expect(planner.openers == [nil, "Kind, option A"])
+        #expect(planner.openers == [nil, "Kind, option A", "Kind, option A"])
     }
 }
 

@@ -8,6 +8,8 @@ struct AgentLoopContext {
     var staleReplans = 0
     /// Confirming readings in a row that disagreed with the planned one.
     var disagreements = 0
+    /// Whether this step's hand-over was already asked once more.
+    var resampled = false
     /// Where the current step's time has gone so far.
     var timing = StepTiming()
     /// Where the finished steps' time went.
@@ -27,6 +29,7 @@ struct AgentLoopContext {
         actedOn = snapshot
         staleReplans = 0
         disagreements = 0
+        resampled = false
         finishedTiming += timing
         timing = StepTiming()
         return step
