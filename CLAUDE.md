@@ -209,6 +209,10 @@ Never write unit tests after the code.
   plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped. Before handing over (low
   support, BLOCKED, probably done), the screen is read once more and the step planned again if it moved on, at
   most `AgentLoop.staleReplanLimit` times per step: a saved item reached its list a second after the screen changed.
+  When that wait sees no change, the same request is asked once more (`AgentLoop.resample`, at most once per step,
+  with hints if the hint retry ran), because Jev answered byte-identical requests with BLOCKED from 0.09 to 0.53. The
+  second answer can only turn the hand-over into an action; a DONE or another stop keeps the first hand-over. On a
+  form's title step it rescued 2 of 10 runs for 0.5 extra requests per run.
 - `-t` texts are `InputText` (`name=value`). `text_to_enter` offers only names; code taps the chosen field and pastes
   the value, which never reaches Jev ("select instead of generate").
   An element whose label or value contains a text's value carries that text's name as `shows_text` (only the name:
