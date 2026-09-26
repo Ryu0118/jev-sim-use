@@ -32,7 +32,15 @@ package struct AgentLoop: Sendable {
             case let .observing(pending): state = try await observe(pending: pending, context: &context)
             case let .planning(observation): state = try await planStep(on: observation, context: &context)
             case let .deciding(step): state = try await decideStep(step, context: &context)
-            case let .finished(outcome): return AgentRunResult(outcome: outcome, history: context.progress.history)
+            case let .finished(outcome):
+                // The last step took no action, so its time is reported here; a run that stops right after an action
+                // has none left.
+                if context.timing.total > 0 {
+                    report(.timed(step: context.progress.nextStep, timing: context.timing))
+                }
+                return AgentRunResult(
+                    outcome: outcome, history: context.progress.history, timing: context.finishedTiming + context.timing,
+                )
             }
         }
     }

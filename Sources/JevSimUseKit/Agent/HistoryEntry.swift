@@ -6,10 +6,13 @@ package struct HistoryEntry: Codable, Sendable, Hashable {
     package let action: String
     /// Whether the next observation differed from the screen the action ran on; `nil` until observed.
     package var screenChanged: Bool?
+    /// Where the step's time went; `nil` in sessions saved before steps were timed. Never sent to Jev.
+    package var timing: StepTiming?
 
     private enum CodingKeys: String, CodingKey {
         case step
         case action
         case screenChanged = "screen_changed"
+        case timing
     }
 }

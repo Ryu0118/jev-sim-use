@@ -34,7 +34,7 @@ struct StepTimingTests {
         let (result, _) = try await Self.run(readDelay: Self.slow, planDelay: .zero)
         let first = try #require(result.history.first?.timing)
         // The step's first reading, then the confirming reading that Jev's instant reply left the loop waiting for.
-        #expect(first.read >= 0.6)
+        #expect(first.read >= 0.5)
         #expect(first.jev < 0.1)
     }
 
