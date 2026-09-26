@@ -8,6 +8,9 @@ package struct ActionPolicy: Sendable, Hashable {
     /// Leaving the app, locking the device, or tapping a destructive control is not undone by going back, so it needs
     /// this much. jev-use gates destructive picks at 0.6 as well; the earlier 0.85 stopped correct steps at 0.65-0.84.
     package static let irreversibleMinimum = 0.6
+    /// A tap counts as reversible only when Jev's probability that it cannot be undone is below this, the lower edge
+    /// of TypeSafe's undecided band: an unsure or missing answer keeps the irreversible bar.
+    package static let reversibleTapMaximum = RoutingPolicy.default.undecidedBand.lowerBound
     /// Leaving the app ends the run's reach: sim-use cannot launch it again. A goal to "go back to the home screen"
     /// (meaning the app's home tab) pressed the Home button at 0.66, then completed a same-named item in another app
     /// and reported success, so this keeps the earlier 0.85.
@@ -32,9 +35,9 @@ package struct ActionPolicy: Sendable, Hashable {
         self.minimumSupport = minimumSupport
     }
 
-    /// The support `action` needs before it runs; higher for actions going back cannot undo.
-    package func requiredSupport(for action: AgentAction) -> Double {
-        switch action.risk {
+    /// The support an action of `risk` needs before it runs; higher for actions going back cannot undo.
+    package func requiredSupport(for risk: ActionRisk) -> Double {
+        switch risk {
         case .harmless: min(minimumSupport, Self.harmlessMaximum)
         case .reversible: minimumSupport
         case .irreversible: max(minimumSupport, Self.irreversibleMinimum)

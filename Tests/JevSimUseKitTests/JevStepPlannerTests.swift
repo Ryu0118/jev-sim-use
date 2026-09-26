@@ -109,7 +109,7 @@ struct JevStepPlannerTests {
     func elementGesturesPool() throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(17, "Buy milk", role: "StaticText")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22,"blocked":0.04},"confidence":0.3},"element_target":{"type":"choice","choice":"e17","probabilities":{"e17":0.65},"confidence":0.6}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"irreversible":{"type":"noul","noul":0.05},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22,"blocked":0.04},"confidence":0.3},"element_target":{"type":"choice","choice":"e17","probabilities":{"e17":0.65},"confidence":0.6}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
         #expect(plan.action == .tap(alias: 17, role: "StaticText", label: "Buy milk"))
         #expect(abs(plan.support - 0.65) < 0.0001)
@@ -123,7 +123,7 @@ struct JevStepPlannerTests {
             Fixtures.entry(8, "Жёлтый 49", role: "GenericElement"),
         ])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.97},"confidence":0.95},"element_target":{"type":"choice","choice":"e7","probabilities":{"e7":0.5,"e9":0.3,"e8":0.2},"confidence":0.3}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.2},"irreversible":{"type":"noul","noul":0.05},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.97},"confidence":0.95},"element_target":{"type":"choice","choice":"e7","probabilities":{"e7":0.5,"e9":0.3,"e8":0.2},"confidence":0.3}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let response = try JSONDecoder().decode(JevResponse.self, from: Data(body.utf8))
         let plan = try JevStepPlanner.interpret(response, menu: menu, goal: "Set the route color to a Красный color")
         #expect(plan.action == .tap(alias: 7, role: "GenericElement", label: "Тёмно-Красный 13"))
@@ -131,13 +131,32 @@ struct JevStepPlannerTests {
         #expect(try abs(JevStepPlanner.interpret(response, menu: menu).support - 0.5) < 0.0001)
     }
 
-    @Test("keeps a destructive tap's own probability, so a split does not carry it over the irreversible bar")
-    func destructiveTapDoesNotPool() throws {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "Delete")])
+    @Test(
+        "keeps a tap Jev judges irreversible on its own probability, and so one whose answer is missing or unsure",
+        arguments: [#""irreversible":{"type":"noul","noul":0.9},"#, "", #""irreversible":{"type":"noul","noul":0.5},"#,
+                    #""irreversible":{"type":"choice","choice":"x","probabilities":{"x":1},"confidence":1},"#],
+    )
+    func irreversibleTapDoesNotPool(irreversibleAnswer: String) throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(19, "x")])
         let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22},"confidence":0.3},"element_target":{"type":"choice","choice":"e19","probabilities":{"e19":0.95},"confidence":0.9}},"usage":{"input_tokens":1,"output_tokens":1}}"#
+        let body = #"{"model":"m","answers":{"finishes":{"type":"noul","noul":0.4},"# + irreversibleAnswer
+            + #""operation":{"type":"choice","choice":"tap","probabilities":{"tap":0.46,"long_press":0.28,"swipe_left":0.22},"confidence":0.3},"element_target":{"type":"choice","choice":"e19","probabilities":{"e19":0.95},"confidence":0.9}},"usage":{"input_tokens":1,"output_tokens":1}}"#
         let plan = try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
         #expect(abs(plan.support - 0.46) < 0.0001)
+        #expect(plan.risk == .irreversible)
+    }
+
+    @Test("asks whether the tap is irreversible in the same request, only when a tap is offered")
+    func irreversibleQuestion() throws {
+        let tapQuestions = try JevStepPlanner.questions(for: request().menu)
+        let data = try JSONEncoder().encode(tapQuestions)
+        let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
+        let instructions = try #require(questions["irreversible"]?["instructions"] as? String)
+        #expect(instructions.hasPrefix(JevStepPlanner.rulesPointer))
+        let noTap = try JSONSerialization.jsonObject(with: JSONEncoder().encode(JevStepPlanner.questions(for: ActionMenu(
+            operations: [.device(.revealContentBelow), .done, .blocked], elements: [], fields: [], texts: [],
+        )))) as? [String: Any]
+        #expect(noTap?["irreversible"] == nil)
     }
 
     @Test("a typing step logs each answer its support depends on, so the lowest one is visible")
@@ -159,7 +178,7 @@ struct JevStepPlannerTests {
         let planRequest = request(texts: [])
         let data = try JSONEncoder().encode(JevStepPlanner.questions(for: planRequest.menu))
         let questions = try #require(JSONSerialization.jsonObject(with: data) as? [String: [String: Any]])
-        #expect(Set(questions.keys) == ["operation", "element_target", "finishes"])
+        #expect(Set(questions.keys) == ["operation", "element_target", "finishes", "irreversible"])
         for (name, question) in questions {
             let instructions = try #require(question["instructions"] as? String)
             #expect(instructions.hasPrefix(JevStepPlanner.rulesPointer), "\(name) does not point at the rules")
