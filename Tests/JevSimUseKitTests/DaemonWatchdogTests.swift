@@ -15,7 +15,8 @@ struct DaemonWatchdogTests {
     private static let hang: Duration = .seconds(30)
 
     private static func client(
-        _ runner: ScriptedCommandRunner, device: String = Fixtures.simulator, reports: Reports = Reports(),
+        _ runner: ScriptedCommandRunner, device: String = Fixtures.simulator, deadline: Duration = deadline,
+        reports: Reports = Reports(),
     ) -> SimUseClient {
         SimUseClient(
             device: Fixtures.device(device),
@@ -160,7 +161,8 @@ struct DaemonWatchdogTests {
     @Test("does not take a cancelled read, such as a confirming read dropped after a planning error, for a hang")
     func cancellationIsNotAHang() async throws {
         let runner = Self.runner(hanging: [0])
-        let client = Self.client(runner)
+        // A deadline far past the cancellation, so a slow test machine cannot let it pass first.
+        let client = Self.client(runner, deadline: .seconds(10))
         let read = Task { try await client.observe() }
         try await Task.sleep(for: .milliseconds(20))
         read.cancel()
