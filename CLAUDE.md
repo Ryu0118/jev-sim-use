@@ -57,16 +57,27 @@ Never write unit tests after the code.
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
+  `SimUseDaemonWatchdog` gives every iOS `ui` read through the daemon a 3 s deadline (healthy reads 0.45-0.67 s, a
+  hung daemon's 10-20 s or never): past it the read is cancelled, `daemon stop --device <udid> --timeout 1` runs, and
+  the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run (`SimUseError.readTimedOut` after), reported
+  as a warning. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
+  report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
+  counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
+  the default `--timeout`). Android reads have no deadline: their normal time was never measured.
 - `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
   `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
   numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.
+  Each action's `HistoryEntry` and each `SessionRun` keep a `StepTiming` (optional, so older files decode); it never
+  reaches Jev's `history`.
   `UserDirectories` is the one resolver for `HOME` / `XDG_*`.
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act, as a state machine: `AgentLoopState` (observing, planning,
   deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
-  step (progress, the acted-on screen, re-plan and disagreement counters). `JevStepPlanner` sends one request asking which
+  step (progress, the acted-on screen, re-plan and disagreement counters, the step's `StepTiming`). Each step ends
+  with a `[n] took …s (read …, jev …, act …)` line: the loop's own waits, which never overlap, so the confirming read
+  under Jev's request counts only for the wait after Jev answered. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
