@@ -11,9 +11,9 @@ and it taps its way there on its own. Each step sends the screen's visible label
 
 ## Features
 
-- ⚡ **Ultrafast navigation** — one small Jev call per step instead of a full LLM agent turn
-- 🔁 **Hands over, then picks up again** — when Jev is stuck it stops with a session your agent can inspect, teach, and resume
-- 🎯 **Jev chooses, never invents** — every action comes from what is on screen, and it only enters text you pass with `-t name=value`
+- ⚡ **Ultrafast navigation** — one small Jev request per step instead of an LLM reasoning turn per tap
+- ⏯️ **Resumable sessions** — a run that stops leaves a session you or your agent can inspect, add notes to, and resume
+- 🔒 **Local text** — values passed with `-t` are typed into fields but never sent to Jev
 
 ## Installation
 
@@ -73,6 +73,19 @@ entered for it without being sent to Jev:
 ```sh
 jev-sim-use "In Maps, search for ramen and show the results" -t query=ramen
 jev-sim-use "Log in to the app" -t email=alice@example.com -t password=hunter2
+```
+
+### Longer routes
+
+For flows across several screens, list the steps with the labels the screens show, and limit Jev to the operations
+the route needs:
+
+```sh
+jev-sim-use --max-steps 30 --actions tap,type,scroll,back,wait "1. On the Home tab, tap New Memo.
+2. Enter the title text into the Title field.
+3. Tap Save.
+4. Tap the memo Buy milk, then tap Favorite.
+The goal is reached when Buy milk shows as a favorite on the Home tab." -t title="Buy milk"
 ```
 
 ### Choosing a device
