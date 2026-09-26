@@ -52,7 +52,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
   alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
-  `jev-sim-use skill install|uninstall|print` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
+  `jev-sim-use skill install|uninstall|print [<path>]` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
 - Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
   `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are
   symlinks to `skills/jev-sim-use`. `release.yml` bumps all manifest versions; `install.sh` is the curl installer.

@@ -25,7 +25,8 @@ extension SkillBundle {
               item.
             - sim-use itself for reading the screen, checking a result, single exact actions, and anything Jev is not offered.
               Run it through `jev-sim-use exec <sim-use args>` to target the same device. Learn its commands from sim-use's own
-              skill and `sim-use --help`; [references/sim-use.md](references/sim-use.md) says how to install that skill.
+              skill and `sim-use --help`; [references/sim-use.md](references/sim-use.md) says how to install that skill
+              (without this skill installed, read it with `jev-sim-use skill print references/sim-use.md`).
 
             ## Before the first run
 
@@ -151,9 +152,10 @@ extension SkillBundle {
             - **step limit reached**: `resume` gives another `--max-steps` actions.
             - **app crashed or disappeared**: relaunch the app before resuming.
 
-            When a stop is not obvious, read [references/troubleshooting.md](references/troubleshooting.md): it maps the usual
-            causes (rows exposed as loose text, look-alike buttons, unlabelled sliders, prompts sim-use cannot see, hidden
-            controls, slow submits) to the note or fix that resolves each, and lists what to rule out before blaming the run.
+            When a stop is not obvious, read [references/troubleshooting.md](references/troubleshooting.md) (or
+            `jev-sim-use skill print references/troubleshooting.md`): it maps the usual causes (rows exposed as loose text,
+            look-alike buttons, unlabelled sliders, prompts sim-use cannot see, hidden controls, slow submits) to the note or fix
+            that resolves each, and lists what to rule out before blaming the run.
 
             ## Supervise the session instead of starting over
 
@@ -209,6 +211,8 @@ extension SkillBundle {
             screens with data that may not leave the machine.
 
             ## More
+
+            Without this skill installed, print a reference with `jev-sim-use skill print references/<file>.md`.
 
             - [references/sim-use.md](references/sim-use.md): install sim-use's own skill; read before using sim-use directly.
             - [references/troubleshooting.md](references/troubleshooting.md): read when a run stops and the reason is not obvious,

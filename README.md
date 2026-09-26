@@ -185,7 +185,7 @@ jev-sim-use session list|show|tell|forget|resume   inspect, teach, and continue 
 jev-sim-use doctor                   check sim-use, the device, and Jev settings
 jev-sim-use exec <sim-use args...>   run a sim-use command as-is
 jev-sim-use config get|set|unset|list  base-url, model
-jev-sim-use skill install|uninstall|print  the agent skill (--client claude|agents or --dest <dir>)
+jev-sim-use skill install|uninstall|print [<path>]  the agent skill (--client claude|agents or --dest <dir>)
 ```
 
 | Option | Default | |
