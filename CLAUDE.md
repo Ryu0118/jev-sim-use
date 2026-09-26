@@ -134,7 +134,11 @@ Never write unit tests after the code.
   verb), Escape on iOS (`ios key 41`, group `keys`: it closes a context menu, whose backdrop is never a target, and
   closed a filled form without asking, so it is irreversible), a two-finger drag from a list's first shown row to its
   last on iOS (`multi-touch`, group `two-finger`, offered where rows line up: it starts UIKit multiple selection; as an
-  element gesture Jev aimed it at the button whose menu also selects rows), and the platform's hardware buttons
+  element gesture Jev aimed it at the button whose menu also selects rows), a pull to refresh on iOS (group `scroll`:
+  one `swipe` down the middle of the screen from 30% to 85% of its height in 0.3 s; the vertical scroll preset, about
+  210 pt over 1.5 s, and an element swipe down a 44 pt row only drew the refresh control's pull progress and let it
+  go, which is why a refresh goal never refreshed; this pull filled the control every time and held a refresh open in
+  most runs), and the platform's hardware buttons
   (`SimUseDeviceAction.available(on:)`) except Siri (one press left `sim-use ui` unreadable until a reboot); and
   pastes. A search field that shows results only on Return cannot finish without it. Not offered, each for a reason
   that holds against sim-use 0.14.0: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), drag and
@@ -142,9 +146,7 @@ Never write unit tests after the code.
   cannot tell whether `type` or `paste` will land; both need hardware keyboard events), keys whose effect `sim-use ui`
   does not show (Tab, arrows, Cmd+A: focus, caret, and selection are not in the tree; Backspace did nothing without
   focus and deleted four characters for "the last character", since Jev cannot count earlier presses), two-finger
-  taps and long-presses (they zoom a map, which the tree does not show), a pull-to-refresh action (no list on the test
-  simulator showed a refresh indicator; the vertical scroll preset moves content about 210 pt and an element swipe 80%
-  of a row, so neither is known to pass a refresh threshold), raw `touch`, and
+  taps and long-presses (they zoom a map, which the tree does not show), raw `touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
   irreversible at least 0.6, as jev-use gates destructive picks. A tap is irreversible unless Jev's `irreversible`
