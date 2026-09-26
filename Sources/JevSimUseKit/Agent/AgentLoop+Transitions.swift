@@ -42,6 +42,10 @@ extension AgentLoop {
             return .observing(pending: nil)
         }
         let fresh = try await confirmation?.value ?? observation
+        // The confirming reading follows the planned one with no action between: what changed is changing on its own.
+        if confirmation != nil {
+            context.progress.noteReading(fresh.snapshot)
+        }
         if overlapped, !fresh.disappearedApps.isEmpty,
            let outcome = context.progress.record(fresh, stallLimit: configuration.stallLimit)
         {

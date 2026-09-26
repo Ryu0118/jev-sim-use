@@ -2,23 +2,23 @@
 import Synchronization
 import Testing
 
-/// A row tapped 26 times never opened while a relative time on the screen ticked, so every screen looked new. The loop
-/// handing over at the fourth tap runs end to end in scripts/e2e.sh; these are the screen sequences the guard must tell
-/// apart.
+/// A row tapped 26 times never opened while a relative time on it ticked, so every screen looked new. The time also
+/// moves between two readings with no tap between, which is how the guard tells it from a tap's effect.
 @Suite("The same action repeated on a screen whose elements stay put is refused, even while a value there ticks")
 struct RepeatGuardTests {
     static let open = AgentAction.tap(alias: 1, role: "Button", label: "Open")
 
     /// A screen with the row to open, its relative time, and `extra` elements.
-    static func screen(_ minutes: Int, _ extra: [String] = []) -> UISnapshot {
-        let row = Fixtures.entry(1, "Open", value: "\(minutes) minutes ago")
+    static func screen(_ seconds: Int, _ extra: [String] = []) -> UISnapshot {
+        let row = Fixtures.entry(1, "Open", value: "\(seconds) seconds ago")
         let others = extra.enumerated().map { Fixtures.entry($0.offset + 2, $0.element, role: "StaticText") }
-        return Fixtures.snapshot(outline: "screen \(minutes) \(extra)", entries: [row] + others)
+        return Fixtures.snapshot(outline: "screen \(seconds) \(extra)", entries: [row] + others)
     }
 
     @Test("refuses the fourth identical action only when it keeps landing on the same elements", arguments: [
         ("the same elements, a value ticking", (0 ... 3).map { screen($0) }, true),
-        ("alternating between two sets of elements", (0 ... 3).map { screen($0, $0.isMultiple(of: 2) ? [] : ["Sort by date"]) }, true),
+        // The first tap opens a new state, so the three repeats that led nowhere new are the second to the fourth.
+        ("alternating between two sets of elements", (0 ... 4).map { screen($0, $0.isMultiple(of: 2) ? [] : ["Sort by date"]) }, true),
         ("a new page each time, like a Next button", (0 ... 3).map { screen($0, ["Page \($0)"]) }, false),
     ] as [(String, [UISnapshot], Bool)])
     func repeats(_: String, screens: [UISnapshot], futile: Bool) {
@@ -28,6 +28,8 @@ struct RepeatGuardTests {
             #expect(!progress.isFutileRepeat(Self.open), "refused before the limit")
             progress.recordAction(Self.open, disappeared: [])
             _ = progress.record(ScreenObservation(snapshot: screen, disappearedApps: []), stallLimit: 9)
+            // The confirming reading, a moment later with no tap between, shows the time moved on.
+            progress.noteReading(Self.screen(1000 + progress.steps, extraOf(screen)))
         }
         #expect(progress.isFutileRepeat(Self.open) == futile)
         #expect(!progress.isFutileRepeat(.tap(alias: 2, role: "Button", label: "Other")), "another action is never refused")
@@ -44,18 +46,29 @@ struct RepeatGuardTests {
         #expect(outcome == .noActionFits(step: AgentProgress.repeatLimit + 1))
         #expect(driver.taps == AgentProgress.repeatLimit)
     }
+
+    /// The labels of `screen`'s elements after the row.
+    private func extraOf(_ screen: UISnapshot) -> [String] {
+        (screen.entries ?? []).dropFirst().map(\.label)
+    }
 }
 
-/// Shows the list with one more minute on its relative time after every tap.
+/// Shows the list with one more second on its relative time on every reading, and counts the taps, which change
+/// nothing.
 private final class TickingListDriver: DeviceDriving {
     private let count = Mutex(0)
+    private let reads = Mutex(0)
 
     var taps: Int {
         count.withLock { $0 }
     }
 
     func observe() async throws -> ScreenObservation {
-        ScreenObservation(snapshot: RepeatGuardTests.screen(taps), disappearedApps: [])
+        let seconds = reads.withLock { reads in
+            reads += 1
+            return reads
+        }
+        return ScreenObservation(snapshot: RepeatGuardTests.screen(seconds), disappearedApps: [])
     }
 
     func tap(alias _: Int, on _: UISnapshot) async throws -> [String] {

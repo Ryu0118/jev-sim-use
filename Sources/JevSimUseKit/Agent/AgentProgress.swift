@@ -20,13 +20,22 @@ struct AgentProgress: Sendable {
     private var exploredBranches: [String: Set<String>] = [:]
     private var pendingDisappearances: [String] = []
     private var currentSkeleton = ""
-    /// The action taken back to back, the skeletons of the screens it was taken on, and how many times in a row.
-    private var repeatRun: (action: String, skeletons: Set<String>, count: Int)?
+    /// Each element's value and states on the current screen, by `UIEntry.stateKey`.
+    private var currentStates: [String: String] = [:]
+    /// Elements seen changing between two readings with no action between (a relative time, a timer): their changes
+    /// are not an action's effect.
+    private var tickingElements: Set<String> = []
+    /// The action taken back to back, the skeletons of the screens it was taken on, and the element states before the
+    /// first and after each one.
+    private var repeatRun: (action: String, skeletons: Set<String>, states: [[String: String]])?
+    /// Whether the next recorded screen is the one the last action left, to add to `repeatRun`.
+    private var awaitsRepeatState = false
 
-    /// How many times in a row one action may be taken from screens showing the same elements before it is refused.
+    /// How many repeats in a row may leave the screen in a state already seen in the run before the next is refused.
     ///
     /// A row tapped 26 times in a row at 0.64-0.98 never opened; each tap counted as a change because a relative
-    /// time on the screen ticked, so the identity-keyed `triedActions` never caught it.
+    /// time on the row ticked, so the identity-keyed `triedActions` never caught it. A counter's taps, by contrast,
+    /// each leave a new value, and a switch flipped back and forth returns to states already seen.
     static let repeatLimit = 3
 
     init(history: [HistoryEntry] = []) {
@@ -49,12 +58,30 @@ struct AgentProgress: Sendable {
         currentTitle.flatMap { exploredBranches[$0] } ?? []
     }
 
-    /// Whether `action` would be the same action once more after `repeatLimit` in a row, on a screen showing the
-    /// same elements (`UISnapshot.skeleton`) as one it was already taken on: it did not get anywhere, whether the
-    /// screen stayed or alternated. Waiting is exempt: waiting out a slow save is how it works.
+    /// Whether `action` would be the same action once more after its last `repeatLimit` repeats each left the screen
+    /// in a state already seen in the run, on a screen showing the same elements (`UISnapshot.skeleton`) as one it was
+    /// taken on: it did not get anywhere, whether the screen stayed or alternated. States leave out elements that
+    /// tick on their own. Waiting is exempt: waiting out a slow save is how it works.
     func isFutileRepeat(_ action: AgentAction) -> Bool {
-        guard action != .wait, let run = repeatRun, run.action == action.description else { return false }
-        return run.count >= Self.repeatLimit && run.skeletons.contains(currentSkeleton)
+        guard action != .wait, let run = repeatRun, run.action == action.description,
+              run.skeletons.contains(currentSkeleton)
+        else { return false }
+        let states = run.states.map { $0.filter { !tickingElements.contains($0.key) } }
+        var stale = 0
+        for index in states.indices.dropFirst() {
+            stale = states[..<index].contains(states[index]) ? stale + 1 : 0
+        }
+        return stale >= Self.repeatLimit
+    }
+
+    /// Notes `snapshot`, a reading taken with no action since the last recorded one: an element whose value or states
+    /// changed between the two changes on its own. After an action whose effect had not shown yet, a change may be
+    /// that effect arriving late, so nothing is noted then.
+    mutating func noteReading(_ snapshot: UISnapshot) {
+        guard history.last?.screenChanged != false else { return }
+        for (key, state) in Self.states(of: snapshot) where currentStates[key].map({ $0 != state }) == true {
+            tickingElements.insert(key)
+        }
     }
 
     /// Returns an outcome when the observation means the run must stop.
@@ -77,6 +104,11 @@ struct AgentProgress: Sendable {
         }
         currentTitle = title
         currentSkeleton = observation.snapshot.skeleton
+        currentStates = Self.states(of: observation.snapshot)
+        if awaitsRepeatState {
+            repeatRun?.states.append(currentStates)
+            awaitsRepeatState = false
+        }
         if let label = lastTapLabel, currentOutline != outline {
             menuOpener = label
         }
@@ -92,14 +124,32 @@ struct AgentProgress: Sendable {
         steps += 1
         lastActionName = action.optionName
         repeatRun = if let run = repeatRun, run.action == action.description {
-            (run.action, run.skeletons.union([currentSkeleton]), run.count + 1)
+            (run.action, run.skeletons.union([currentSkeleton]), run.states)
         } else {
-            (action.description, [currentSkeleton], 1)
+            (action.description, [currentSkeleton], [currentStates])
         }
+        awaitsRepeatState = true
         menuOpener = nil
         if case let .tap(_, _, label) = action {
             lastTapLabel = label
         }
         pendingDisappearances = disappeared
+    }
+
+    /// Each element's value and states, by role, label, and identifier; elements alike in all three are numbered in
+    /// reading order.
+    private static func states(of snapshot: UISnapshot) -> [String: String] {
+        var states: [String: String] = [:]
+        for entry in snapshot.entries ?? [] {
+            let base = [entry.role, entry.label, entry.uniqueId ?? ""].joined(separator: "|")
+            var key = base
+            var index = 1
+            while states[key] != nil {
+                index += 1
+                key = "\(base)#\(index)"
+            }
+            states[key] = [entry.value ?? "", entry.states.joined(separator: ",")].joined(separator: "|")
+        }
+        return states
     }
 }
