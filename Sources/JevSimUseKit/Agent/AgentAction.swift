@@ -33,6 +33,15 @@ package enum AgentAction: Sendable, Hashable {
 }
 
 extension AgentAction {
+    /// Whether the action can work and still leave the screen as it was.
+    var effectMayNotShow: Bool {
+        if case let .device(action) = self {
+            action.effectMayNotShow
+        } else {
+            false
+        }
+    }
+
     /// How costly the action is when wrong.
     var risk: ActionRisk {
         switch self {

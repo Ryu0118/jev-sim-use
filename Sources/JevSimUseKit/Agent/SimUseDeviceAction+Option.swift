@@ -76,6 +76,15 @@ extension SimUseDeviceAction {
         }
     }
 
+    /// Whether the action can work and leave the screen as it was: a refresh often reloads the same content.
+    var effectMayNotShow: Bool {
+        if case .pullToRefresh = self {
+            true
+        } else {
+            false
+        }
+    }
+
     /// How much going wrong costs, which sets the support `ActionPolicy` asks for.
     var risk: ActionRisk {
         switch self {

@@ -213,7 +213,9 @@ Never write unit tests after the code.
   screen looked new. Elements seen changing between the planned and the confirming reading, with no action between
   (`AgentProgress.noteReading`), tick on their own and are left out of those states; a counter whose value goes up
   with each tap keeps going, and a switch flipped back and forth hands over once its states repeat. `history` tells Jev each
-  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
+  step's effect ("screen changed" / "no visible effect"; for an action that can work without changing the screen,
+  `pull_to_refresh`, an unchanged screen reads "done; ... not a failure" (`PlanningState.Step.unseenEffect`): as "no
+  visible effect", a refresh that had run looked failed, and Jev pulled again and handed over in 2 of 6 runs). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
   former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
   name; it was removed because it matched strings in one script only, and measured runs (an item below the fold, in

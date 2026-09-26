@@ -208,6 +208,20 @@ struct PlanningStateNotesTests {
         #expect(json.contains(#""notes":["note 3""#))
         #expect(json.contains(#""result":"no visible effect""#))
     }
+
+    @Test("does not report a refresh that left the screen as it was as having no effect, which made Jev pull again")
+    func refreshResult() throws {
+        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(4, "Row")])
+        var progress = AgentProgress()
+        _ = progress.record(ScreenObservation(snapshot: snapshot, disappearedApps: []), stallLimit: 5)
+        progress.recordAction(.device(.pullToRefresh(x: 201, from: 262, to: 743)), disappeared: [])
+        _ = progress.record(ScreenObservation(snapshot: snapshot, disappearedApps: []), stallLimit: 5)
+        let request = PlanRequest(goal: "g", snapshot: snapshot, menu: ActionCatalog.menu(for: snapshot, texts: []), history: progress.history)
+        #expect(PlanningState(request).history.map(\.result) == [PlanningState.Step.unseenEffect])
+        #expect(progress.ineffectiveActions.contains("pull_to_refresh"))
+        let saved = try JSONDecoder().decode(HistoryEntry.self, from: Data(#"{"step":1,"action":"a","screen_changed":false}"#.utf8))
+        #expect(PlanningState.Step(saved).result == "no visible effect")
+    }
 }
 
 @Suite("Named texts reach Jev by name only, never by value")
