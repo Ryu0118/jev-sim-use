@@ -30,8 +30,11 @@ package struct SkillRunner: Sendable {
     }
 
     private func install(into directory: URL, force: Bool) throws -> SkillOutcome {
-        guard force || !fileManager.fileExists(atPath: directory.path(percentEncoded: false)) else {
-            throw SkillError.alreadyInstalled(directory)
+        let exists = fileManager.fileExists(atPath: directory.path(percentEncoded: false))
+        guard force || !exists else { throw SkillError.alreadyInstalled(directory) }
+        // A forced install replaces the directory, so a reference file dropped from the skill does not linger.
+        if exists {
+            try fileManager.removeItem(at: directory)
         }
         // SKILL.md points at references/ for detail, so the whole directory is written, not SKILL.md alone.
         for (path, contents) in SkillBundle.files {

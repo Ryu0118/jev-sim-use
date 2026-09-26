@@ -29,6 +29,16 @@ struct SkillRunnerTests {
         #expect(throws: Never.self) { try runner.run(.install(target, force: true)) }
     }
 
+    @Test("a forced install removes files an older version of the skill left behind")
+    func forcedInstallDropsStaleFiles() throws {
+        let target = SkillTarget.directory(home.appending(path: "custom"))
+        _ = try runner.run(.install(target, force: false))
+        let stale = home.appending(path: "custom/jev-sim-use/references/retired.md")
+        FileManager.default.createFile(atPath: stale.path(percentEncoded: false), contents: Data("old".utf8))
+        _ = try runner.run(.install(target, force: true))
+        #expect(!FileManager.default.fileExists(atPath: stale.path(percentEncoded: false)))
+    }
+
     @Test("uninstall removes the skill directory and reports when nothing was there")
     func uninstall() throws {
         let target = SkillTarget.client(.claude)
