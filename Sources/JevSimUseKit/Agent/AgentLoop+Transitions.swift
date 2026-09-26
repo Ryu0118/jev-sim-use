@@ -87,13 +87,15 @@ extension AgentLoop {
         // A saved item can reach a list a second after the screen changed: Jev, planning on the list without it,
         // scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the screen moved on
         // (jev-ultrafast checks freshness the same way), a bounded number of times per step.
-        if context.staleReplans < Self.staleReplanLimit, outcome.isHandOver,
-           let again = try await context.timing.add(to: \.read, { try await reading(changedFrom: step.fresh.snapshot) })
-        {
-            context.staleReplans += 1
-            return .observing(pending: again)
+        guard context.staleReplans < Self.staleReplanLimit, outcome.isHandOver else { return .finished(outcome) }
+        let (again, changed) = try await context.timing.add(to: \.read) { try await reading(changedFrom: step.fresh.snapshot) }
+        // An app that disappeared while the wait read is a crash, whether or not the screen moved on.
+        if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
+            return .finished(crash)
         }
-        return .finished(outcome)
+        guard changed else { return .finished(outcome) }
+        context.staleReplans += 1
+        return .observing(pending: again)
     }
 
     /// Takes `action` on the confirming reading, or plans again when its target is no longer where it was planned.

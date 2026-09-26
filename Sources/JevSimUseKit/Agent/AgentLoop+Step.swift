@@ -130,18 +130,24 @@ extension AgentLoop {
         return observation
     }
 
-    /// A reading whose layout differs from `snapshot`'s, taken within `handOverWait`, or `nil` if none came. A saved
-    /// memo reached its list one to eight seconds after the editor closed, depending on the app's server.
-    func reading(changedFrom snapshot: UISnapshot) async throws -> ScreenObservation? {
+    /// The first reading whose layout differs from `snapshot`'s, taken within `handOverWait`, or the last one when none
+    /// did, and whether it differs. A saved memo reached its list one to eight seconds after the editor closed,
+    /// depending on the app's server. The reading carries the disappeared apps of every reading before it: sim-use
+    /// reports a disappearance once, so a reading dropped here would take a crash with it.
+    func reading(changedFrom snapshot: UISnapshot) async throws -> (reading: ScreenObservation, changed: Bool) {
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.handOverWait)
+        var disappeared: [String] = []
+        var reading: ScreenObservation
         repeat {
-            let reading = try await driver.observe()
+            reading = try await driver.observe()
+            disappeared += reading.disappearedApps
             if reading.snapshot.layout != snapshot.layout {
-                return reading
+                break
             }
         } while clock.now < deadline
-        return nil
+        reading.disappearedApps = disappeared
+        return (reading, reading.snapshot.layout != snapshot.layout)
     }
 
     /// The element `plan` taps when it can be tapped without waiting for the confirming reading: a confident tap on
