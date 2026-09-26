@@ -4,4 +4,6 @@ package struct AgentRunResult: Sendable, Hashable {
     package var outcome: AgentOutcome
     /// Earlier history followed by this run's actions.
     package var history: [HistoryEntry]
+    /// Where this run's time went, the last step included, which took no action and so has no history entry.
+    package var timing = StepTiming()
 }

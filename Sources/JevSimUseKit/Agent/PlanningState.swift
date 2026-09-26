@@ -33,10 +33,18 @@ struct PlanningState: Encodable, Sendable {
         let action: String
         let result: String?
 
+        /// The result of an action whose effect need not show, such as a refresh, when the screen stayed as it was.
+        /// Reported as "no visible effect", a refresh that had run read as failed: the satisfied answer fell from
+        /// 0.73-0.90 to 0.10-0.45, and Jev pulled again or gave up. "done; its effect does not show on screen" still
+        /// left it at 0.43-0.56; saying an unchanged screen is not a failure gave 0.79-0.91.
+        static let unseenEffect = "done; it can succeed and leave the screen as it was, so an unchanged screen is not a failure"
+
         init(_ entry: HistoryEntry) {
             step = entry.step
             action = entry.action
-            result = entry.screenChanged.map { $0 ? "screen changed" : "no visible effect" }
+            result = entry.screenChanged.map { changed in
+                changed ? "screen changed" : entry.effectMayNotShow == true ? Self.unseenEffect : "no visible effect"
+            }
         }
     }
 

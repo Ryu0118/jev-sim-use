@@ -47,6 +47,41 @@ submit screen, check whether it went through before resuming.
 banners can appear seconds after launch and derail a run midway. Clear them before starting, and after launching
 an app give it a few seconds before the first run.
 
+## Slow runs: reading the timings
+
+Each step ends with a line such as `[3] took 1.05s (read 0.61s, jev 0.24s, act 0.20s)`, and `session show` keeps the
+same figures for every action and each run's total. The parts are what the run waited for, and they add up to the
+step's time:
+
+- `read`: `sim-use ui` readings. One reading takes about 0.5-0.7 s. A step reads two or three times (settling, the
+  confirmation), up to 2 s more after an action that seemed to change nothing, and up to 5 s more each time it
+  checks whether the screen moves on before handing over. So 1-3 s is normal, and 5-15 s on a step that hands over.
+- `jev`: the Jev request, about 0.2-0.5 s. A second request (the retry with accessibility hints) doubles it. A slow
+  `jev` with a normal `read` is the API or the network, not the device.
+- `act`: the action. A tap takes about 0.2 s. A tap on a row that first has to be scrolled into view includes that
+  scroll and the readings after it, and `wait` includes its pause.
+
+**A warning that a sim-use screen read had no answer after 3 s** means the device's sim-use daemon hung. A hung
+daemon's readings take 10-20 s instead of under one, or never answer. On iOS jev-sim-use handles this itself: it
+cancels the reading, stops the device's daemon, reads the screen without it, and goes on; that step's `read` includes
+the 3 s and the restart. This happens at most twice per run; after that, slow readings are waited out, and only a
+reading with no answer after 30 s (a daemon that stopped answering altogether) stops the run with exit 3. Android readings
+have no such deadline, so there a `read` far above the usual, on a step that did not hand over, points to the same
+cause. To fix it by hand, whether after that exit or while running sim-use yourself:
+
+```sh
+jev-sim-use exec daemon status                      # a daemon listed as unreachable, or one with errno=60 in its log
+jev-sim-use exec daemon stop --device <udid>        # the next sim-use command starts a fresh daemon
+jev-sim-use session resume
+```
+
+If `daemon stop` reports `stopped: false`, the daemon process is not answering at all. Stop it again. If it still
+does not go away, end its process by the pid that `daemon status` shows.
+
+Restarting the daemon loses its report of apps that crashed since the last command. So if the app on screen after the
+restart is a different one, the run stops as "app crashed or disappeared" even when the app may be fine. Look at the
+screen, relaunch the app if it did crash, and resume.
+
 ## Before blaming the run
 
 These came from classifying every failure across repeated runs against several apps.

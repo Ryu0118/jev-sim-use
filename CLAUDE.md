@@ -57,16 +57,28 @@ Never write unit tests after the code.
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
+  `SimUseDaemonWatchdog` gives every iOS `ui` read through the daemon a 3 s deadline (healthy reads 0.45-0.67 s, a
+  hung daemon's 10-20 s or never): past it the read is cancelled, `daemon stop --device <udid> --timeout 1` runs, and
+  the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run, reported as a warning. After that reads are
+  waited out up to 30 s (`SimUseError.readTimedOut` past it): a natural hang answered in about 10 s and a fresh daemon
+  hung again within a minute, so failing sooner would end runs that finish today. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
+  report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
+  counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
+  the default `--timeout`). Android reads have no deadline: their normal time was never measured.
 - `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
   `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
   numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.
+  Each action's `HistoryEntry` and each `SessionRun` keep a `StepTiming` (optional, so older files decode); it never
+  reaches Jev's `history`.
   `UserDirectories` is the one resolver for `HOME` / `XDG_*`.
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
 - `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act, as a state machine: `AgentLoopState` (observing, planning,
   deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
-  step (progress, the acted-on screen, re-plan and disagreement counters). `JevStepPlanner` sends one request asking which
+  step (progress, the acted-on screen, re-plan and disagreement counters, the step's `StepTiming`). Each step ends
+  with a `[n] took …s (read …, jev …, act …)` line: the loop's own waits, which never overlap, so the confirming read
+  under Jev's request counts only for the wait after Jev answered. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
@@ -213,7 +225,9 @@ Never write unit tests after the code.
   screen looked new. Elements seen changing between the planned and the confirming reading, with no action between
   (`AgentProgress.noteReading`), tick on their own and are left out of those states; a counter whose value goes up
   with each tap keeps going, and a switch flipped back and forth hands over once its states repeat. `history` tells Jev each
-  step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
+  step's effect ("screen changed" / "no visible effect"; for an action that can work without changing the screen,
+  `pull_to_refresh`, an unchanged screen reads "done; ... not a failure" (`PlanningState.Step.unseenEffect`): as "no
+  visible effect", a refresh that had run looked failed, and Jev pulled again and handed over in 2 of 6 runs). Code never explores on Jev's behalf: `blocked` and
   low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
   former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
   name; it was removed because it matched strings in one script only, and measured runs (an item below the fold, in

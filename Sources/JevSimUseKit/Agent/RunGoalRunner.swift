@@ -48,6 +48,7 @@ package struct RunGoalRunner: Sendable {
         var session = loaded
         let connection = try await bootstrap.connect(
             deviceID: SimUseBootstrap.deviceID(flag: request.deviceID ?? session.deviceID, environment: environment),
+            onDaemonRecovery: { report(.warning($0.description)) },
         )
         connection.versionWarning.map { report(.warning($0)) }
         report(.connected(device: connection.client.device, endpoint: settings.endpoint))
@@ -74,7 +75,7 @@ package struct RunGoalRunner: Sendable {
         } else {
             let ended = now()
             let steps = result.history.count - session.history.count
-            session.runs.append(SessionRun(endedAt: ended, steps: steps, outcome: result.outcome.description))
+            session.runs.append(SessionRun(endedAt: ended, steps: steps, outcome: result.outcome.description, timing: result.timing))
             session.history = result.history
             session.updatedAt = ended
             try sessionStore.save(session)

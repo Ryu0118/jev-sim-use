@@ -6,6 +6,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     case retryingWithHints(step: Int)
     /// `action` is about to run although confidence is in the confirm band.
     case lowConfidence(step: Int, confidence: Double)
+    /// `step` ended, by acting or by stopping, and `timing` says where its time went.
+    case timed(step: Int, timing: StepTiming)
 
     /// A single progress line for the console.
     package var description: String {
@@ -20,6 +22,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
             "[\(step)] unsure; asking again with the screen's accessibility hints"
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"
+        case let .timed(step, timing):
+            "[\(step)] took \(StepTiming.format(timing.total)) (\(timing))"
         }
     }
 
