@@ -76,7 +76,8 @@ package struct SimUseClient: DeviceDriving {
     }
 
     /// The `tap` arguments for a coordinate tap on `entry`. On iOS a switch (51 pt) or colour well (28 pt) sits at the
-    /// row's trailing edge, and both answered only a short hold there.
+    /// row's trailing edge, and both answered only a short hold there. The same hold at a switch row's centre flipped
+    /// nothing (0 of 11 on two switches), so the trailing offset stays.
     private func point(on entry: UIEntry, frame: ElementFrame, platform: String) -> [String] {
         let trailing = platform == SimUseContract.Platform.ios && (entry.isToggle || entry.isValueRow)
         let x = trailing ? max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18)) : frame.center.x
