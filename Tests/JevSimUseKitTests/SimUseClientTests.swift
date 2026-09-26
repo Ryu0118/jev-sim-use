@@ -45,25 +45,35 @@ struct SimUseClientTests {
         let runner = FakeCommandRunner(["paste": output, "keyboard-state": hiddenKeyboard])
         let expected = SimUseError.malformedOutput(arguments: ["paste"] + device, detail: "Error: Missing text")
         await #expect(throws: expected) {
-            try await client(runner).paste("")
+            try await client(runner).paste("", replacing: false)
         }
     }
 
     @Test("passes paste text after a terminator so it is never parsed as an option")
     func pasteTerminator() async throws {
         let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#), "keyboard-state": hiddenKeyboard])
-        _ = try await client(runner).paste("-5")
+        _ = try await client(runner).paste("-5", replacing: false)
         #expect(runner.recordedCalls.last == ["paste"] + device + ["--json", "--", "-5"])
     }
 
-    @Test("stops before pasting while only the software keyboard is up, since iOS would drop the paste silently")
-    func softKeyboard() async throws {
+    @Test("replaces a field's text by selecting all before the paste")
+    func pasteReplacing() async throws {
+        let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#), "keyboard-state": hiddenKeyboard])
+        _ = try await client(runner).paste("new", replacing: true)
+        #expect(runner.recordedCalls.last == ["paste", "--replace"] + device + ["--json", "--", "new"])
+    }
+
+    @Test(
+        "stops before pasting while only the software keyboard is up, since iOS would drop the paste silently",
+        arguments: [false, true],
+    )
+    func softKeyboard(replacing: Bool) async throws {
         let runner = FakeCommandRunner([
             "paste": .json(#"{"ok":true,"data":{}}"#),
             "keyboard-state": .json(#"{"ok":true,"data":{"visible":true,"platform":"ios"}}"#),
         ])
         await #expect(throws: SimUseError.hardwareKeyboardRequired) {
-            try await client(runner).paste("牛乳を買う")
+            try await client(runner).paste("牛乳を買う", replacing: replacing)
         }
         #expect(runner.recordedCalls == [["keyboard-state"] + device + ["--json"]])
     }

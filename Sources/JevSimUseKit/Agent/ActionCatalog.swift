@@ -46,6 +46,10 @@ enum ActionCatalog {
         }
         if !texts.isEmpty, !fields.isEmpty {
             operations.append(.enterText)
+            // Only a field that holds text has something to replace; elsewhere the option would only split typing.
+            if entries.filter(isEditable).contains(where: { !($0.value ?? "").isEmpty }) {
+                operations.append(.replaceText)
+            }
         }
         // iOS goes back by the left-edge swipe, which only a navigation stack answers; that stack shows a BackButton.
         // Without one, Jev chose go_back at 0.79-0.88 on a sheet and on a tab's root, and the swipe did nothing or
@@ -60,7 +64,7 @@ enum ActionCatalog {
         let actsOnElements = operations.contains(where: \.actsOnElement)
         return ActionMenu(
             operations: operations, elements: actsOnElements ? Array(elements) : [],
-            fields: operations.contains(.enterText) ? Array(fields) : [], texts: texts,
+            fields: operations.contains(where: \.typesText) ? Array(fields) : [], texts: texts,
         )
     }
 

@@ -64,7 +64,7 @@ private final class HintedScreenDriver: DeviceDriving {
         []
     }
 
-    func paste(_: String) async throws -> [String] {
+    func paste(_: String, replacing _: Bool) async throws -> [String] {
         []
     }
 }

@@ -57,6 +57,12 @@ package enum SimUseContract {
         static let switchHoldSeconds = "0.05"
     }
 
+    /// `paste` options.
+    enum Paste {
+        /// Selects all (Cmd+A) before pasting, so the paste replaces the field's content.
+        static let replace = "--replace"
+    }
+
     /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.
     enum Swipe {
         static let from = "--from"

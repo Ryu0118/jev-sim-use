@@ -84,8 +84,8 @@ extension AgentLoop {
                 try await driver.perform(.goBack, platform: snapshot.platform)
             }
         case let .device(deviceAction): try await driver.perform(deviceAction, platform: snapshot.platform)
-        case let .enterText(field, _, text):
-            try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value)
+        case let .enterText(field, _, text, replacing):
+            try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value, replacing: replacing)
         case .wait: try await pause()
         case .done, .noneApplies: []
         }

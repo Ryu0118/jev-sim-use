@@ -28,6 +28,18 @@ struct ActionCatalogTests {
         #expect(menu.fields == [ElementTarget(alias: 7, role: "TextField", label: "empty input field")])
     }
 
+    @Test("offers replacing only when a field holds text, so an empty form does not split typing in two")
+    func replaceText() {
+        let filled = Fixtures.entry(7, "Title", role: "TextField", value: "Old title")
+        let texts = [InputText(name: "title", value: "New title")]
+        let empty = ActionCatalog.menu(for: Fixtures.snapshot(entries: [Fixtures.entry(7, "Title", role: "TextField")]), texts: texts)
+        #expect(empty.operations.contains(.enterText) && !empty.operations.contains(.replaceText))
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [filled]), texts: texts)
+        #expect(menu.operations.contains(.replaceText))
+        #expect(!ActionCatalog.menu(for: Fixtures.snapshot(entries: [filled]), texts: texts, allowed: [.tap]).operations
+            .contains(.replaceText))
+    }
+
     @Test("offers only the allowed operation groups, and element targets only when an element operation is allowed")
     func allowedGroups() {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Settings"), Fixtures.entry(2, "", role: "TextField")])

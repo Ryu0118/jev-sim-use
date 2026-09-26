@@ -105,6 +105,24 @@ struct JevStepPlannerTests {
         #expect(abs(plan.support - 0.87) < 0.0001)
     }
 
+    @Test("a tap on the field Jev would replace adds up with replacing, but appending and replacing do not pool")
+    func tapThenReplace() throws {
+        let field = Fixtures.entry(13, "Title", role: "TextField", value: "Old title")
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [field]), texts: [InputText(name: "title", value: "New")])
+        func plan(_ probabilities: String) throws -> StepPlan {
+            let body = StubTransport.answer(
+                operation: "replace_text", confidence: 0.5,
+                extra: [("element_target", "e13", 0.9), ("field_target", "e13", 1), ("text_to_enter", "title", 1)],
+            ).replacingOccurrences(of: #""replace_text":0.5}"#, with: probabilities)
+            return try JevStepPlanner.interpret(JSONDecoder().decode(JevResponse.self, from: Data(body.utf8)), menu: menu)
+        }
+        let tapped = try plan(#""replace_text":0.5,"tap":0.3,"enter_text":0.2}"#)
+        #expect(tapped.action == .enterText(field: 13, label: "Title", text: InputText(name: "title", value: "New"), replacing: true))
+        #expect(abs(tapped.support - 0.8) < 0.0001)
+        let split = try plan(#""replace_text":0.5,"enter_text":0.45}"#)
+        #expect(abs(split.support - 0.5) < 0.0001)
+    }
+
     @Test("gates a reversible element action on the element, since how to touch it splits between gestures")
     func elementGesturesPool() throws {
         let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(17, "Buy milk", role: "StaticText")])

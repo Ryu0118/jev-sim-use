@@ -21,7 +21,7 @@ package enum OperationGroup: String, Sendable, Hashable, CaseIterable {
     /// Whether `operation` belongs to this group.
     func contains(_ operation: Operation) -> Bool {
         switch (self, operation) {
-        case (.tap, .tap), (.type, .enterText): true
+        case (.tap, .tap), (.type, .enterText), (.type, .replaceText): true
         case let (.longPress, .gesture(gesture)): gesture == .longPress
         case let (.swipe, .gesture(gesture)): [.swipeLeft, .swipeRight, .swipeUp, .swipeDown].contains(gesture)
         case let (.pinch, .gesture(gesture)): [.pinchIn, .pinchOut].contains(gesture)

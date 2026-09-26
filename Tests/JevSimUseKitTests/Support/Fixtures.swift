@@ -30,9 +30,10 @@ enum Fixtures {
         states: [String] = [],
         frame: ElementFrame? = nil,
         band: String? = nil,
+        value: String? = nil,
     ) -> UIEntry {
         UIEntry(
-            aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, uniqueId: nil,
+            aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: value, uniqueId: nil,
             region: band.map { ElementRegion(kind: $0, label: nil) }, frame: frame,
         )
     }
