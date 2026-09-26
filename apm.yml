@@ -3,7 +3,7 @@
 # The skill source is skills/jev-sim-use (shared with the Claude Code and Codex plugins);
 # .apm/skills/ holds a symlink to it. release.yml bumps version with each release.
 name: jev-sim-use
-version: 0.2.3
+version: 0.3.0
 description: Agent skill for reaching iOS Simulator and Android screens with one jev-sim-use command.
 author: Ryu0118
 dependencies:
