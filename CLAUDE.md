@@ -282,4 +282,7 @@ pop-up menu", "the dismiss button") and keep raw logs local.
 ## Release
 
 `.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
+It builds the universal binary with `scripts/build-release.sh` (`--build-system swiftbuild`: Swift 6.3's default
+build system cannot resolve the EmbedSkill plugin in a multi-arch build), which CI's `Universal Release Build` job
+also runs on every change.
 Keep `THIRD_PARTY_LICENSES` in sync when dependencies change.
