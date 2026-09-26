@@ -9,8 +9,11 @@ struct PlanningRules {
     private let canWait: Bool
     private let canTap: Bool
     private let canType: Bool
+    private let inMenu: Bool
 
-    init(operations: [Operation]) {
+    /// `inMenu` adds the sentence about `screen.opened_by`, sent only while a menu opened by a tap is showing.
+    init(operations: [Operation], inMenu: Bool = false) {
+        self.inMenu = inMenu
         canScroll = operations.contains { operation in
             guard case let .device(action) = operation else { return false }
             return [.revealContentBelow, .revealContentAbove, .revealContentRight, .revealContentLeft].contains(action)
@@ -42,6 +45,8 @@ struct PlanningRules {
             "Prefer a visible element that is or leads to what `goal` needs"
                 + (canScroll ? "; scroll only when nothing in `screen.elements` is or leads to it." : "."),
             unnamedItemRoute,
+            inMenu ? "`screen.opened_by` is the control whose tap opened the menu on `screen`: choose the item there "
+                + "that `goal` asks that control to take." : nil,
             canTap ? "Do not toggle a switch already in the requested state (switch values are on or off)." : nil,
             "DONE needs visible evidence on `screen` that every part of `goal` is satisfied; when `goal` asks for "
                 + "something to read or show a value, an element in `screen.elements` whose label or value shows it is "

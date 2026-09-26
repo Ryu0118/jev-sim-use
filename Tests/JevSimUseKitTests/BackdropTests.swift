@@ -54,14 +54,17 @@ struct BackdropTests {
         #expect(map.backdrop == nil)
     }
 
-    @Test("the state leaves the backdrop out and names the control that opened the menu")
+    @Test("the state leaves the backdrop out and names the opener, with the menu sentence only then")
     func stateNamesOpener() throws {
         let menu = ActionCatalog.menu(for: Self.menu, texts: [])
         var request = PlanRequest(goal: "Choose option B", snapshot: Self.menu, menu: menu, history: [])
-        #expect(PlanningState(request).screen.openedBy == nil)
+        let plain = PlanningState(request)
+        #expect(!plain.rules.contains("opened_by"))
+        #expect(plain.screen.openedBy == nil)
 
         request.openedBy = "Kind, option A"
         let state = PlanningState(request)
+        #expect(state.rules.contains("`screen.opened_by` is the control whose tap opened the menu"))
         #expect(state.screen.elements.map(\.label) == ["Option A", "Option B", "Option C", nil])
         let json = try String(decoding: JSONEncoder().encode(state.screen), as: UTF8.self)
         #expect(json.contains(#""opened_by":"Kind, option A""#))

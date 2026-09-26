@@ -154,6 +154,8 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   is a target, whatever its role: Reminders exposes its rows only as `StaticText`. At most 255 per question.
   Except a pop-up menu's dismiss backdrop (`UISnapshot.backdrop`: a `Button` spanning the screen with labelled
   elements deeper inside it), left out of targets and state: Jev tapped it at 0.35-0.40 instead of the menu's item.
+  While it shows, the state carries `screen.opened_by` (the last tap that changed the screen,
+  `AgentProgress.menuOpener`) and the rules gain one sentence about it, so the items read as choices for that control.
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
