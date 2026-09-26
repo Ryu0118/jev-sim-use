@@ -52,12 +52,14 @@ package struct SimUseClient: DeviceDriving {
     ///
     /// On iOS the paste is a Cmd+V key event, which the simulator drops without a connected hardware keyboard while
     /// sim-use still reports success; the software keyboard being up after the field's tap means exactly that. The
-    /// edit-menu path (`--via-menu`) did not help: its Paste item never appeared in Reminders or Safari.
-    package func paste(_ text: String) async throws -> [String] {
+    /// edit-menu path (`--via-menu`) did not help: its Paste item never appeared in Reminders or Safari. Replacing
+    /// selects all with Cmd+A first, another key event with the same need.
+    package func paste(_ text: String, replacing: Bool) async throws -> [String] {
         if device.platform == SimUseContract.Platform.ios, try await softKeyboardIsVisible() {
             throw SimUseError.hardwareKeyboardRequired
         }
-        return try await run([SimUseContract.Command.paste], operands: [text])
+        let replace = replacing ? [SimUseContract.Paste.replace] : []
+        return try await run([SimUseContract.Command.paste] + replace, operands: [text])
     }
 
     /// Taps `entry` by coordinates: a switch or value row on its trailing control, anything else at its centre.

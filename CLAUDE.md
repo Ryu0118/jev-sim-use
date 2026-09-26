@@ -12,10 +12,27 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `mise run setup` — install tools, configure Git hooks
 - `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
+- `mise run e2e -- <udid>` — the real-simulator E2E run (see Testing); not in CI
 - `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
 - Keep commits small and easy to revert
+
+## Testing
+
+E2E is the primary proof of behaviour. Unit tests are only for what truly needs one (regressions, critical
+guards, edge cases, and paths the E2E never runs): list those failure modes first, write their tests, then implement.
+Never write unit tests after the code.
+
+- E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
+  sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
+  simulator's built-in Settings app: a multi-screen route, a switch, a row reached by scrolling, typing into search
+  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Each goal is judged by reading
+  the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
+  lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
+  (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
+- Unit tests run in CI with build and lint.
+- `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
 
 ## Architecture
 
@@ -25,7 +42,7 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   (execv sim-use with arguments passed through), `doctor`, `config`. Thin: parse, `validate()`, build a request, call
   one Kit Runner, present the outcome, map failures to exit codes (`ExitStatus`: 2 setup, 3 runtime).
   - Commands conform to `ContextualCommand` and take a `CLIContext` (injectable `CLIOutput` + environment); `.live` is
-    the only place the CLI reads `ProcessInfo`. CLI tests use `RecordingOutput` and a `FakeSimUse` script on `PATH`.
+    the only place the CLI reads `ProcessInfo`. CLI tests cover argument parsing.
 - `JevSimUseKit` Runners (return values, never print):
   - `RunGoalRunner` (`Agent/`): resolves `JevSettings`, pins the device (`--device` > `$SIM_USE_DEVICE` > the only
     usable device), builds the `RoutingPolicy`, runs `AgentLoop`, reports `RunGoalEvent`s. Every run belongs to a
@@ -47,8 +64,10 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `JevSimUseKit/Configuration`: `JevSettings` resolves flag > env > `UserConfig` file > default for the base URL
   (`/v1/systemone` appended) and model. The key comes only from `TYPESAFE_API_KEY`. The tool speaks only TypeSafe's
   wire format; other providers go behind a compatible proxy. `UserConfigStore` uses `FileManagerProtocol`.
-- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act. `JevStepPlanner` sends one request asking which
-  operation to run, which target it would use, and whether it would finish the goal.
+- `JevSimUseKit/Agent`: `AgentLoop` observe → plan → act, as a state machine: `AgentLoopState` (observing, planning,
+  deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
+  step (progress, the acted-on screen, re-plan and disagreement counters). `JevStepPlanner` sends one request asking which
+  operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
 - `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
   `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
   alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
@@ -88,33 +107,59 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   changing Jev questions. The live docs at https://docs.typesafe.ai are the source of truth.
 - One request per step, the jev-ultrafast shape: choice `operation` (tap, each element gesture, `enter_text`, each
   screen-level action, `done`, `blocked`), speculative target choices (`element_target` shared by tap and gestures;
-  `field_target` and `text_to_enter` when typing is possible), and noul `finishes` ("if the chosen operation works,
-  is the whole goal satisfied?"). Code reads only the target that matches the chosen operation. Asking operation and
+  `field_target` and `text_to_enter` when typing is possible), noul `finishes` ("if the chosen operation works,
+  is the whole goal satisfied?"), noul `satisfied` ("is every part of the goal already satisfied?"), and, when a tap is
+  offered, noul `irreversible` ("would tapping the element this step
+  would choose lose data or state that going back cannot restore?"). Code reads only the target that matches the chosen operation. Asking operation and
   target apart keeps a scroll or DONE from competing with every element for probability. `PlanningRules` builds the
   rules from the step's offered operations: sentences about scrolling, going back, waiting, toggling, or typing are left
   out when Jev cannot choose that operation (the full menu gives the full text). Target questions cannot see the
   operation answer and the request has no shared instructions field, so the rules travel once as the state's `rules`
   and every question opens with `JevStepPlanner.rulesPointer` (`rules` is guidance, `screen` is data). Do not add a
   second round trip.
-- Completion: `done` with support >= `ActionPolicy.doneMinimum` (0.55; correct DONEs scored 0.58-0.99, a wrong one 0.49) exits 0, below it stops as
-  `goalProbablyReached`; `finishes` >= 0.75 (set from runs: finishing actions scored 0.78-0.95, others at most 0.48) followed by a changed screen ends the run without another request (as in
-  jev-use), which also settles relative goals the last screen cannot prove. Support is the weakest answer the action
+- Completion: DONE's support is the `satisfied` answer, not DONE's share of `operation`, where it competed with the
+  operation that finishes the goal (after typing a query: done 0.58, press_return 0.33, and the run exited 0 without
+  Return). When `satisfied` is below 0.5, DONE keeps only the share `satisfied` backs and the rest goes to the other
+  operations in proportion (`JevStepPlanner.notDone`), so the finishing operation runs; a response without the answer
+  is read as before. DONE with support >= `ActionPolicy.doneMinimum` (0.55) exits 0, below it stops as
+  `goalProbablyReached`. A screen that carries the goal's last named title one step early (a settings screen titled
+  like the list it leads to) still reads as satisfied: nothing on screen tells the two apart. `finishes` is asked and logged on every step line but does not end a run: after any action
+  Jev judges the new screen in another request (a changed screen once came from elsewhere, and a run ended as reached
+  on a tap that never landed). Support is the weakest answer the action
   depends on (operation, target, text); targets with the same role and label pool their probability. For a reversible
   tap or element gesture, the operation factor is the sum over every element operation (they share `element_target`),
-  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. Targets whose label holds the
-  goal's quoted item (`ScanFirst.namedTerms`, such as one colour name across seven swatches) pool too: any of them meets the goal. `StepPlan.factors`
+  so the gate checks what to act on, as jev-use does; the most probable gesture still runs. `StepPlan.factors`
   keeps each of those answers, and the progress line lists them when there is more than one.
-- Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); screen-level scrolls in
+- Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); typing that appends
+  (`enter_text`) or replaces (`replace_text`, `paste --replace`, offered only when a field holds a value: appending
+  left the old title in front of the new one); screen-level scrolls in
   four directions, go back (on iOS only when a `BackButton` shows a navigation stack, and done by tapping it, since a
   map on a detail screen swallowed the left-edge swipe; the swipe does
   nothing on a sheet or a tab's root, where Jev chose it at 0.79-0.88), a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`
-  verb), and the platform's hardware buttons (`SimUseDeviceAction.available(on:)`); and pastes. A search field that
-  shows results only on Return cannot finish without it. Not offered: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), `type` (Jev cannot
-  tell whether `type` or `paste` will land; both need hardware keyboard events), raw `touch` / `multi-touch`, and
+  verb), Escape on iOS (`ios key 41`, group `keys`: it closes a context menu, whose backdrop is never a target, and
+  closed a filled form without asking, so it is irreversible), a two-finger drag from a list's first shown row to its
+  last on iOS (`multi-touch`, group `two-finger`, offered where rows line up: it starts UIKit multiple selection; as an
+  element gesture Jev aimed it at the button whose menu also selects rows), a pull to refresh on iOS (group `scroll`:
+  one `swipe` down the middle of the screen from 30% to 85% of its height in 0.3 s; the vertical scroll preset, about
+  210 pt over 1.5 s, and an element swipe down a 44 pt row only drew the refresh control's pull progress and let it
+  go, which is why a refresh goal never refreshed; this pull filled the control every time and held a refresh open in
+  most runs), and the platform's hardware buttons
+  (`SimUseDeviceAction.available(on:)`) except Siri (one press left `sim-use ui` unreadable until a reboot); and
+  pastes. A search field that shows results only on Return cannot finish without it. Not offered, each for a reason
+  that holds against sim-use 0.14.0: double tap (two `tap` calls land ~0.4 s apart, outside iOS's window), drag and
+  drop (no primitive holds and then moves; split `touch --down` / `--up` did not move a slider either), `type` (Jev
+  cannot tell whether `type` or `paste` will land; both need hardware keyboard events), keys whose effect `sim-use ui`
+  does not show (Tab, arrows, Cmd+A: focus, caret, and selection are not in the tree; Backspace did nothing without
+  focus and deleted four characters for "the last character", since Jev cannot count earlier presses), two-finger
+  taps and long-presses (they zoom a map, which the tree does not show), raw `touch`, and
   non-actions (`screenshot`, `record-video`, `keyboard-state`, `app-state`, `viewer`, `daemon`); all stay reachable
   through `exec`. `ActionRisk` sets the bar: harmless (scrolls, back) at most 0.5 (TypeSafe reads less as genuinely unsure), reversible at `--min-confidence`,
-  irreversible (tapping a control labelled 削除 / Delete / Remove / 消去) at least 0.6, as jev-use gates
-  destructive picks; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
+  irreversible at least 0.6, as jev-use gates destructive picks. A tap is irreversible unless Jev's `irreversible`
+  answer is below 0.35 (`ActionPolicy.reversibleTapMaximum`, the undecided band's lower edge), so a label in any
+  language is judged by what the control does and a missing or unsure answer fails safe (`StepPlan.risk`); a stub server
+  that omits the key gets the irreversible bar for every tap. Opening and navigating taps scored 0.07-0.23 and deleting or
+  discarding 0.72-0.83; closing, cancelling an edit, archiving, or unfavouriting scored 0.39-0.65, so those face 0.6
+  and keep their own probability; leaving the app (hardware buttons) 0.85, since sim-use cannot launch it again (a goal "go back
   to the home screen", meaning the app's tab, pressed Home at 0.66 and finished in another app). The shared rules also say a word that could
   name a place in the app or on the device (home, settings, search, back) means the app's own first. Typing is reversible (it submits nothing and is cleared as easily): 0.85 held
   correct email / password steps back at 0.65-0.84, and no reference agent gates typing higher than a tap. Horizontal element swipes travel 40% of the width, which reveals a row's actions (Delete) instead of
@@ -159,17 +204,19 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
-  anyway hands over, and landing on screens already seen counts toward the stall limit. A fourth identical action in a row
-  (`AgentProgress.repeatLimit`) on a screen showing the same elements as one of the last three was taken on
-  (`UISnapshot.skeleton`: identity without values) hands over too: a row tapped 26 times never opened while a relative
-  time ticked, so every screen looked new. A stepper whose count is only its own value would hand over the same way. `history` tells Jev each
+  anyway hands over, and landing on screens already seen counts toward the stall limit. The same action repeated on a
+  screen showing the same elements as one it was taken on (`UISnapshot.skeleton`) hands over once its last
+  `AgentProgress.repeatLimit` repeats each left the elements' values and states as a state already seen in the run
+  (`AgentProgress.isFutileRepeat`): a row tapped 26 times never opened while a relative time on it ticked, so every
+  screen looked new. Elements seen changing between the planned and the confirming reading, with no action between
+  (`AgentProgress.noteReading`), tick on their own and are left out of those states; a counter whose value goes up
+  with each tap keeps going, and a switch flipped back and forth hands over once its states repeat. `history` tells Jev each
   step's effect ("screen changed" / "no visible effect"). Code never explores on Jev's behalf: `blocked` and
-  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. One
-  narrow exception, `ScanFirst`: when the goal names items in the UI's script, none is visible, the screen is a list of rows to open (buttons or cells; a sheet listing features as text
-  is not),
-  and Jev would tap an unnamed element with support below 0.85 (a confident tap is Jev knowing the way), code scrolls
-  that list once per title first (Jev's prior sent it into 一般
-  for デベロッパ at 0.51-0.77, and wording did not move it). Sections entered and left are not offered again from
+  low support hand over, as jev-ultrafast and jev-browser-use do; exploring moved away from the right screen. A
+  former exception, `ScanFirst`, scrolled a list once before an unsure dive when the goal quoted a non-Latin item
+  name; it was removed because it matched strings in one script only, and measured runs (an item below the fold, in
+  a Japanese and an English UI, 5 each) finished the same without it. An unsure dive hands over on support instead.
+  Sections entered and left are not offered again from
   the same title (`AgentProgress.exploredElements`).
 - Jev reliably picks a visible target but does not know where an off-screen setting lives; a supervisor `session
   tell` fixes that (Dark Mode: support 0.26 without the note, 1.00 with it). Toggles are shown as `on` / `off`, and Jev

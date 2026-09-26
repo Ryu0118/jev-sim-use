@@ -42,8 +42,8 @@ final class ScriptedDriver: DeviceDriving {
         record("\(action)")
     }
 
-    func paste(_ text: String) async throws -> [String] {
-        record("paste \(text)")
+    func paste(_ text: String, replacing: Bool) async throws -> [String] {
+        record(replacing ? "paste --replace \(text)" : "paste \(text)")
     }
 
     private func record(_ action: String) -> [String] {

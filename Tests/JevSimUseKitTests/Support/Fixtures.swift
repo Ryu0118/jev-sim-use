@@ -19,6 +19,15 @@ enum Fixtures {
         #"{"ok":true,"data":{"devices":["# + items.joined(separator: ",") + "]}}"
     }
 
+    /// A 402x874 iPhone screen, in the points describe-ui reports.
+    static let screen = ElementFrame(x: 0, y: 0, width: 402, height: 874)
+
+    /// One of the device envelopes above, decoded.
+    static func device(_ json: String) -> SimUseDevice {
+        (try? JSONDecoder().decode(SimUseDevice.self, from: Data(json.utf8)))
+            ?? SimUseDevice(deviceId: "undecodable", name: "", platform: "", kind: nil, state: "")
+    }
+
     static func snapshot(outline: String = "App: Settings  402x874", entries: [UIEntry] = []) -> UISnapshot {
         UISnapshot(platform: "ios", outline: outline, appLabel: "Settings", entries: entries, crashDialog: nil)
     }
@@ -28,12 +37,18 @@ enum Fixtures {
         _ label: String,
         role: String = "Button",
         states: [String] = [],
+        value: String? = nil,
+        uniqueId: String? = nil,
         frame: ElementFrame? = nil,
         band: String? = nil,
+        region: ElementRegion? = nil,
+        depth: Int? = nil,
     ) -> UIEntry {
-        UIEntry(
-            aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: nil, uniqueId: nil,
-            region: band.map { ElementRegion(kind: $0, label: nil) }, frame: frame,
+        var entry = UIEntry(
+            aliases: ElementAliases(alias: alias), role: role, label: label, states: states, value: value, uniqueId: uniqueId,
+            region: region ?? band.map { ElementRegion(kind: $0, label: nil) }, frame: frame,
         )
+        entry.depth = depth
+        return entry
     }
 }

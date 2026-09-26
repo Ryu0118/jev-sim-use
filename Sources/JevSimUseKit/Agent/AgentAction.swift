@@ -7,8 +7,9 @@ package enum AgentAction: Sendable, Hashable {
     case gesture(ElementGesture, alias: Int, role: String, label: String)
     /// A gesture or button press that does not target an element.
     case device(SimUseDeviceAction)
-    /// Tap the field `@field`, then enter one of the texts the user supplied; Jev picks it by name, never writes it.
-    case enterText(field: Int, label: String, text: InputText)
+    /// Tap the field `@field`, then enter one of the texts the user supplied, in place of the field's text when
+    /// `replacing`; Jev picks it by name, never writes it.
+    case enterText(field: Int, label: String, text: InputText, replacing: Bool = false)
     /// Wait for the app to catch up.
     case wait
     /// Jev judged the goal visibly satisfied.
@@ -22,7 +23,8 @@ package enum AgentAction: Sendable, Hashable {
         case let .tap(alias, _, _): PlanningState.elementID(alias)
         case let .gesture(gesture, alias, _, _): "\(gesture.rawValue)_\(PlanningState.elementID(alias))"
         case let .device(action): action.optionName
-        case let .enterText(field, _, text): "enter_\(text.name)_\(PlanningState.elementID(field))"
+        case let .enterText(field, _, text, replacing):
+            "\(replacing ? "replace" : "enter")_\(text.name)_\(PlanningState.elementID(field))"
         case .wait: "wait"
         case .done: "done"
         case .noneApplies: "blocked"
@@ -34,7 +36,9 @@ extension AgentAction {
     /// How costly the action is when wrong.
     var risk: ActionRisk {
         switch self {
-        case let .tap(_, _, label): ActionCatalog.isDestructive(label) ? .irreversible : .reversible
+        // Whether a tap destroys data depends on what the control does, in whatever language its label is; code
+        // cannot tell, so a tap is irreversible until Jev's answer lowers it (`StepPlan.risk`).
+        case .tap: .irreversible
         case let .gesture(gesture, _, _, _): gesture.risk
         case let .device(action): action.risk
         // Text in a field is cleared as easily as it is typed, and it submits nothing; jev-browser-use and jev-use
@@ -52,7 +56,8 @@ extension AgentAction: CustomStringConvertible {
         case let .tap(_, role, label): "Tap the \(role) labelled \"\(label)\""
         case let .gesture(gesture, _, role, label): "\(gesture.verb) the \(role) labelled \"\(label)\""
         case let .device(action): action.summary
-        case let .enterText(_, label, text): "Enter the \(text.name) into \"\(label)\""
+        case let .enterText(_, label, text, replacing):
+            replacing ? "Replace the text in \"\(label)\" with the \(text.name)" : "Enter the \(text.name) into \"\(label)\""
         case .wait: "Wait"
         case .done: "Done"
         case .noneApplies: "Nothing"

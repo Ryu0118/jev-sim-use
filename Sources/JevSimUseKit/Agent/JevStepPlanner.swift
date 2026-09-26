@@ -9,6 +9,8 @@ package struct JevStepPlanner: StepPlanning {
     static let fieldQuestion = "field_target"
     static let textQuestion = "text_to_enter"
     static let finishesQuestion = "finishes"
+    static let irreversibleQuestion = "irreversible"
+    static let satisfiedQuestion = "satisfied"
 
     /// Opens every question. The rules, built by `PlanningRules` from the step's offered operations, travel once as the
     /// state's `rules`: target questions cannot see the operation answer, and swift-jev's request has no shared
@@ -34,7 +36,7 @@ package struct JevStepPlanner: StepPlanning {
         while true {
             do {
                 let response = try await client.evaluate(state: state, questions: questions)
-                return try Self.interpret(response, menu: request.menu, goal: request.goal)
+                return try Self.interpret(response, menu: request.menu)
             } catch let JevError.invalidRequest(body) {
                 throw PlanningError.rejected(body: body)
             } catch JevError.transport where attempt < Self.transportAttempts {
@@ -63,6 +65,18 @@ package struct JevStepPlanner: StepPlanning {
                     whenFalse: "More operations are needed after it, or `goal` is already satisfied without it.",
                 ),
             ),
+            // DONE shares the operation question with the operation that would finish the goal, so its probability
+            // says how close the step is, not whether the goal is met: after typing a query Jev chose done 0.58 over
+            // press_return 0.33 and the run ended without Return. This asks only the latter, in the same request.
+            satisfiedQuestion: Question(
+                instructions: """
+                \(rulesPointer) Is every part of `goal` already satisfied, so that no operation is still needed?
+                """,
+                kind: .noul(
+                    whenTrue: "`screen`, with `history` for what earlier steps did, shows every part of `goal` done.",
+                    whenFalse: "Some part of `goal` still needs an operation.",
+                ),
+            ),
         ]
         if !menu.elements.isEmpty {
             questions[elementQuestion] = try targetQuestion(
@@ -71,7 +85,21 @@ package struct JevStepPlanner: StepPlanning {
                 menu.elements,
             )
         }
-        if menu.operations.contains(.enterText) {
+        // Whether a tap can be undone is judged from what the control does, so a label in any language is read the
+        // same way; like `finishes`, it is about the step's own choice and costs no extra round trip.
+        if menu.operations.contains(.tap) {
+            questions[irreversibleQuestion] = try Question(
+                instructions: """
+                \(rulesPointer) Suppose this step taps the element in `screen.elements` it would choose, whether or not \
+                `goal` wants what that tap does. Would the tap lose data or state that going back cannot restore?
+                """,
+                kind: .noul(
+                    whenTrue: "The tap destroys, discards, or irrevocably commits something going back does not undo.",
+                    whenFalse: "Going back or another tap undoes it, or it only opens, selects, toggles, or navigates.",
+                ),
+            )
+        }
+        if menu.operations.contains(where: \.typesText) {
             questions[fieldQuestion] = try targetQuestion(
                 "Suppose the operation types text. Which field in `screen.elements` should receive it? Do not "
                     + "choose a field that already holds the needed text. Options are element ids.",

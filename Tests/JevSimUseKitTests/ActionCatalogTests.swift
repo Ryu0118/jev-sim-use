@@ -1,80 +1,86 @@
 @testable import JevSimUseKit
 import Testing
 
+/// What Jev may choose from on one screen. `--actions` narrowing and the back button left to go_back run end to end in
+/// scripts/e2e.sh; these are the ways the menu can offer something it should not, or miss something it should.
+@Suite("The menu offers every element and operation that can work on the screen, and nothing else")
 struct ActionCatalogTests {
-    private let frame = ElementFrame(x: 0, y: 0, width: 10, height: 10)
-
-    @Test("offers enabled, labelled elements as targets, text rows included; skips disabled and unlabelled ones")
-    func elements() {
+    @Test("offers enabled, labelled elements, text rows included, and leaves out everything else")
+    func targets() {
         let snapshot = Fixtures.snapshot(entries: [
             Fixtures.entry(1, "Wi-Fi"),
             Fixtures.entry(2, "Locked", states: ["disabled"]),
-            Fixtures.entry(3, "牛乳を買う、未実行", role: "StaticText"),
-            Fixtures.entry(4, "", role: "Group", frame: frame),
+            Fixtures.entry(3, "Buy milk, not done", role: "StaticText"),
+            Fixtures.entry(4, "", role: "Group", frame: ElementFrame(x: 0, y: 0, width: 10, height: 10)),
             Fixtures.entry(5, "  "),
+            Fixtures.entry(6, "Settings", role: "Heading"),
+            Fixtures.entry(7, "Back", uniqueId: "BackButton"),
+            Fixtures.entry(8, "General"),
         ])
-        let menu = ActionCatalog.menu(for: snapshot, texts: [])
-        #expect(menu.elements.map(\.alias) == [1, 3])
-        #expect(menu.operations.first == .tap)
-        #expect(menu.operations.suffix(2) == [.done, .blocked])
-        #expect(!menu.operations.contains(.enterText))
-    }
-
-    @Test("offers typing only when there is a named text and an editable field")
-    func enterText() {
-        let field = Fixtures.entry(7, "", role: "TextField")
-        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [field]), texts: [InputText(name: "email", value: "a@b")])
-        #expect(menu.operations.contains(.enterText))
-        #expect(menu.fields == [ElementTarget(alias: 7, role: "TextField", label: "empty input field")])
-    }
-
-    @Test("offers only the allowed operation groups, and element targets only when an element operation is allowed")
-    func allowedGroups() {
-        let snapshot = Fixtures.snapshot(entries: [Fixtures.entry(1, "Settings"), Fixtures.entry(2, "", role: "TextField")])
-        let texts = [InputText(name: "query", value: "milk")]
-        let tapping = ActionCatalog.menu(for: snapshot, texts: texts, allowed: [.tap, .scroll])
-        #expect(tapping.operations.map(\.optionName) == [
-            "tap", "scroll_to_reveal_below", "scroll_to_reveal_above", "scroll_to_reveal_right", "scroll_to_reveal_left",
-            "done", "blocked",
-        ])
-        #expect(tapping.fields.isEmpty)
-        let typing = ActionCatalog.menu(for: snapshot, texts: texts, allowed: [.type])
-        #expect(typing.operations == [.enterText, .done, .blocked])
-        #expect(typing.elements.isEmpty)
-        #expect(typing.fields.map(\.alias) == [2])
+        let menu = ActionCatalog.menu(for: snapshot, texts: [], explored: ["General"])
+        #expect(menu.elements.map(\.alias) == [1, 3], "disabled, unlabelled, blank, title, back button, explored")
     }
 
     @Test("stays within Jev's option limit")
     func cap() {
-        let entries = (1 ... 300).map { Fixtures.entry($0, "Row \($0)") }
-        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: entries), texts: [])
+        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: (1 ... 300).map { Fixtures.entry($0, "Row \($0)") }), texts: [])
         #expect(menu.elements.count == ActionCatalog.maximumOptions)
         #expect(menu.operations.count <= ActionCatalog.maximumOptions)
     }
 
-    @Test("drops screen-level actions that already did nothing on this screen")
-    func exclusion() {
-        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [Fixtures.entry(1, "A")]), texts: [], excluding: ["scroll_to_reveal_below"])
-        #expect(!menu.operations.contains(.device(.revealContentBelow)))
-        #expect(menu.operations.contains(.device(.revealContentAbove)))
+    private static let ios = Fixtures.snapshot(entries: [Fixtures.entry(1, "Close"), Fixtures.entry(2, "", role: "TextField")])
+    private static let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: ios.entries, crashDialog: nil)
+    private static let iosWithBack = Fixtures.snapshot(entries: ios.entries! + [Fixtures.entry(3, "Back", uniqueId: "BackButton")])
+    private static let query = [InputText(name: "query", value: "milk")]
+    private static let filled = Fixtures.snapshot(entries: [Fixtures.entry(2, "Title", role: "TextField", value: "Old")])
+    private static let rows = Fixtures.snapshot(entries: (1 ... 2).map {
+        Fixtures.entry($0, "Row \($0)", role: "StaticText", frame: ElementFrame(x: 0, y: Double(100 * $0), width: 402, height: 43))
+    })
+    private static let androidRows = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: rows.entries, crashDialog: nil)
+    private static let selectRows = Operation.device(.selectRows(
+        from: ElementFrame(x: 0, y: 100, width: 402, height: 43), to: ElementFrame(x: 0, y: 200, width: 402, height: 43),
+    ))
+
+    @Test("offers an operation only where it can work", arguments: [
+        ("iOS go_back without a back button, as on a sheet or a tab's root", ios, [], [], Operation.device(.goBack), false),
+        ("iOS go_back with a back button", iosWithBack, [], [], .device(.goBack), true),
+        ("Android go_back, whose back button always has somewhere to go", android, [], [], .device(.goBack), true),
+        ("a scroll that already did nothing on this screen", ios, [], ["scroll_to_reveal_below"], .device(.revealContentBelow), false),
+        ("another scroll on that screen", ios, [], ["scroll_to_reveal_below"], .device(.revealContentAbove), true),
+        ("typing without a named text", ios, [], [], .enterText, false),
+        ("typing with a named text and a field", ios, query, [], .enterText, true),
+        ("the recent apps button on Android", android, [], [], .device(.press(.recents)), true),
+        ("the recent apps button on iOS, which has none", ios, [], [], .device(.press(.recents)), false),
+        ("Siri, whose press left the screen unreadable", ios, [], [], .device(.press(.siri)), false),
+        ("replacing in an empty field, which would only split typing", ios, query, [], .replaceText, false),
+        ("replacing in a field that holds text", filled, query, [], .replaceText, true),
+        ("Escape on iOS", ios, [], [], .device(.pressEscape), true),
+        ("Escape on Android, which has no key verb", android, [], [], .device(.pressEscape), false),
+        ("the two-finger selection where rows line up", rows, [], [], selectRows, true),
+        ("the two-finger selection on Android, where it was not verified", androidRows, [], [], selectRows, false),
+    ] as [(String, UISnapshot, [InputText], Set<String>, Operation, Bool)])
+    func operation(_: String, snapshot: UISnapshot, texts: [InputText], excluded: Set<String>, operation: Operation, offered: Bool) {
+        #expect(ActionCatalog.menu(for: snapshot, texts: texts, excluding: excluded).operations.contains(operation) == offered)
     }
 
-    @Test("leaves the iOS back button to go_back, so the two do not split Jev's probability")
-    func backButton() {
-        let back = UIEntry(
-            aliases: ElementAliases(alias: 6), role: "Button", label: "一般", states: [], value: nil,
-            uniqueId: "BackButton", region: nil, frame: nil,
-        )
-        let menu = ActionCatalog.menu(for: Fixtures.snapshot(entries: [back, Fixtures.entry(7, "キーボード")]), texts: [])
-        #expect(menu.elements.map(\.alias) == [7])
-        #expect(menu.operations.contains(.device(.goBack)))
+    @Test("drops each new operation when its group is left out of --actions", arguments: [
+        (filled, query, Operation.replaceText, OperationGroup.type),
+        (ios, [], .device(.pressEscape), .keys),
+        (rows, [], selectRows, .twoFinger),
+    ] as [(UISnapshot, [InputText], Operation, OperationGroup)])
+    func narrowed(snapshot: UISnapshot, texts: [InputText], operation: Operation, group: OperationGroup) {
+        #expect(ActionCatalog.menu(for: snapshot, texts: texts).operations.contains(operation))
+        let others = OperationGroup.all.subtracting([group])
+        #expect(!ActionCatalog.menu(for: snapshot, texts: texts, allowed: others).operations.contains(operation))
     }
 
-    @Test("offers go_back on iOS only where a back button shows a stack to go back through, and always on Android")
-    func goBackNeedsAStack() {
-        let root = [Fixtures.entry(1, "Close"), Fixtures.entry(2, "Route Color")]
-        #expect(!ActionCatalog.menu(for: Fixtures.snapshot(entries: root), texts: []).operations.contains(.device(.goBack)))
-        let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: root, crashDialog: nil)
-        #expect(ActionCatalog.menu(for: android, texts: []).operations.contains(.device(.goBack)))
+    @Test("offers pulling to refresh on iOS from 30% to 85% of the screen's height, and only with the scroll group")
+    func pullToRefresh() {
+        let screen = Fixtures.snapshot(entries: [Fixtures.entry(1, "Row", frame: ElementFrame(x: 0, y: 0, width: 402, height: 874))])
+        #expect(ActionCatalog.menu(for: screen, texts: []).operations.contains(.device(.pullToRefresh(x: 201, from: 262, to: 743))))
+        let names = { (menu: ActionMenu) in menu.operations.map(\.optionName) }
+        #expect(!names(ActionCatalog.menu(for: screen, texts: [], allowed: [.tap, .swipe])).contains("pull_to_refresh"))
+        let android = UISnapshot(platform: "android", outline: "o", appLabel: "App", entries: screen.entries, crashDialog: nil)
+        #expect(!names(ActionCatalog.menu(for: android, texts: [])).contains("pull_to_refresh"))
     }
 }

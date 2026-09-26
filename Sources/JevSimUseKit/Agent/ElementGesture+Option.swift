@@ -6,7 +6,7 @@ extension ElementGesture {
         case .swipeLeft: "Swipe left across one element, to reveal a row's actions such as Delete, or move a carousel inside it; not for moving the whole screen to the next page or photo, which scrolling sideways does"
         case .swipeRight: "Swipe right across one element, to reveal a row's leading actions or move a carousel inside it back; not for moving the whole screen back a page or photo, which scrolling sideways does"
         case .swipeUp: "Swipe up within one element, to move only that element's content; not for scrolling the screen"
-        case .swipeDown: "Swipe down within one element, to move only that element's content or refresh it; not for scrolling the screen"
+        case .swipeDown: "Swipe down within one element, to move only that element's content; not for scrolling the screen"
         case .pinchOut: "Spread two fingers on an element, to zoom in"
         case .pinchIn: "Pinch two fingers on an element, to zoom out"
         case .rotateClockwise: "Rotate two fingers clockwise on an element, to turn a map or picture and change the heading its compass shows"

@@ -44,6 +44,8 @@ package enum SimUseContract {
     enum Key {
         /// USB HID usage 0x28, as `sim-use ios key --help` lists it.
         static let returnKeycode = "40"
+        /// USB HID usage 0x29. `ios key --help` does not list it; it closed a sheet and a context menu on iOS 26.
+        static let escapeKeycode = "41"
         /// Android has no `key` verb; its `type` help says to embed a newline for Enter.
         static let newline = "\n"
     }
@@ -57,10 +59,35 @@ package enum SimUseContract {
         static let switchHoldSeconds = "0.05"
     }
 
+    /// `paste` options.
+    enum Paste {
+        /// Selects all (Cmd+A) before pasting, so the paste replaces the field's content.
+        static let replace = "--replace"
+    }
+
+    /// `multi-touch`: two fingers down together, moved in a straight line, lifted together.
+    enum MultiTouch {
+        static let command = "multi-touch"
+        static let flags = ["--x1", "--y1", "--x2", "--y2", "--x1-end", "--y1-end", "--x2-end", "--y2-end"]
+        static let duration = "--duration"
+        /// Half the gap between the fingers, in points.
+        static let fingerOffset = 20.0
+
+        /// Two fingers side by side at `centerX`, moved from `from` to `to` vertically over 0.8 s.
+        static func arguments(centerX: Double, from: Double, to: Double) -> [String] {
+            let left = centerX - fingerOffset, right = centerX + fingerOffset
+            let values = [left, from, right, from, left, to, right, to].map { "\($0)" }
+            return [command] + zip(flags, values).flatMap { [$0, $1] } + [duration, "0.8"]
+        }
+    }
+
     /// `swipe` endpoints, as `x,y` in the coordinates describe-ui reports.
     enum Swipe {
         static let from = "--from"
         static let to = "--to"
+        static let duration = "--duration"
+        /// Fast enough for a pull to refresh; the scroll preset's 1.5 s is not.
+        static let refreshSeconds = "0.3"
     }
 
     /// Gesture presets, named by finger direction: `scroll-up` pages down.

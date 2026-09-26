@@ -8,8 +8,10 @@ package enum HardwareButton: String, Sendable, Hashable, CaseIterable {
     case sideButton = "side-button"
     case siri
 
-    /// The buttons sim-use supports on `platform`, per `sim-use button --help`.
+    /// The buttons offered on `platform`, from those `sim-use button --help` lists. Siri stays reachable through `exec`
+    /// only: one press left `sim-use ui` unable to read the simulator, even after Home and a daemon restart, until the
+    /// simulator was rebooted.
     static func available(on platform: String) -> [HardwareButton] {
-        platform == SimUseContract.Platform.android ? [.home, .lock, .recents] : [.home, .lock, .applePay, .sideButton, .siri]
+        platform == SimUseContract.Platform.android ? [.home, .lock, .recents] : [.home, .lock, .applePay, .sideButton]
     }
 }

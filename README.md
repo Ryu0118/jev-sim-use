@@ -194,7 +194,7 @@ jev-sim-use skill install|uninstall|print [<path>]  the agent skill (--client cl
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
 | `--max-steps` | 15 | Per run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Below this, it hands over instead of guessing |
-| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `buttons`, `wait`) |
+| `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `two-finger`, `buttons`, `keys`, `wait`) |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
 | `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
 

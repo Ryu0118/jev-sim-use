@@ -2,125 +2,102 @@ import Foundation
 @testable import JevSimUseKit
 import Testing
 
+/// What each action sends to sim-use and how a failed command is read. Taps by alias outside the daemon, a switch's
+/// trailing-edge tap, pasting after `--`, the keyboard check, Return, and an error envelope run end to end against the
+/// fake sim-use in scripts/e2e.sh; these are the rest of sim-use's argument contract and its failure shapes.
 struct SimUseClientTests {
-    private let device = ["--device", "B34F0000-0000-0000-0000-000000000001"]
-    private let hiddenKeyboard = CommandOutput.json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#)
+    private static let device = ["--device", "B34F0000-0000-0000-0000-000000000001"]
 
-    private func client(_ runner: FakeCommandRunner) throws -> SimUseClient {
-        let device = try JSONDecoder().decode(SimUseDevice.self, from: Data(Fixtures.simulator.utf8))
-        let invoker = SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner)
-        return SimUseClient(device: device, invoker: invoker)
+    private static func client(_ runner: FakeCommandRunner) throws -> SimUseClient {
+        SimUseClient(device: Fixtures.device(Fixtures.simulator), invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner))
     }
 
-    @Test("decodes describe-ui leniently and reports disappeared apps")
-    func observe() async throws {
-        let runner = FakeCommandRunner(["ui": .json("""
-        {"ok":true,"data":{"platform":"ios","orientation":"portrait","outline":"App: Share  402x874",\
-        "entries":[{"aliases":{"at":1},"role":"Cell","label":"Alice",\
-        "frame":{"x":0,"y":140,"width":402,"height":60},\
-        "region":{"kind":"Content"},"states":[]}],"lists":[],"appLabel":"Share","appPackage":"com.x"},\
-        "process":{"events":[{"bundleId":"com.x","confidence":"high","kind":"disappeared","pid":100}],"pending":[]}}
-        """)])
-        let observation = try await client(runner).observe()
-        #expect(observation.snapshot.entries?.first?.label == "Alice")
-        #expect(observation.disappearedApps == ["com.x"])
-        #expect(runner.recordedCalls == [["ui"] + device + ["--json"]])
+    private static func entry(_ role: String, value: String? = nil, _ frame: ElementFrame) -> UIEntry {
+        Fixtures.entry(9, "Target", role: role, value: value, frame: frame)
     }
 
-    @Test("surfaces the error envelope with its hint")
-    func errorEnvelope() async throws {
-        let envelope = #"{"ok":false,"error":"No snapshot","hint":"Run ui"}"#
-        let runner = FakeCommandRunner(["tap": .json(envelope, exitCode: 1)])
-        let expected = SimUseError.commandFailed(
-            arguments: ["tap", "@3"] + device, message: "No snapshot", hint: "Run ui",
-        )
-        await #expect(throws: expected) {
-            try await client(runner).tap(alias: 3, on: Fixtures.snapshot())
+    private static let row = ElementFrame(x: 30, y: 150, width: 340, height: 100)
+
+    /// A switch sim-use gave another role, known only by its iOS toggle trait.
+    private static var toggleTrait: UIEntry {
+        var entry = entry("Button", ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        entry.traits = ["Button", "Toggle"]
+        return entry
+    }
+
+    @Test("aims each element action where the element answers it", arguments: [
+        ("a switch: its trailing edge, held briefly", entry("CheckBox", ElementFrame(x: 36, y: 184, width: 330, height: 28)),
+         ElementGesture?.none, ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
+        ("a control with the toggle trait, whatever its role: as a switch", toggleTrait, nil,
+         ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
+        ("a full-width value row: its trailing control, held briefly",
+         entry("Button", value: "Azure", ElementFrame(x: 32, y: 406, width: 338, height: 28)), nil,
+         ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"]),
+        ("a narrow button with a value: its alias", entry("Button", value: "2026/09/25", ElementFrame(x: 253, y: 692, width: 110, height: 33)),
+         nil, ["tap", "@9"]),
+        ("a long press: the alias", entry("Button", row), .longPress, ["long-press", "@9"]),
+        ("a sideways swipe: 40% of the width, short of a row's full delete swipe", entry("Button", row), .swipeLeft,
+         ["swipe", "--from", "336.0,200.0", "--to", "200.0,200.0"]),
+        ("a two-finger gesture: the element's centre", entry("Button", row), .pinchOut,
+         ["gesture", "pinch-out", "--center-x", "200.0", "--center-y", "200.0"]),
+    ] as [(String, UIEntry, ElementGesture?, [String])])
+    func elementAction(_: String, target: UIEntry, gesture: ElementGesture?, expected: [String]) async throws {
+        let ok = CommandOutput.json(#"{"ok":true,"data":{}}"#)
+        let runner = FakeCommandRunner(["tap": ok, "long-press": ok, "swipe": ok, "gesture": ok])
+        let snapshot = Fixtures.snapshot(entries: [target])
+        if let gesture {
+            _ = try await Self.client(runner).perform(gesture, alias: 9, on: snapshot)
+        } else {
+            _ = try await Self.client(runner).tap(alias: 9, on: snapshot)
         }
+        #expect(runner.recordedCalls == [expected + Self.device + ["--json"]])
     }
 
-    @Test("reports stderr when validation fails before any JSON is written")
-    func validationFailure() async throws {
-        let output = CommandOutput(exitCode: 64, stdout: Data(), stderr: "Error: Missing text\n")
-        let runner = FakeCommandRunner(["paste": output, "keyboard-state": hiddenKeyboard])
-        let expected = SimUseError.malformedOutput(arguments: ["paste"] + device, detail: "Error: Missing text")
-        await #expect(throws: expected) {
-            try await client(runner).paste("")
-        }
+    @Test("reads every way a sim-use command can fail", arguments: [
+        ("an error envelope on stdout with its hint", CommandOutput.json(#"{"ok":false,"error":"No snapshot","hint":"Run ui"}"#, exitCode: 1),
+         SimUseError.commandFailed(arguments: ["tap", "@3"] + device, message: "No snapshot", hint: "Run ui")),
+        ("argument validation: plain text on stderr and no JSON", CommandOutput(exitCode: 64, stdout: Data(), stderr: "Error: Missing text\n"),
+         .malformedOutput(arguments: ["tap", "@3"] + device, detail: "Error: Missing text")),
+        ("no output at all", CommandOutput(exitCode: 9, stdout: Data(), stderr: ""),
+         .malformedOutput(arguments: ["tap", "@3"] + device, detail: "exit status 9 with no JSON output")),
+    ] as [(String, CommandOutput, SimUseError)])
+    func failure(_: String, output: CommandOutput, expected: SimUseError) async throws {
+        let client = try Self.client(FakeCommandRunner(["tap": output]))
+        await #expect(throws: expected) { try await client.tap(alias: 3, on: Fixtures.snapshot()) }
+    }
+
+    @Test("runs every iOS tap outside the daemon, which checks for crashed apps and doubles a tap's time")
+    func noDaemon() async throws {
+        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
+        let toggle = Fixtures.entry(9, "Switch", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
+        let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Row")])
+        _ = try await Self.client(runner).tap(alias: 9, on: snapshot)
+        _ = try await Self.client(runner).tap(alias: 4, on: snapshot)
+        #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
     }
 
     @Test("passes paste text after a terminator so it is never parsed as an option")
     func pasteTerminator() async throws {
-        let runner = FakeCommandRunner(["paste": .json(#"{"ok":true,"data":{}}"#), "keyboard-state": hiddenKeyboard])
-        _ = try await client(runner).paste("-5")
-        #expect(runner.recordedCalls.last == ["paste"] + device + ["--json", "--", "-5"])
+        let runner = FakeCommandRunner([
+            "paste": .json(#"{"ok":true,"data":{}}"#),
+            "keyboard-state": .json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#),
+        ])
+        _ = try await Self.client(runner).paste("-5", replacing: false)
+        #expect(runner.recordedCalls.last == ["paste"] + Self.device + ["--json", "--", "-5"])
+        _ = try await Self.client(runner).paste("new", replacing: true)
+        #expect(runner.recordedCalls.last == ["paste", "--replace"] + Self.device + ["--json", "--", "new"])
     }
 
-    @Test("stops before pasting while only the software keyboard is up, since iOS would drop the paste silently")
-    func softKeyboard() async throws {
+    @Test(
+        "stops before pasting while only the software keyboard is up, since iOS would drop the paste silently",
+        arguments: [false, true],
+    )
+    func softKeyboard(replacing: Bool) async throws {
         let runner = FakeCommandRunner([
             "paste": .json(#"{"ok":true,"data":{}}"#),
             "keyboard-state": .json(#"{"ok":true,"data":{"visible":true,"platform":"ios"}}"#),
         ])
-        await #expect(throws: SimUseError.hardwareKeyboardRequired) {
-            try await client(runner).paste("牛乳を買う")
-        }
-        #expect(runner.recordedCalls == [["keyboard-state"] + device + ["--json"]])
-    }
-
-    @Test("taps an iOS switch on its trailing edge with a short hold; every iOS tap runs outside the daemon")
-    func switchTap() async throws {
-        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
-        let toggle = Fixtures.entry(9, "Dark Appearance", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
-        let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Wi-Fi")])
-        _ = try await client(runner).tap(alias: 9, on: snapshot)
-        _ = try await client(runner).tap(alias: 4, on: snapshot)
-        #expect(runner.recordedCalls == [
-            ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"],
-            ["tap", "@4"] + device + ["--json"],
-        ])
-        #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
-    }
-
-    @Test("treats a control with the iOS toggle trait as a switch whatever role sim-use gave it")
-    func toggleTrait() async throws {
-        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
-        var toggle = Fixtures.entry(9, "Dark Appearance", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
-        toggle.traits = ["Button", "Toggle"]
-        _ = try await client(runner).tap(alias: 9, on: Fixtures.snapshot(entries: [toggle]))
-        #expect(runner.recordedCalls == [["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"] + device + ["--json"]])
-    }
-
-    @Test("taps a full-width value row on its trailing control, and a narrow value button at its alias")
-    func valueRowTap() async throws {
-        let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
-        let color = UIEntry(
-            aliases: ElementAliases(alias: 12), role: "Button", label: "Route Color", states: [], value: "Azure",
-            uniqueId: nil, region: nil, frame: ElementFrame(x: 32, y: 406, width: 338, height: 28),
-        )
-        let date = UIEntry(
-            aliases: ElementAliases(alias: 15), role: "Button", label: "Date Picker", states: [], value: "2026/09/25",
-            uniqueId: nil, region: nil, frame: ElementFrame(x: 253, y: 692, width: 110, height: 33),
-        )
-        let snapshot = Fixtures.snapshot(entries: [color, date])
-        _ = try await client(runner).tap(alias: 12, on: snapshot)
-        _ = try await client(runner).tap(alias: 15, on: snapshot)
-        #expect(runner.recordedCalls == [
-            ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"] + device + ["--json"],
-            ["tap", "@15"] + device + ["--json"],
-        ])
-    }
-
-    @Test("aims long-press at the alias, swipes across the frame, and pinches at its centre", arguments: [
-        (ElementGesture.longPress, ["long-press", "@9"]),
-        (.swipeLeft, ["swipe", "--from", "336.0,200.0", "--to", "200.0,200.0"]),
-        (.pinchOut, ["gesture", "pinch-out", "--center-x", "200.0", "--center-y", "200.0"]),
-    ])
-    func elementGestures(gesture: ElementGesture, expected: [String]) async throws {
-        let runner = FakeCommandRunner(["long-press": .json(#"{"ok":true,"data":{}}"#), "swipe": .json(#"{"ok":true,"data":{}}"#),
-                                        "gesture": .json(#"{"ok":true,"data":{}}"#)])
-        let entry = Fixtures.entry(9, "Row", frame: ElementFrame(x: 30, y: 150, width: 340, height: 100))
-        _ = try await client(runner).perform(gesture, alias: 9, on: Fixtures.snapshot(entries: [entry]))
-        #expect(runner.recordedCalls == [expected + device + ["--json"]])
+        await #expect(throws: SimUseError.hardwareKeyboardRequired) { try await Self.client(runner).paste("text", replacing: replacing) }
+        #expect(runner.recordedCalls == [["keyboard-state"] + Self.device + ["--json"]])
     }
 }
