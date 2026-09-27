@@ -58,6 +58,9 @@ Never write unit tests after the code.
   - `DoctorRunner` (`Doctor/`): sim-use, device (reads the screen once), and Jev settings checks → `DoctorReport`.
   - `ConfigRunner` (`Configuration/`): get / set (validated) / unset / list on `UserConfigStore`.
   - `FailureCategory` classifies Runner errors as setup vs runtime.
+- `JevSimUseObjC`: a few Objective-C functions that send a message to a private framework's object after checking its
+  selector and signature (`methodSignatureForSelector:`, since XPC proxies forward everything) and catch an
+  Objective-C exception, which Swift cannot. `PrivateMessage` is its only caller.
 - `JevSimUseKit/Process`: `CommandRunning` seam; `SubprocessCommandRunner` runs commands through swift-subprocess 1.0
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not

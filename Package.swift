@@ -32,6 +32,7 @@ let package = Package(
         .target(
             name: "JevSimUseKit",
             dependencies: [
+                "JevSimUseObjC",
                 .product(name: "Jev", package: "swift-jev"),
                 .product(name: "FileManagerProtocol", package: "FileManagerProtocol"),
                 .product(name: "ProcessRunning", package: "ProcessRunning"),
@@ -39,6 +40,8 @@ let package = Package(
             ],
             plugins: ["EmbedSkill"],
         ),
+        // Guarded messages to the simulator's private frameworks: Objective-C exceptions cannot be caught in Swift.
+        .target(name: "JevSimUseObjC"),
         // Explicit paths: `plugins/jev-sim-use` is the agent plugin, and on a case-insensitive disk it is also
         // SwiftPM's default `Plugins` directory.
         .plugin(
