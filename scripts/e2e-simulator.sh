@@ -115,7 +115,7 @@ open_settings() {
 }
 
 # Sets the switch with identifier `$1` to `$2` ("1" or "0") and confirms it on screen. iOS switches ignore a centre
-# tap, so this taps the trailing edge with a short hold, as the tool itself does.
+# tap, so this taps the trailing edge with a short hold through the daemon, as the tool itself does.
 # Taps the switch `$1` until it reads `$2`: at most two taps, each followed by up to 3 s of readings. Under heavy host
 # load one tap followed by a fixed 1 s wait left the switch as it was, while the goal's own flip had worked.
 set_switch() {
@@ -124,7 +124,7 @@ set_switch() {
         [[ $(value_of "$id") == "$want" ]] && return 0
         read -r x y < <(ui_json | jq -r --arg a "$id" '[.data.entries[] | select(.uniqueId == $a)][0].frame
             | "\(.x + .width - 26) \(.y + .height / 2)"')
-        SIM_USE_NO_DAEMON=1 sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
+        sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
         for _ in 1 2 3 4 5 6; do
             sleep 0.5
             [[ $(value_of "$id") == "$want" ]] && return 0
