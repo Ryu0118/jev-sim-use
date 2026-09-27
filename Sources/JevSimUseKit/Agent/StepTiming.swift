@@ -21,7 +21,8 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
 
     /// The parts, compactly: `read 0.61s, jev 0.24s, act 0.20s`, with `hand-over 5.00s` when the step waited to stop.
     package var description: String {
-        "read \(Self.format(read)), jev \(Self.format(jev)), act \(Self.format(act))"
+        "read \(Self.format(read))" + (readBaseline.map { " (baseline \(Self.format($0)))" } ?? "")
+            + ", jev \(Self.format(jev)), act \(Self.format(act))"
             + (handOver > 0 ? ", hand-over \(Self.format(handOver))" : "")
     }
 
@@ -35,6 +36,7 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
     private enum CodingKeys: String, CodingKey {
         case read, jev, act
         case handOver = "hand_over"
+        case readBaseline = "read_baseline"
     }
 
     /// Timings saved before the hand-over part existed have no `hand_over`.
@@ -44,6 +46,7 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
         jev = try container.decode(Double.self, forKey: .jev)
         act = try container.decode(Double.self, forKey: .act)
         handOver = try container.decodeIfPresent(Double.self, forKey: .handOver) ?? 0
+        readBaseline = try container.decodeIfPresent(Double.self, forKey: .readBaseline)
     }
 
     /// What a step waited on, for a message about a step that did not finish.
@@ -70,7 +73,10 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
 
     /// Both timings' parts added.
     static func + (lhs: Self, rhs: Self) -> Self {
-        Self(read: lhs.read + rhs.read, jev: lhs.jev + rhs.jev, act: lhs.act + rhs.act, handOver: lhs.handOver + rhs.handOver)
+        var sum = Self(read: lhs.read + rhs.read, jev: lhs.jev + rhs.jev, act: lhs.act + rhs.act, handOver: lhs.handOver + rhs.handOver)
+        // A run's total shows the largest baseline any of its steps read at.
+        sum.readBaseline = [lhs.readBaseline, rhs.readBaseline].compactMap(\.self).max()
+        return sum
     }
 
     /// Adds `rhs`'s parts to `lhs`'s.

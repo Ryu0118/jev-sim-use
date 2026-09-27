@@ -4,11 +4,11 @@ extension AgentLoop {
     func observe(pending: ScreenObservation?, context: inout AgentLoopContext) async throws -> AgentLoopState {
         try Task.checkCancellation()
         // Falling back discards a pending reading: it was one of the readings that kept disagreeing.
-        let (actedOn, settled) = (context.actedOn, !context.overlapped)
+        let (actedOn, settled, watch) = (context.actedOn, !context.overlapped, context.watch)
         let observation = if let pending, context.overlapped {
             pending
         } else {
-            try await context.timed(\.read) { try await observeAfterAction(on: actedOn, settled: settled) }
+            try await context.timed(\.read) { try await observeAfterAction(on: actedOn, settled: settled, watch: watch) }
         }
         if let outcome = context.progress.record(observation, stallLimit: configuration.stallLimit) {
             return .finished(outcome)
@@ -98,7 +98,9 @@ extension AgentLoop {
         // scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the screen moved on
         // (jev-ultrafast checks freshness the same way), a bounded number of times per step.
         guard context.staleReplans < Self.staleReplanLimit, outcome.isHandOver else { return .finished(outcome) }
-        context.watch.extend(by: configuration.handOverWait)
+        // Each read of the hand-over wait has its own deadline, so the wait stands outside the cycle's.
+        context.watch.pause()
+        defer { context.watch.resume() }
         let (again, changed) = try await context.timed(\.handOver) { try await reading(changedFrom: step.fresh.snapshot) }
         // An app that disappeared while the wait read is a crash, whether or not the screen moved on.
         if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
@@ -130,8 +132,9 @@ extension AgentLoop {
         }
         context.watch.acting(target, on: step.fresh.snapshot)
         if target == .wait {
-            context.watch.extend(by: configuration.waitDuration)
+            context.watch.pause()
         }
+        defer { context.watch.resume() }
         let (performed, disappeared) = try await context.timed(\.act) { try await perform(target, on: step.fresh.snapshot) }
         context.watch.acting(nil, on: nil)
         acted(performed, disappeared: disappeared, on: step.fresh.snapshot, context: &context)
