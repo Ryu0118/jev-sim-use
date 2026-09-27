@@ -27,7 +27,12 @@ Never write unit tests after the code.
 - E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
   sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
   simulator's built-in Settings app: a multi-screen route, a switch, a row reached by scrolling, typing into search
-  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Each goal is judged by reading
+  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Goals in other built-in apps
+  cover what Settings lacks: Calendar (a typed title, the Alert and Repeat menus, then reopening and editing the
+  event), Maps (a typed search opened with Return; needs the network), Photos (a photo opened and closed), and
+  Reminders (a typed reminder deleted with its swipe action). Each app is relaunched in English with launch arguments,
+  so the simulator's language stays as it is, and each goal deletes what it created. Each goal runs once (`-r 1`)
+  and `-g` selects goals. Each goal is judged by reading
   the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
   lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
   (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
