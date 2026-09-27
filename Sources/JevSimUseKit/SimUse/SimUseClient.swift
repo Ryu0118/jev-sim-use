@@ -14,6 +14,15 @@ package struct SimUseClient: DeviceDriving {
         self.watchdog = watchdog
     }
 
+    init(
+        device: SimUseDevice, invoker: SimUseInvoker, timing: CallBaselines,
+        report: @escaping @Sendable (DaemonRecovery) -> Void,
+    ) {
+        self.init(device: device, invoker: invoker, watchdog: SimUseDaemonWatchdog(
+            deadline: timing.policy.floor, cap: timing.policy.floor * 6, report: report,
+        ))
+    }
+
     /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. On iOS a read that outlasts the watchdog's
     /// deadline replaces the hung daemon (see `SimUseDaemonWatchdog`); Android read times were never measured, so
     /// Android reads have no deadline.

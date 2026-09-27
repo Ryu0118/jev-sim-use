@@ -54,6 +54,9 @@ extension SimUseError: CustomStringConvertible {
             check `jev-sim-use exec daemon status`, stop it with `jev-sim-use exec daemon stop --device \(deviceID)`, then \
             `jev-sim-use session resume`.
             """
+        case let .callTimedOut(command, seconds, daemonStopped):
+            "`sim-use \(command)` gave no answer within \(seconds.formatted()) s and was stopped; the sim-use daemon "
+                + (daemonStopped ? "was stopped too." : "could not be stopped.")
         case let .targetNotRevealed(scroll, _):
             "The element to tap was not found after \(scroll.summary.lowercased()) to reveal it."
         }

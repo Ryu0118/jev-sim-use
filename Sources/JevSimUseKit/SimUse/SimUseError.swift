@@ -21,9 +21,18 @@ package enum SimUseError: Error, Sendable, Equatable {
     case typedTextNotLanded
     /// `sim-use` exited without an output this tool understands.
     case malformedOutput(arguments: [String], detail: String)
+    /// A sim-use `command` had no answer within `seconds` and was killed; `daemonStopped` tells whether the daemon went.
+    case callTimedOut(command: String, seconds: Double, daemonStopped: Bool)
     /// A screen read on `deviceID` still had no answer after `seconds`, after the run's daemon replacements were used up.
     case readTimedOut(deviceID: String, seconds: Double)
     /// A tap scrolled its element into reach but did not find it afterwards, so only `scroll` happened. The agent
     /// loop records the scroll instead of the tap and plans on the moved screen.
     case targetNotRevealed(scroll: SimUseDeviceAction, disappearedApps: [String])
+}
+
+extension SimUseError {
+    /// Whether this is a sim-use call that hung and was killed.
+    var isCallTimeout: Bool {
+        false
+    }
 }

@@ -20,7 +20,8 @@ struct StepTimeoutTests {
         let driver = HangingDriver(outlines: ["A", "B"], hangingTaps: [1])
         let result = try await Self.run(driver, [.tapNext(), .done()])
         #expect(driver.taps == 1)
-        #expect(driver.daemonStops == 1)
+        // Only the per-call layer stops the daemon; the cycle's cut does not stop it a second time.
+        #expect(driver.daemonStops == 0)
         #expect(result.outcome == .goalReached(steps: 1))
         let cut = try #require(result.history.first)
         #expect(cut.action.contains("cut off") && cut.action.contains("may or may not"))
@@ -36,7 +37,7 @@ struct StepTimeoutTests {
             return
         }
         #expect(step == 2 && waitingOn == .act)
-        #expect(driver.daemonStops == 2)
+        #expect(driver.daemonStops == 0)
     }
 
     @Test("forgets an earlier cut once a cycle finishes, so two cuts apart do not end the run")
@@ -56,6 +57,35 @@ struct StepTimeoutTests {
         #expect(driver.daemonStops == 0)
     }
 
+    @Test("treats a sim-use call that timed out during an action like a cut: re-read, not re-sent, and counted")
+    func callTimeoutIsAnIncident() async throws {
+        let driver = HangingDriver(outlines: ["A", "B"], timingOutTaps: [1])
+        let result = try await Self.run(driver, [.tapNext(), .done()])
+        #expect(driver.taps == 1)
+        #expect(result.outcome == .goalReached(steps: 1))
+        #expect(result.history.first?.action.contains("may or may not") == true)
+        let twice = try await Self.run(HangingDriver(outlines: ["A"], timingOutTaps: [1, 2]), [.tapNext()])
+        guard case .stepTimedOut = twice.outcome else {
+            Issue.record("expected a step timeout, got \(twice.outcome)")
+            return
+        }
+    }
+
+    @Test("keeps its minimum reads after an unchanged action on a slow device, without the cycle's deadline cutting them")
+    func waitsKeepTheirReads() async throws {
+        let driver = HangingDriver(outlines: ["A"], readDelay: .milliseconds(120))
+        let configuration = AgentConfiguration(
+            goal: "g", maxSteps: 1, unchangedWait: .milliseconds(10), stepTimeout: .milliseconds(300), minUnchangedReads: 4,
+        )
+        let result = try await AgentLoop(driver: driver, planner: SlowPlanner([.tapNext(), .blocked()], delay: .zero), configuration: configuration)
+            .run()
+        // Four reads of 120 ms after the tap outlast the 300 ms cycle deadline; the wait is not part of it.
+        #expect(driver.readsAfterFirstTap >= 4)
+        if case .stepTimedOut = result.outcome {
+            Issue.record("the wait's reads were cut off")
+        }
+    }
+
     @Test("cancels the confirming read when the cut lands while Jev plans")
     func cutCancelsConfirmingRead() async throws {
         let driver = HangingDriver(outlines: ["A"], hangingReadsAfter: 2)
@@ -71,13 +101,26 @@ private final class HangingDriver: DeviceDriving {
     private let hangingTaps: Set<Int>
     private let hangingReadsAfter: Int?
     private let hang: Duration
-    private let counts = Mutex((taps: 0, reads: 0, inFlight: 0, stops: 0))
+    private let counts = Mutex((taps: 0, reads: 0, inFlight: 0, stops: 0, readsAfterTap: 0))
 
-    init(outlines: [String], hangingTaps: Set<Int> = [], hangingReadsAfter: Int? = nil, hang: Duration = .seconds(30)) {
+    private let timingOutTaps: Set<Int>
+    private let readDelay: Duration
+
+    init(
+        outlines: [String], hangingTaps: Set<Int> = [], timingOutTaps: Set<Int> = [], hangingReadsAfter: Int? = nil,
+        hang: Duration = .seconds(30), readDelay: Duration = .zero,
+    ) {
         base = FakeDriver(outlines: outlines)
         self.hangingTaps = hangingTaps
+        self.timingOutTaps = timingOutTaps
         self.hangingReadsAfter = hangingReadsAfter
         self.hang = hang
+        self.readDelay = readDelay
+    }
+
+    /// Reads started after the first tap was sent.
+    var readsAfterFirstTap: Int {
+        counts.withLock { $0.readsAfterTap }
     }
 
     var taps: Int {
@@ -96,9 +139,11 @@ private final class HangingDriver: DeviceDriving {
         let read = counts.withLock { counts in
             counts.reads += 1
             counts.inFlight += 1
+            counts.readsAfterTap += counts.taps > 0 ? 1 : 0
             return counts.reads
         }
         defer { counts.withLock { $0.inFlight -= 1 } }
+        try await Task.sleep(for: readDelay)
         if let hangingReadsAfter, read > hangingReadsAfter {
             try await Task.sleep(for: hang)
         }
@@ -112,6 +157,9 @@ private final class HangingDriver: DeviceDriving {
         }
         if hangingTaps.contains(tap) {
             try await Task.sleep(for: hang)
+        }
+        if timingOutTaps.contains(tap) {
+            throw SimUseError.callTimedOut(command: "tap", seconds: 3, daemonStopped: true)
         }
         return try await base.tap(alias: alias, on: snapshot)
     }

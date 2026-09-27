@@ -11,6 +11,8 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
     /// Reading on before a hand-over, in case the screen moves on. Counted as reading, this wait made every stopped
     /// step look like a slow first read.
     package var handOver: Double = 0
+    /// The read baseline, when the read deadline stretched past its floor.
+    package var readBaseline: Double?
 
     /// The step's time.
     package var total: Double {

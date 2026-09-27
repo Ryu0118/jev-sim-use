@@ -24,6 +24,10 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var handOverWait: Duration
     /// How long one cycle (read, plan, act) may take before it is cut off; `nil` turns the cut-off off.
     package var stepTimeout: Duration?
+    /// Readings taken after an action that left the screen as it was, however long `unchangedWait` has run.
+    package var minUnchangedReads: Int
+    /// Readings taken before a hand-over, however long `handOverWait` has run.
+    package var minHandOverReads: Int
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -38,6 +42,8 @@ package struct AgentConfiguration: Sendable, Hashable {
         waitDuration: Duration = .zero,
         handOverWait: Duration = .zero,
         stepTimeout: Duration? = nil,
+        minUnchangedReads: Int = 1,
+        minHandOverReads: Int = 1,
     ) {
         self.goal = goal
         self.texts = texts
@@ -50,5 +56,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.waitDuration = waitDuration
         self.handOverWait = handOverWait
         self.stepTimeout = stepTimeout
+        self.minUnchangedReads = minUnchangedReads
+        self.minHandOverReads = minHandOverReads
     }
 }
