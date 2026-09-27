@@ -464,11 +464,11 @@ longer shows" -t title="$title" \
     check "no reminder is left behind" open_reminders
 }
 
-# Stops the recording `$1` without ever blocking the suite: simctl's recorder once ignored SIGINT and held a goal for 26
-# minutes (a non-interactive shell starts background jobs with SIGINT ignored, so only simctl's own handler stops it).
-# It gets 10 s to finish the file after SIGINT, then SIGTERM and SIGKILL. A recorder stopped that way may leave the file
-# truncated and the simulator's recording busy ("Host recording is already in progress"), so later goals may go
-# unrecorded; the goal's checks note it, and a later recorder that cannot start exits at once.
+# Stops the recording `$1` without ever blocking the suite: SIGINT makes simctl write the file, and the suite once
+# waited 26 minutes on a recorder that had inherited an ignored SIGINT. If it is still running 10 s after SIGINT, it is
+# killed and the goal's checks note it: the file may be truncated, and a recorder that did not stop on SIGINT left the
+# simulator's recording busy ("Host recording is already in progress") until the simulator rebooted, so later goals
+# may go unrecorded (a recorder that cannot start exits at once). SIGTERM is no gentler: it wrote an empty file.
 stop_recorder() {
     local pid=$1
     kill -INT "$pid" 2>/dev/null
@@ -479,11 +479,9 @@ stop_recorder() {
         }
         sleep 0.5
     done
-    kill -TERM "$pid" 2>/dev/null
-    sleep 2
     kill -KILL "$pid" 2>/dev/null
     wait "$pid" 2>/dev/null
-    echo "NOTE  the recording may be truncated: the recorder ignored SIGINT for 10 s" >>"$run_dir/checks.txt"
+    echo "NOTE  the recording may be truncated: the recorder ignored SIGINT for 10 s and was killed" >>"$run_dir/checks.txt"
 }
 
 # --- Driver --------------------------------------------------------------------------------------------------------
@@ -502,7 +500,11 @@ for name in "${selected[@]}"; do
         : >"$run_dir/checks.txt"
         echo "== $name (run $run)" >&2
 
-        xcrun simctl io "$DEVICE" recordVideo --codec h264 --force "$run_dir/recording.mp4" >/dev/null 2>&1 &
+        # A non-interactive shell starts background jobs with SIGINT ignored; restoring it lets SIGINT finish the file.
+        (
+            trap - INT
+            exec xcrun simctl io "$DEVICE" recordVideo --codec h264 --force "$run_dir/recording.mp4" >/dev/null 2>&1
+        ) &
         recorder=$!
         started=$(date +%s)
         "goal_${name//-/_}" || echo "FAIL  setup: could not reach the starting screen" >>"$run_dir/checks.txt"
