@@ -19,6 +19,9 @@ package protocol DeviceDriving: Sendable {
     /// Pastes `text` into the focused field, in place of its content when `replacing`. Paste handles Unicode on iOS,
     /// unlike `type`.
     func paste(_ text: String, replacing: Bool) async throws -> [String]
+    /// Whether the device's pasteboard holds `text`, after a paste whose text did not show; `nil` when it cannot be
+    /// read.
+    func pasteboardHolds(_ text: String) async -> Bool?
 }
 
 /// One `sim-use ui` reading.
@@ -36,6 +39,11 @@ package struct ScreenObservation: Sendable, Hashable {
 }
 
 package extension DeviceDriving {
+    /// Drivers without a readable pasteboard cannot tell.
+    func pasteboardHolds(_: String) async -> Bool? {
+        nil
+    }
+
     /// Drivers without a daemon have nothing to stop.
     func stopDaemon() async -> Bool {
         false

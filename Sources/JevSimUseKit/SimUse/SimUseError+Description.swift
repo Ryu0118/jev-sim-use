@@ -33,6 +33,18 @@ extension SimUseError: CustomStringConvertible {
             sim-use's paste. In Simulator, turn on I/O > Keyboard > Connect Hardware Keyboard, then run \
             `jev-sim-use session resume`.
             """
+        case .pasteboardUnavailable:
+            """
+            Typed text never reached the field: sim-use pastes through the simulator's pasteboard, and on this \
+            simulator the pasteboard did not take the text (`xcrun simctl pbpaste <udid>` stays empty after a paste). \
+            Restart the simulator (or use another one), then run `jev-sim-use session resume`.
+            """
+        case .typedTextNotLanded:
+            """
+            Typed text did not appear in the field twice in a row. sim-use's paste is a Cmd+V key event, which needs a \
+            connected hardware keyboard (Simulator: I/O > Keyboard > Connect Hardware Keyboard) and a focused field. \
+            Check both, then run `jev-sim-use session resume`.
+            """
         case let .malformedOutput(arguments, detail):
             "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
         case let .readTimedOut(deviceID, seconds):
