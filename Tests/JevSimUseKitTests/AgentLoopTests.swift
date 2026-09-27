@@ -23,11 +23,16 @@ struct AgentLoopTests {
         #expect(driver.performedActions == ["tap @1", "paste --replace Team sync"])
     }
 
-    @Test("hands over instead of repeating an action that did not change the screen")
-    func noRepeat() async throws {
+    /// A tap that left the screen as it was may not have landed at all: sim-use reported ok for taps that did nothing.
+    /// The hand-over says so, rather than that nothing on the screen advances the goal.
+    @Test("hands over after a tap that did not change the screen, saying the tap had no visible effect", arguments: [
+        StepPlan.tapNext(), .blocked(),
+    ])
+    func noRepeat(next: StepPlan) async throws {
         let driver = FakeDriver(outlines: ["A"])
-        let outcome = try await run(driver, [.tapNext()], maxSteps: 10)
-        #expect(outcome == .noActionFits(step: 2))
+        let outcome = try await run(driver, [.tapNext(), next], maxSteps: 10)
+        #expect(outcome == .tapHadNoEffect(step: 2, tap: #"Tap the Button labelled "Next""#))
+        #expect(outcome.description.contains("had no visible effect"))
         #expect(driver.performedActions == ["tap @1"])
     }
 

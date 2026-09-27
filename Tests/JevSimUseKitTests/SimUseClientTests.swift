@@ -2,7 +2,7 @@ import Foundation
 @testable import JevSimUseKit
 import Testing
 
-/// What each action sends to sim-use and how a failed command is read. Taps by alias outside the daemon, a switch's
+/// What each action sends to sim-use and how a failed command is read. Taps by alias, a switch's
 /// trailing-edge tap, pasting after `--`, the keyboard check, Return, and an error envelope run end to end against the
 /// fake sim-use in scripts/e2e.sh; these are the rest of sim-use's argument contract and its failure shapes.
 struct SimUseClientTests {
@@ -77,14 +77,20 @@ struct SimUseClientTests {
         await #expect(throws: expected) { try await client.tap(alias: 3, on: Fixtures.snapshot()) }
     }
 
-    @Test("runs every iOS tap outside the daemon, which checks for crashed apps and doubles a tap's time")
-    func noDaemon() async throws {
+    /// A tap sent outside the daemon (`SIM_USE_NO_DAEMON`) reported ok and did nothing, on iOS 26.5 and 27.0 alike,
+    /// while the same point through the daemon landed every time: every tap goes through the daemon.
+    @Test("runs every iOS tap through the daemon: a plain tap, a value row's held tap, a switch's, and a bar item's")
+    func throughDaemon() async throws {
         let runner = FakeCommandRunner(["tap": .json(#"{"ok":true,"data":{}}"#)])
         let toggle = Fixtures.entry(9, "Switch", role: "CheckBox", frame: ElementFrame(x: 36, y: 184, width: 330, height: 28))
-        let snapshot = Fixtures.snapshot(entries: [toggle, Fixtures.entry(4, "Row")])
+        let valueRow = Fixtures.entry(5, "Colour", value: "Azure", frame: ElementFrame(x: 32, y: 406, width: 338, height: 28))
+        let bar = Fixtures.entry(6, "Add", frame: ElementFrame(x: 345, y: 66, width: 37, height: 36))
+        let snapshot = Fixtures.snapshot(entries: [toggle, valueRow, bar, Fixtures.entry(4, "Row")])
         _ = try await Self.client(runner).tap(alias: 9, on: snapshot)
+        _ = try await Self.client(runner).tap(alias: 5, on: snapshot)
         _ = try await Self.client(runner).tap(alias: 4, on: snapshot)
-        #expect(runner.recordedEnvironments == [["SIM_USE_NO_DAEMON": "1"], ["SIM_USE_NO_DAEMON": "1"]])
+        _ = try await Self.client(runner).tapWhereShown(bar, on: snapshot)
+        #expect(runner.recordedEnvironments == [[:], [:], [:], [:]])
     }
 
     @Test("passes paste text after a terminator so it is never parsed as an option")
