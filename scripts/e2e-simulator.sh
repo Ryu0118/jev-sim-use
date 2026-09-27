@@ -152,8 +152,7 @@ tap_id_if_shown() {
 
 # Relaunches Calendar in its list view, which lists events as rows whatever the time of day, scrolled to today. A
 # relaunch may return it to the multi-day view, and the list keeps an earlier scroll position. Today's first event then
-# sits under the bar, where the tool does not see it as covered (the list lies in a labelled group, which the occlusion
-# check keeps apart from the bar), so the list is drawn down until it shows.
+# sits under the bar, so the list is drawn down until it shows; the goals are about the event form, not reaching it.
 open_calendar_list() {
     open_app "$CALENDAR" Calendar || return 1
     if ! screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List; then
