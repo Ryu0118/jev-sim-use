@@ -126,9 +126,9 @@ set_switch() {
     [[ $(value_of "$id") == "$want" ]]
 }
 
-# Relaunches the app `$1` in English, waits until sim-use reads it as `$2`, and answers first-run prompts, which appear
-# only on a fresh simulator. The launch arguments leave the simulator's own language as it is. Each further argument is
-# a `simctl privacy` service granted first: its permission alert belongs to the system, is shown in the simulator's own
+# Relaunches the app `$1` in English and waits until sim-use reads it as `$2`, past the screens a fresh simulator shows
+# on an app's first launch. The launch arguments leave the simulator's own language as it is. Each further argument is
+# a `simctl privacy` service granted first: a permission alert belongs to the system, shows in the simulator's own
 # language, and stayed over every later app until answered, so it is granted rather than tapped away.
 open_app() {
     local bundle=$1 name=$2 service
@@ -141,11 +141,33 @@ open_app() {
         [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]] && break
         sleep 0.5
     done
-    for prompt in Continue "Not Now"; do
-        screen_has '.role == "Button" and .label == $a' "$prompt" \
-            && sim-use tap --label "$prompt" --device "$DEVICE" --json >/dev/null && sleep 1
-    done
+    dismiss_first_run
     [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]]
+}
+
+# Answers the screens an app shows on its first launch, which arrive a few seconds after it and one after another: a
+# "What's New" sheet (Continue), an offer to sync or notify (Not Now), and system alerts that `simctl privacy` cannot
+# grant, such as notifications, which are answered with their first button (Don't Allow) since their labels are in the
+# simulator's language. Only this setup taps by label; it stops once two readings a second apart show none of them.
+dismiss_first_run() {
+    local quiet=0 screen point label
+    for _ in $(seq 1 12); do
+        screen=$(ui_json)
+        if [[ $(jq -r '.data.appLabel // empty' <<<"$screen") == SpringBoard ]]; then
+            point=$(jq -r '[.data.entries[] | select(.role == "Button")] | sort_by(.frame.y, .frame.x) | .[0].frame
+                | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"' <<<"$screen")
+            [[ -n $point ]] && sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null
+            quiet=0
+        elif label=$(jq -er '[.data.entries[] | select(.role == "Button" and (.label == "Continue" or .label == "Not Now"))]
+            [0].label' <<<"$screen"); then
+            sim-use tap --label "$label" --device "$DEVICE" --json >/dev/null
+            quiet=0
+        else
+            quiet=$((quiet + 1))
+            [[ $quiet -ge 2 ]] && return 0
+        fi
+        sleep 1
+    done
 }
 
 # Taps the element with identifier `$1` when it shows.
@@ -159,7 +181,7 @@ tap_id_if_shown() {
 # relaunch may return it to the multi-day view, and the list keeps an earlier scroll position. Today's first event then
 # sits under the bar, so the list is drawn down until it shows; the goals are about the event form, not reaching it.
 open_calendar_list() {
-    open_app "$CALENDAR" Calendar || return 1
+    open_app "$CALENDAR" Calendar location || return 1
     if ! screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List; then
         sim-use tap --id toggle-day-list-view --device "$DEVICE" --json >/dev/null && sleep 1
         sim-use tap --id list-view --device "$DEVICE" --json >/dev/null && sleep 1
