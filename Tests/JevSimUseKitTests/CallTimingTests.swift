@@ -63,6 +63,17 @@ struct CallTimingTests {
         #expect(baselines.deadline(for: .action, intrinsic: .milliseconds(1500)) == .milliseconds(1660))
     }
 
+    @Test("keeps the live floor clearly above the slowest healthy read seen, however fast the device's baseline")
+    func liveFloor() {
+        let baselines = CallBaselines()
+        for _ in 0 ..< 5 {
+            baselines.record(.read, .milliseconds(100))
+        }
+        // 4.73 s was the slowest healthy read measured, 3.05 s the one a sheet opening always takes; hangs took 10 s.
+        #expect(baselines.deadline(for: .read) >= .milliseconds(4730) + .seconds(1))
+        #expect(baselines.deadline(for: .read) < .seconds(10))
+    }
+
     @Test("reads an action's own duration from its arguments, with sim-use's defaults where none is given", arguments: [
         (["gesture", "scroll-up", "--duration=1.5"], Duration.milliseconds(1500)),
         (["swipe", "--from=1,2", "--to=3,4", "--duration=1.2"], .milliseconds(1200)),
