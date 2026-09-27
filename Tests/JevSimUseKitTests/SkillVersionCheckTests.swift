@@ -83,5 +83,6 @@ struct SkillVersionCheckTests {
     @Test("ships the skill with the binary's version, so a bump that misses SKILL.md fails here")
     func embeddedSkillMatchesBinary() {
         #expect(SkillBundle.version == JevSimUseVersion.current)
+        #expect(SkillBundle.markdown.contains("must be \(JevSimUseVersion.current),"))
     }
 }
