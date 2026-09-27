@@ -20,6 +20,12 @@ struct TypedTextTests {
                             after: [Self.field("Search", value: "Keyboard", width: 276)]) == true)
     }
 
+    @Test("lands in a search field whose label becomes the text it holds")
+    func labelBecomesText() {
+        #expect(Self.landed("Keyboard", before: Self.field("Search", value: "Search"),
+                            after: [Self.field("Keyboard", value: "Keyboard", width: 286)]) == true)
+    }
+
     @Test("does not land when the field still shows its placeholder")
     func placeholderStays() {
         #expect(Self.landed("Keyboard", before: Self.field("Search", value: "Search"),

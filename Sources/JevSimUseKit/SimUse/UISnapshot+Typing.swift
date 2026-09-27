@@ -21,14 +21,19 @@ extension UISnapshot {
         return wasEmpty && nowShows && after.value != before.value
     }
 
-    /// The element with `field`'s role, label, and identifier, the nearest one when several match: focusing a search
-    /// field narrowed it to make room for its Cancel button, so its frame is not compared.
+    /// The element with `field`'s role and identifier: the one that also keeps its label, else the nearest within
+    /// `fieldDrift` points. Focusing a search field narrowed it for its Cancel button, and typing into it made its label
+    /// the text, so neither frame nor label alone finds it.
     private func sameField(as field: UIEntry) -> UIEntry? {
         let center = field.frame?.center ?? (x: 0, y: 0)
-        return (entries ?? [])
-            .filter { $0.role == field.role && $0.label == field.label && $0.uniqueId == field.uniqueId }
+        let fields = (entries ?? []).filter { $0.role == field.role && $0.uniqueId == field.uniqueId }
+        let labelled = fields.filter { $0.label == field.label }
+        return (labelled.isEmpty ? fields.filter { distance($0, center) <= Self.fieldDrift } : labelled)
             .min { distance($0, center) < distance($1, center) }
     }
+
+    /// How far, in points summed over both axes, a field's centre may move between the paste and the next reading.
+    static let fieldDrift = 60.0
 
     private func distance(_ entry: UIEntry, _ point: (x: Double, y: Double)) -> Double {
         guard let center = entry.frame?.center else { return .infinity }
