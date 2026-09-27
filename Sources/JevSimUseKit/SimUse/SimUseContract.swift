@@ -11,9 +11,8 @@ package enum SimUseContract {
     static let noRawFlag = "--no-raw"
     /// Skips discovering physical iPhones for `devices`, which this tool never drives; the discovery took about a second.
     static let noPhysicalIOSFlag = "--no-physical-ios"
-    /// Runs a command in-process instead of through sim-use's per-device daemon. An iOS tap took 0.2 s this way and
-    /// 0.4 s through the daemon, which checks for crashed apps on every command. The daemon still reports an app that
-    /// disappeared on its next command, which is always the `ui` read after a tap.
+    /// Runs a command in-process instead of through sim-use's per-device daemon: only the read retried after a hung
+    /// daemon. Taps stay on the daemon, since outside it a tap without a hold reported ok and did nothing.
     static let noDaemonEnvironment = ["SIM_USE_NO_DAEMON": "1"]
     /// The iOS home screen's and system alerts' bundle id.
     static let springBoardBundle = "com.apple.springboard"

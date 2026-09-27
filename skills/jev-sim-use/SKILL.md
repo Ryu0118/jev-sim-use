@@ -148,6 +148,8 @@ Stop reasons on exit 1:
   line shows which answer was weak, such as `support 0.49 [operation 0.97, element 0.49]`: here, what to act on.
 - **no offered action advances the goal**: Jev does not know where the target lives. `tell` where it is, or get
   closer with `exec`, then `resume`.
+- **the last tap had no visible effect**: the tap left the screen as it was, so it may not have landed at all. Read
+  the screen: if the tap's target is still there untouched, tap it with `exec` or `tell` another way in, then `resume`.
 - **the screen stopped changing**: actions are not landing. Read the screen and look at it before resuming.
 - **the goal is probably reached, but not surely**: read the screen; if it is not done, `tell` what the finished
   screen looks like and `resume`.

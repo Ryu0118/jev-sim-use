@@ -93,7 +93,7 @@ struct CallDeadlineTests {
 
     /// Answers `daemon stop`, screens, and actions; calls whose kind is in `hanging` sleep until cancelled.
     private static func runner(hangingReads: Bool = false, hangingRetry: Bool = false, hangingGesture: Bool = false,
-                               gestureTakes: Duration = .zero) -> ScriptedCommandRunner
+                               hangingTap: Bool = false, gestureTakes: Duration = .zero) -> ScriptedCommandRunner
     {
         ScriptedCommandRunner { call in
             switch call.arguments.first {
@@ -103,6 +103,9 @@ struct CallDeadlineTests {
                     try await Task.sleep(for: hang)
                 }
                 return .screen(app: "A")
+            case SimUseContract.Command.tap where hangingTap:
+                try await Task.sleep(for: hang)
+                return .json(#"{"ok":true,"data":{}}"#)
             case SimUseContract.Command.gesture:
                 try await Task.sleep(for: hangingGesture ? hang : gestureTakes)
                 return .json(#"{"ok":true,"data":{}}"#)
@@ -160,6 +163,19 @@ struct CallDeadlineTests {
         }
         #expect(error?.isCallTimeout == true)
         #expect(runner.recordedCalls.count { $0.arguments.first == SimUseContract.Command.gesture } == 1)
+        #expect(runner.recordedCalls.count { $0.arguments.first == SimUseContract.Command.daemon } == 1)
+    }
+
+    /// Taps go through the daemon, so a daemon that hangs mid-tap must meet the same deadline as any other action.
+    @Test("kills a tap the daemon hangs on, stops the daemon once, and does not tap again")
+    func hungTapNotResent() async throws {
+        let runner = Self.runner(hangingTap: true)
+        let error = await #expect(throws: SimUseError.self) {
+            try await Self.client(runner).tap(alias: 4, on: Fixtures.snapshot(entries: [Fixtures.entry(4, "Row")]))
+        }
+        #expect(error?.isCallTimeout == true)
+        let taps = runner.recordedCalls.filter { $0.arguments.first == SimUseContract.Command.tap }
+        #expect(taps.count == 1 && taps.allSatisfy { !$0.bypassedDaemon })
         #expect(runner.recordedCalls.count { $0.arguments.first == SimUseContract.Command.daemon } == 1)
     }
 }
