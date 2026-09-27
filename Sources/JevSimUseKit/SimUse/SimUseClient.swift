@@ -82,7 +82,7 @@ package struct SimUseClient: DeviceDriving {
     /// Taps `entry` by coordinates: a switch or value row on its trailing control, anything else at its centre.
     package func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
         guard let frame = entry.frame else { return try await tapInPlace(alias: entry.aliases.alias, on: snapshot) }
-        return try await tap(point(on: entry, frame: frame, in: snapshot.space), on: snapshot.platform)
+        return try await tap(point(on: entry, frame: frame, in: snapshot.space))
     }
 
     /// One `ui` read, with `environment` added. The raw tree is kept because only it carries iOS accessibility hints;
@@ -103,8 +103,8 @@ package struct SimUseClient: DeviceDriving {
     private func tapInPlace(alias: Int, on snapshot: UISnapshot) async throws -> [String] {
         guard snapshot.platform == SimUseContract.Platform.ios,
               let entry = snapshot.entry(alias: alias), entry.isToggle || entry.isValueRow, let frame = entry.frame
-        else { return try await tap([SimUseContract.Command.tap, "@\(alias)"], on: snapshot.platform) }
-        return try await tap(point(on: entry, frame: frame, in: snapshot.space), on: snapshot.platform)
+        else { return try await tap([SimUseContract.Command.tap, "@\(alias)"]) }
+        return try await tap(point(on: entry, frame: frame, in: snapshot.space))
     }
 
     /// The `tap` arguments for a coordinate tap on `entry`. On iOS a switch (51 pt) or colour well (28 pt) sits at the
@@ -151,9 +151,11 @@ package struct SimUseClient: DeviceDriving {
     /// Extra readings allowed while a revealing scroll still moves the screen.
     static let revealSettleReads = 3
 
-    /// Runs a `tap` command, on iOS outside the daemon (see `SimUseContract.noDaemonEnvironment`).
-    private func tap(_ arguments: [String], on platform: String) async throws -> [String] {
-        try await run(arguments, environment: platform == SimUseContract.Platform.ios ? SimUseContract.noDaemonEnvironment : [:])
+    /// Runs a `tap` command through the daemon. Sent outside it (`SIM_USE_NO_DAEMON`), a tap without a hold reported
+    /// ok and did nothing on iOS 26.5 and 27.0, and a 0.05 s hold landed on one but not the other; through the daemon
+    /// the same point landed every time, at about 0.3 s more per tap.
+    private func tap(_ arguments: [String]) async throws -> [String] {
+        try await run(arguments)
     }
 
     private func softKeyboardIsVisible() async throws -> Bool {

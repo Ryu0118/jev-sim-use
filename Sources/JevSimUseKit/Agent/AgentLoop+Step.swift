@@ -25,7 +25,7 @@ extension AgentLoop {
             return false
         }
         return switch outcome {
-        case .escalated, .noActionFits: true
+        case .escalated, .noActionFits, .tapHadNoEffect: true
         default: false
         }
     }
@@ -50,7 +50,7 @@ extension AgentLoop {
             || plan.action != .wait && progress.ineffectiveActions.contains(plan.action.optionName)
             || progress.isFutileRepeat(plan.action)
         {
-            return .stop(.noActionFits(step: step))
+            return .stop(progress.tapWithoutEffect.map { .tapHadNoEffect(step: step, tap: $0) } ?? .noActionFits(step: step))
         }
         if plan.support < configuration.actionPolicy.requiredSupport(for: plan.risk) {
             return .stop(.escalated(step: step, action: plan.action, confidence: plan.support))

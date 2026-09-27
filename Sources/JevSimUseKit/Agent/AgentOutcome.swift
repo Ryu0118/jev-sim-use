@@ -12,6 +12,8 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case appCrashed(detail: String)
     /// Jev judged that none of the offered actions advances the goal.
     case noActionFits(step: Int)
+    /// As `noActionFits`, right after `tap`, a tap that left the screen as it was: it may not have landed at all.
+    case tapHadNoEffect(step: Int, tap: String)
     /// Jev chose DONE with support below `ActionPolicy.doneMinimum`: probably reached, but not enough to claim success.
     case goalProbablyReached(steps: Int, probability: Double)
     /// Two cycles in a row did not finish within the step timeout; the second one, at `step`, waited on `waitingOn`.
@@ -38,7 +40,7 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     /// Whether Jev chose to stop on what it saw, rather than a limit, a crash, or success ending the run.
     var isHandOver: Bool {
         switch self {
-        case .escalated, .noActionFits, .goalProbablyReached: true
+        case .escalated, .noActionFits, .tapHadNoEffect, .goalProbablyReached: true
         default: false
         }
     }
@@ -57,6 +59,9 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
             "Stopped after \(steps) action(s): the goal is probably reached (p="
                 + "\(probability.formatted(.number.precision(.fractionLength(2))))), but not surely; check the screen."
         case let .noActionFits(step): "Stopped at step \(step): no offered action advances the goal on this screen."
+        case let .tapHadNoEffect(step, tap):
+            "Stopped at step \(step): the last tap (\(tap)) had no visible effect; the screen stayed as it was. Check "
+                + "whether it landed before resuming."
         case let .stepTimedOut(step, waitingOn, seconds):
             "Stopped at step \(step): two steps in a row did not finish within \(seconds) s (the last waited on "
                 + "\(waitingOn.rawValue)). Check `jev-sim-use exec daemon status`, stop a hung daemon with "

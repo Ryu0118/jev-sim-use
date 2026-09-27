@@ -58,7 +58,7 @@ step's time:
   checks whether the screen moves on before handing over. So 1-3 s is normal, and 5-15 s on a step that hands over.
 - `jev`: the Jev request, about 0.2-0.5 s. A second request (the retry with accessibility hints) doubles it. A slow
   `jev` with a normal `read` is the API or the network, not the device.
-- `act`: the action. A tap takes about 0.2 s. A tap on a row that first has to be scrolled into view includes that
+- `act`: the action. A tap takes about 0.4 s, up to 1 s on a busy Mac. A tap on a row that first has to be scrolled into view includes that
   scroll and the readings after it, and `wait` includes its pause.
 - `(baseline …)` after `read` appears on a slow device: the median of its recent readings, which stretched the
   deadlines below. On a busy Mac (load average 100 or more) readings of 2-4 s are normal and not a hang.

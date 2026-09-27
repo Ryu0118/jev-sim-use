@@ -6,6 +6,7 @@ struct AgentProgress: Sendable {
     private let stepOffset: Int
     private var currentOutline: String?
     private var lastActionName: String?
+    private var lastActionWasTap = false
     /// Option names already tried on each screen. Repeating an action on an identical screen cannot help, and
     /// screens can alternate (a scroll that bounces), so this is keyed by screen rather than by the previous one.
     private var triedActions: [String: Set<String>] = [:]
@@ -48,6 +49,12 @@ struct AgentProgress: Sendable {
     /// The number the next action gets, counting the continued history.
     var nextStep: Int {
         stepOffset + steps + 1
+    }
+
+    /// The last action, when it was a tap that left the screen as it was.
+    var tapWithoutEffect: String? {
+        guard lastActionWasTap, let last = history.last, last.screenChanged == false else { return nil }
+        return last.action
     }
 
     /// Options code drops on the current screen instead of asking Jev to remember them.
@@ -131,6 +138,7 @@ struct AgentProgress: Sendable {
         history.append(HistoryEntry(step: nextStep, action: description, screenChanged: nil, timing: timing))
         steps += 1
         lastActionName = nil
+        lastActionWasTap = false
         lastTapLabel = nil
         menuOpener = nil
         repeatRun = nil
@@ -152,6 +160,11 @@ struct AgentProgress: Sendable {
         ))
         steps += 1
         lastActionName = action.optionName
+        lastActionWasTap = if case .tap = action {
+            true
+        } else {
+            false
+        }
         repeatRun = if let run = repeatRun, run.action == action.description {
             (run.action, run.skeletons.union([currentSkeleton]), run.states)
         } else {
