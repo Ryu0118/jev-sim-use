@@ -3,10 +3,15 @@ import Synchronization
 
 /// Answers the loop's screen-change waits from a script, in order (repeating the last), and records how long each
 /// wait was allowed. A wait answered `false` sleeps until its deadline, as a live watcher that saw nothing does.
-final class ScriptedScreenWatcher: ScreenChangeWatching {
+final class ScriptedScreenWatcher: ClosableScreenWatcher {
     private let changes: [Bool]
     private let stills: [Bool]
-    private let state = Mutex((changes: 0, stills: 0, changeSpans: [Duration]()))
+    private let state = Mutex((changes: 0, stills: 0, changeSpans: [Duration](), closes: 0))
+
+    /// How many times the watcher was closed.
+    var closes: Int {
+        state.withLock { $0.closes }
+    }
 
     /// How many times the loop waited for a change.
     var changeWaits: Int {
@@ -49,5 +54,9 @@ final class ScriptedScreenWatcher: ScreenChangeWatching {
             try await Task.sleep(until: deadline)
         }
         return still
+    }
+
+    func close() {
+        state.withLock { $0.closes += 1 }
     }
 }
