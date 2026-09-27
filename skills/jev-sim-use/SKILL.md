@@ -2,7 +2,7 @@
 name: jev-sim-use
 description: Reach a screen, setting, or filled-in form in an iOS Simulator or Android app with one command instead of driving sim-use tap by tap. Use it whenever an agent needs to navigate an app to some state before checking or testing something there ("open Settings > Display", "search for ramen and show the results", "sign in with this email", "create a memo and save it"), even if the user only says "go to", "open", or "get to". jev-sim-use hands each step to Jev, a fast typed-judgment model, so navigation costs one shell call rather than one reasoning turn per tap. Also runs any sim-use command through `jev-sim-use exec`.
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
 ---
 
 # jev-sim-use
@@ -25,7 +25,7 @@ it stops.
 ## Before the first run
 
 ```sh
-jev-sim-use --version  # must be 0.3.0, the version this skill is for
+jev-sim-use --version  # must be 0.3.1, the version this skill is for
 jev-sim-use doctor     # sim-use installed, one usable device, TYPESAFE_API_KEY set
 ```
 
