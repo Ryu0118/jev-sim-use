@@ -14,22 +14,31 @@ extension SimUseClient {
         let start = clock.now
         if let reading = try await within(deadline, { try await read() }) {
             timing.record(.read, clock.now - start)
-            timing.lastApp = reading.snapshot.appLabel
+            remember(reading.snapshot)
             return reading
         }
         let lastApp = timing.lastApp
         let stopped = await stopDaemon()
         report(DaemonRecovery(deviceID: device.deviceId, waited: deadline, daemonStopped: stopped))
-        guard var reading = try await within(deadline, { try await read(environment: SimUseContract.noDaemonEnvironment) })
-        else {
-            throw SimUseError.callTimedOut(command: SimUseContract.Command.ui, seconds: deadline / .seconds(1), daemonStopped: stopped)
+        let outside = { () async throws -> ScreenObservation in
+            guard let reading = try await within(deadline, { try await read(environment: SimUseContract.noDaemonEnvironment) })
+            else {
+                throw SimUseError.callTimedOut(command: SimUseContract.Command.ui, seconds: deadline / .seconds(1), daemonStopped: stopped)
+            }
+            return reading
         }
-        timing.lastApp = reading.snapshot.appLabel
+        var reading = try await outside()
         // The daemon reports an app that disappeared on its next command, and that report went with the stopped
-        // daemon; a read outside it reports none. An app no longer on screen may have crashed, so it counts as gone.
-        if let lastApp, lastApp != reading.snapshot.appLabel {
-            reading.disappearedApps.append("\(lastApp), gone from the screen when a hung sim-use daemon was replaced")
+        // daemon; a read outside it reports none. An app no longer on screen may have crashed, so it counts as gone,
+        // but only when a second reading agrees: a first one can catch a launch or an alert on its way.
+        if let lastApp, Self.shows(reading.snapshot, without: lastApp) {
+            let again = try await outside()
+            reading = ScreenObservation(snapshot: again.snapshot, disappearedApps: reading.disappearedApps + again.disappearedApps)
+            if Self.shows(reading.snapshot, without: lastApp) {
+                reading.disappearedApps.append("\(lastApp), gone from the screen when a hung sim-use daemon was replaced")
+            }
         }
+        remember(reading.snapshot)
         return reading
     }
 
@@ -61,6 +70,22 @@ extension SimUseClient {
             defer { group.cancelAll() }
             return try await group.next() ?? nil
         }
+    }
+
+    /// Keeps the app `snapshot` shows as the one to look for after a replacement; SpringBoard is not an app a run
+    /// drives, so the app under it stays the one.
+    private func remember(_ snapshot: UISnapshot) {
+        if let bundle = snapshot.appPackage, bundle != SimUseContract.springBoardBundle {
+            timing.lastApp = bundle
+        }
+    }
+
+    /// Whether `snapshot` shows that the app `bundle` left the screen. It goes by the bundle id, since right after a
+    /// launch sim-use gave the new app's elements under the previous app's label. SpringBoard showing buttons is an
+    /// alert over the app, not the home screen, whose icons sim-use does not list.
+    private static func shows(_ snapshot: UISnapshot, without bundle: String) -> Bool {
+        guard let shown = snapshot.appPackage, shown != bundle else { return false }
+        return shown != SimUseContract.springBoardBundle || !(snapshot.entries ?? []).contains { $0.role == "Button" }
     }
 
     /// The deadlines this device's calls get now; none off iOS, whose calls run without one.
