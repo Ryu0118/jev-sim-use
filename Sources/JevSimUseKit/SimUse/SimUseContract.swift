@@ -18,6 +18,12 @@ package enum SimUseContract {
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 
+    /// `flag` with its value joined as `flag=value`, which sim-use cannot read as another option even when the value
+    /// starts with `-`. Coordinates are passed this way.
+    static func option(_ flag: String, _ value: String) -> String {
+        "\(flag)=\(value)"
+    }
+
     /// The advisory kind sim-use attaches when it could not confirm the screen's orientation and assumed one.
     static let orientationFallback = "orientation_calibration_fallback"
 
@@ -92,7 +98,7 @@ package enum SimUseContract {
             let left = centerX - fingerOffset, right = centerX + fingerOffset
             let points = [(left, from), (right, from), (left, to), (right, to)].map { space.native(x: $0.0, y: $0.1) }
             let values = points.flatMap { [$0.x, $0.y] }.map { "\($0)" }
-            return [command] + zip(flags, values).flatMap { [$0, $1] } + [duration, "0.8"]
+            return [command] + zip(flags, values).map(SimUseContract.option) + [duration, "0.8"]
         }
     }
 
@@ -103,7 +109,7 @@ package enum SimUseContract {
 
         /// A swipe between two device-native points.
         static func arguments(from start: (x: Double, y: Double), to end: (x: Double, y: Double)) -> [String] {
-            [Command.swipe, from, "\(start.x),\(start.y)", to, "\(end.x),\(end.y)"]
+            [Command.swipe, option(from, "\(start.x),\(start.y)"), option(to, "\(end.x),\(end.y)")]
         }
 
         static let duration = "--duration"

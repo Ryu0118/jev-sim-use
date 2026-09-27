@@ -123,7 +123,7 @@ struct OcclusionTests {
         _ = try await client(runner).tap(alias: 29, on: snapshot)
         #expect(runner.recordedCalls.map { Array($0.prefix(5)) } == [
             ["gesture", "scroll-up", "--duration", "1.5", "--device"], ["ui", "--device", "D", "--json"],
-            ["ui", "--device", "D", "--json"], ["tap", "-x", "360.0", "-y", "622.0"],
+            ["ui", "--device", "D", "--json"], ["tap", "-x=360.0", "-y=622.0", "--duration", "0.05"],
         ])
     }
 

@@ -26,7 +26,10 @@ package enum ElementGesture: String, Sendable, Hashable, CaseIterable {
         }
         func twoFinger(_ preset: String) -> [String] {
             let pivot = space.native(x: center.x, y: center.y)
-            return [SimUseContract.Command.gesture, preset, Gesture.centerX, "\(pivot.x)", Gesture.centerY, "\(pivot.y)"]
+            return [
+                SimUseContract.Command.gesture, preset, SimUseContract.option(Gesture.centerX, "\(pivot.x)"),
+                SimUseContract.option(Gesture.centerY, "\(pivot.y)"),
+            ]
         }
         return switch self {
         case .longPress: [SimUseContract.Command.longPress, "@\(alias)"]
