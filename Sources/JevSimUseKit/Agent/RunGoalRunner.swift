@@ -10,6 +10,7 @@ package struct RunGoalRunner: Sendable {
     private let now: @Sendable () -> Date
     private let makeSessionID: @Sendable () -> String
     private let makePlanner: @Sendable (JevSettings) -> any StepPlanning
+    private let screenWatch: (any ScreenWatchOpening)?
 
     package init(
         bootstrap: SimUseBootstrap,
@@ -19,6 +20,7 @@ package struct RunGoalRunner: Sendable {
         now: @escaping @Sendable () -> Date = { Date() },
         makeSessionID: @escaping @Sendable () -> String = { String(UUID().uuidString.prefix(8)).lowercased() },
         makePlanner: @escaping @Sendable (JevSettings) -> any StepPlanning = { JevStepPlanner(client: $0.makeClient()) },
+        screenWatch: (any ScreenWatchOpening)? = nil,
     ) {
         self.bootstrap = bootstrap
         self.configStore = configStore
@@ -27,6 +29,7 @@ package struct RunGoalRunner: Sendable {
         self.now = now
         self.makeSessionID = makeSessionID
         self.makePlanner = makePlanner
+        self.screenWatch = screenWatch
     }
 
     /// Resolves settings, pins the device, and runs the agent loop until it stops.
@@ -57,6 +60,8 @@ package struct RunGoalRunner: Sendable {
         session.deviceID = connection.client.device.deviceId
         try sessionStore.save(session)
         report(.session(id: session.id, resumed: resumed))
+        let screen = await screenWatcher(for: connection.client.device, report: report)
+        defer { screen?.close() }
 
         let result = try await AgentLoop(
             driver: connection.client,
@@ -68,7 +73,9 @@ package struct RunGoalRunner: Sendable {
                 unchangedWait: AgentLoop.unchangedWait, waitDuration: AgentLoop.waitDuration,
                 handOverWait: AgentLoop.handOverWait, stepTimeout: request.stepTimeout,
                 minUnchangedReads: AgentLoop.minUnchangedReads, minHandOverReads: AgentLoop.minHandOverReads,
+                quietPeriod: AgentLoop.quietPeriod, settleWait: AgentLoop.settleWait,
             ),
+            screen: screen,
             report: { report(.agent($0)) },
         ).run(continuing: session.history)
 
@@ -83,5 +90,22 @@ package struct RunGoalRunner: Sendable {
             try sessionStore.save(session)
         }
         return RunGoalOutcome(sessionID: session.id, outcome: result.outcome)
+    }
+
+    /// A watcher on the pinned simulator's screen, or `nil` after one debug note when there is none: the loop then
+    /// reads by polling, as it always did.
+    private func screenWatcher(
+        for device: SimUseDevice, report: @Sendable (RunGoalEvent) -> Void,
+    ) async -> (any ClosableScreenWatcher)? {
+        guard let screenWatch else { return nil }
+        do throws(ScreenWatchError) {
+            guard device.platform == SimUseContract.Platform.ios, device.kind == "simulator" else {
+                throw .notASimulator(device.deviceId)
+            }
+            return try await screenWatch.open(simulatorID: device.deviceId)
+        } catch {
+            report(.debug("no screen-change watcher (\(error)); reading the screen by polling"))
+            return nil
+        }
     }
 }

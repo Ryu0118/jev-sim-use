@@ -10,6 +10,8 @@ package enum RunGoalEvent: Sendable, Hashable, CustomStringConvertible {
     case warning(String)
     /// A step of the agent loop.
     case agent(AgentEvent)
+    /// A detail for whoever debugs the tool, such as why the screen is read by polling; hidden by default.
+    case debug(String)
 
     /// A single progress line for the console.
     package var description: String {
@@ -19,6 +21,7 @@ package enum RunGoalEvent: Sendable, Hashable, CustomStringConvertible {
             (resumed ? "Resuming session \(id)" : "Session: \(id)") + " (deleted when the goal is reached)"
         case let .warning(message): "Warning: \(message)"
         case let .agent(event): event.description
+        case let .debug(note): "Debug: \(note)"
         }
     }
 }

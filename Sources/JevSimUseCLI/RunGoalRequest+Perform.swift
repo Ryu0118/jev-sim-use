@@ -10,10 +10,16 @@ extension RunGoalRequest {
             configStore: UserConfigStore(environment: context.environment),
             sessionStore: SessionStore(environment: context.environment),
             environment: context.environment,
+            screenWatch: SimulatorScreenWatchOpener(environment: context.environment),
         )
         let result: RunGoalOutcome
         do {
-            result = try await runner.run(self) { context.output.standardError($0.description) }
+            result = try await runner.run(self) { event in
+                if case .debug = event, !context.showsDebug {
+                    return
+                }
+                context.output.standardError(event.description)
+            }
         } catch {
             throw context.failure(error)
         }
