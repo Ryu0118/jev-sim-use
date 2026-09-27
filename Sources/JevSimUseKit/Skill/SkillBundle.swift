@@ -10,6 +10,11 @@ package enum SkillBundle {
         files.first { $0.path == fileName }?.contents ?? ""
     }
 
+    /// The version SKILL.md's frontmatter declares, which the release workflow keeps equal to the binary's.
+    package static var version: String? {
+        SkillFrontmatter.version(in: markdown)
+    }
+
     /// Every bundled file's path inside the skill directory, SKILL.md first.
     package static var paths: [String] {
         files.map(\.path)
