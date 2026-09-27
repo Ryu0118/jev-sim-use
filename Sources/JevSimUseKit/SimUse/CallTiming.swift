@@ -37,9 +37,10 @@ package struct CallTimingPolicy: Sendable, Hashable {
     /// a slowest read 7.6 times it (3.5 s and 4.7 s) under light load, while a hung daemon answered in 10-20 s or never.
     /// A factor of 8 keeps the slowest healthy read under the deadline (5 s at that median); the 3 s floor still catches
     /// a hang on a fast device. The ceiling stops a stretch of slow reads that did answer from pushing a read's deadline
-    /// past 32 s. A run's first reads also start the daemon, so they get 15 s.
+    /// past 32 s. A run's first read also starts the daemon, so it gets 15 s; two samples end the cold start, since a
+    /// daemon frozen early left no read to record and kept every later read at 15 s.
     package static let standard = CallTimingPolicy(
-        floor: .seconds(3), factor: 8, window: 15, ceiling: .seconds(4), coldStart: .seconds(15), coldSamples: 3,
+        floor: .seconds(3), factor: 8, window: 15, ceiling: .seconds(4), coldStart: .seconds(15), coldSamples: 2,
     )
 
     /// The time an action takes by its own arguments: its `--duration`, or sim-use's default hold for a long-press
@@ -87,16 +88,16 @@ package final class CallBaselines: Sendable {
     func deadline(for kind: CallKind, intrinsic: Duration = .zero) -> Duration {
         // A run's first actions come after its reads started the daemon, so the read baseline stands in for theirs;
         // a first hung gesture waited the whole cold start (17 s) otherwise.
-        guard let baseline = baseline(kind) ?? (kind == .action ? baseline(.read) : nil) else {
+        guard let baseline = baseline(kind) ?? (kind == .action ? baseline(.read, samples: 1) : nil) else {
             return policy.coldStart + intrinsic
         }
         return max(policy.floor, baseline * policy.factor) + intrinsic
     }
 
     /// The median of recent calls of `kind`, capped at the ceiling, once `coldSamples` were timed.
-    func baseline(_ kind: CallKind) -> Duration? {
+    func baseline(_ kind: CallKind, samples minimum: Int? = nil) -> Duration? {
         let recent = samples.withLock { kind == .read ? $0.reads : $0.actions }
-        guard recent.count >= policy.coldSamples, !recent.isEmpty else { return nil }
+        guard recent.count >= (minimum ?? policy.coldSamples), !recent.isEmpty else { return nil }
         return min(recent.sorted()[recent.count / 2], policy.ceiling)
     }
 
