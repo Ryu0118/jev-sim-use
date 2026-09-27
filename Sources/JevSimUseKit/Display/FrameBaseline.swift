@@ -13,6 +13,10 @@ struct FrameBaseline: Sendable {
     /// Rows compared: every second one, since a point spans at least two rows at 2x and 3x, which halves the work.
     static let rowStride = 2
 
+    /// Changes narrower than this share of a row are left out: a caret is about 3 px of a 1206 px row (0.25 %), while
+    /// a spinner or a row's check mark is several percent.
+    static let narrowFraction = 0.01
+
     private var rows: [UInt8] = []
     private var bytesPerRow = 0
     private var height = 0
@@ -38,17 +42,31 @@ struct FrameBaseline: Sendable {
             return resized
         }
 
-        var changed = false
+        // The span of bytes that changed across all compared rows: a change narrower than `narrowFraction` of the row
+        // is a blinking caret, which keeps blinking for as long as a field has focus.
+        var firstChanged = Int.max
+        var lastChanged = -1
         rows.withUnsafeMutableBytes { stored in
-            guard let base = stored.baseAddress else { return }
+            guard let base = stored.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return }
+            let sourceBytes = source.assumingMemoryBound(to: UInt8.self)
             for (index, row) in compared.enumerated() {
                 let target = base + index * bytesPerRow
-                if memcmp(target, source + row * bytesPerRow, bytesPerRow) != 0 {
-                    memcpy(target, source + row * bytesPerRow, bytesPerRow)
-                    changed = true
+                let incoming = sourceBytes + row * bytesPerRow
+                guard memcmp(target, incoming, bytesPerRow) != 0 else { continue }
+                var low = 0
+                while target[low] == incoming[low] {
+                    low += 1
                 }
+                var high = bytesPerRow - 1
+                while target[high] == incoming[high] {
+                    high -= 1
+                }
+                firstChanged = min(firstChanged, low)
+                lastChanged = max(lastChanged, high)
+                memcpy(target, incoming, bytesPerRow)
             }
         }
-        return changed
+        guard lastChanged >= 0 else { return false }
+        return Double(lastChanged - firstChanged + 1) >= Double(bytesPerRow) * Self.narrowFraction
     }
 }
