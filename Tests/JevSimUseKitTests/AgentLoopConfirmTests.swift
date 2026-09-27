@@ -105,7 +105,8 @@ struct AgentLoopConfirmTests {
     @Test("falls back to reading until two readings agree when the confirming readings keep disagreeing")
     func fallback() async throws {
         let planner = RecordingDonePlanner()
-        let (loop, _) = loop((1 ... 9).map { Fixtures.snapshot(outline: "Frame \($0)") }, planner)
+        // Each frame lists an element: a reading with none is blank, and is read past rather than planned on.
+        let (loop, _) = loop((1 ... 9).map { Fixtures.snapshot(outline: "Frame \($0)", entries: [Fixtures.entry(0, "Frame \($0)", role: "Heading")]) }, planner)
         _ = try await loop.run()
         #expect(planner.outlines == ["Frame 1", "Frame 2", "Frame 6"])
     }
