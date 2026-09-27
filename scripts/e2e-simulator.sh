@@ -133,21 +133,48 @@ set_switch() {
     return 1
 }
 
-# Relaunches the app `$1` in English, waits until sim-use reads it as `$2`, and answers first-run prompts, which appear
-# only on a fresh simulator. The launch arguments leave the simulator's own language as it is.
+# Relaunches the app `$1` in English and waits until sim-use reads it as `$2`, past the screens a fresh simulator shows
+# on an app's first launch. The launch arguments leave the simulator's own language as it is. Each further argument is
+# a `simctl privacy` service granted first: a permission alert belongs to the system, shows in the simulator's own
+# language, and stayed over every later app until answered, so it is granted rather than tapped away.
 open_app() {
-    local bundle=$1 name=$2
+    local bundle=$1 name=$2 service
+    for service in "${@:3}"; do
+        xcrun simctl privacy "$DEVICE" grant "$service" "$bundle" || return 1
+    done
     xcrun simctl terminate "$DEVICE" "$bundle" >/dev/null 2>&1
     xcrun simctl launch "$DEVICE" "$bundle" -AppleLanguages "(en)" -AppleLocale en_US >/dev/null || return 1
     for _ in $(seq 1 20); do
         [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]] && break
         sleep 0.5
     done
-    for prompt in Continue "Not Now"; do
-        screen_has '.role == "Button" and .label == $a' "$prompt" \
-            && sim-use tap --label "$prompt" --device "$DEVICE" --json >/dev/null && sleep 1
-    done
+    dismiss_first_run
     [[ $(ui_json | jq -r '.data.appLabel // empty') == "$name" ]]
+}
+
+# Answers the screens an app shows on its first launch, which arrive a few seconds after it and one after another: a
+# "What's New" sheet (Continue), an offer to sync or notify (Not Now), and system alerts that `simctl privacy` cannot
+# grant, such as notifications, which are answered with their first button (Don't Allow) since their labels are in the
+# simulator's language. Only this setup taps by label; it stops once two readings a second apart show none of them.
+dismiss_first_run() {
+    local quiet=0 screen point label
+    for _ in $(seq 1 12); do
+        screen=$(ui_json)
+        if [[ $(jq -r '.data.appLabel // empty' <<<"$screen") == SpringBoard ]]; then
+            point=$(jq -r '[.data.entries[] | select(.role == "Button")] | sort_by(.frame.y, .frame.x) | .[0].frame
+                | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"' <<<"$screen")
+            [[ -n $point ]] && sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null
+            quiet=0
+        elif label=$(jq -er '[.data.entries[] | select(.role == "Button" and (.label == "Continue" or .label == "Not Now"))]
+            [0].label' <<<"$screen"); then
+            sim-use tap --label "$label" --device "$DEVICE" --json >/dev/null
+            quiet=0
+        else
+            quiet=$((quiet + 1))
+            [[ $quiet -ge 2 ]] && return 0
+        fi
+        sleep 1
+    done
 }
 
 # Taps the element with identifier `$1` when it shows.
@@ -161,7 +188,7 @@ tap_id_if_shown() {
 # relaunch may return it to the multi-day view, and the list keeps an earlier scroll position. Today's first event then
 # sits under the bar, so the list is drawn down until it shows; the goals are about the event form, not reaching it.
 open_calendar_list() {
-    open_app "$CALENDAR" Calendar || return 1
+    open_app "$CALENDAR" Calendar location || return 1
     if ! screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list; then
         sim-use tap --id toggle-day-list-view --device "$DEVICE" --json >/dev/null && sleep 1
         sim-use tap --id list-view --device "$DEVICE" --json >/dev/null && sleep 1
@@ -169,6 +196,22 @@ open_calendar_list() {
     tap_id_if_shown today-button
     sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null && sleep 1
     screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list
+}
+
+# Opens the event in the list whose label starts with `$1`, the first one below the bar that covers the list's top or
+# the `$2`th after it (a later occurrence of a repeating event), and waits for its details.
+open_calendar_event() {
+    local point
+    point=$(ui_json | jq -r --arg a "$1" --argjson n "${2:-0}" '[.data.entries[]
+        | select(((.label // "") | startswith($a)) and .frame.y > 110)]
+        | sort_by(.frame.y) | .[$n].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
+    [[ -n $point ]] || return 1
+    sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
+    for _ in $(seq 1 10); do
+        screen_has '.uniqueId == "alert-cell"' && return 0
+        sleep 0.5
+    done
+    return 1
 }
 
 # Calendar's list view without any event an earlier run left behind.
@@ -186,7 +229,13 @@ delete_calendar_events() {
     for _ in 1 2 3 4 5; do
         point=$(ui_json | jq -r '[.data.entries[] | select(((.label // "") | startswith("E2E-")) and .frame.y > 110)]
             | sort_by(.frame.y) | .[0].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
-        [[ -n $point ]] || break
+        if [[ -z $point ]]; then
+            # A row left under the bar cannot be tapped; drawing the list down brings it below.
+            screen_has '(.label // "") | startswith("E2E-")' || break
+            sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null
+            sleep 1
+            continue
+        fi
         sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
         sleep 1.5
         tap_id_if_shown delete-event-cell
@@ -262,6 +311,29 @@ stdout_has() {
     grep -qF -- "$2" "$run_dir/$1.stdout.txt"
 }
 
+# The actions the run `$1` took, one per line in its step-line wording ("Press Return", "Tap the Button labelled …"). A
+# step's timing line follows its action, or ends the run for the last step, which took none; the plan just before
+# each timing line is what ran, since a step may be planned more than once.
+actions_taken() {
+    perl -ne 'if (/\[(\d+)\] took /) { push @done, $plan{$1} } elsif (/\[(\d+)\] (.*?) \(support/) { $plan{$1} = $2 }
+        END { pop @done; print "$_\n" for @done }' "$run_dir/$1.stderr.txt"
+}
+
+# Whether the run `$1` took an action matching the extended regex `$2`.
+took_action() {
+    actions_taken "$1" | grep -qE -- "$2"
+}
+
+# Whether the run `$1`'s actions, joined with " | ", match the extended regex `$2`; anchor it to match them whole.
+actions_are() {
+    [[ $(actions_taken "$1" | paste -sd'|' - | sed 's/|/ | /g') =~ $2 ]]
+}
+
+# Whether the back button names `$1`: the screen was reached from the screen with that title.
+back_is() {
+    screen_has '.uniqueId == "BackButton" and .label == $a' "$1"
+}
+
 session_of() {
     sed -nE 's/^Session: ([0-9a-f]+)$/\1/p' "$run_dir/$1.stdout.txt"
 }
@@ -278,6 +350,7 @@ goal_route() {
     jsu run "In Settings, open General, then Keyboard, then Text Replacement" -d "$DEVICE" --max-steps 8
     check "exit status 0" status_is run 0
     check "the Text Replacement screen shows" heading_is "Text Replacement"
+    check "it was reached from Keyboard, the step before it" back_is Keyboards
 }
 
 # A switch, which ignores a centre tap.
@@ -316,6 +389,9 @@ goal_search() {
     check "the search for the query ran" screen_has '.role != "TextField" and .role != "SearchField"
         and ((.label // "") | contains("Keyboard"))'
     check "two actions ran: the typing and Return" stdout_has run "after 2 action(s)."
+    # Its last two actions: a Return pressed before typing is the placeholder limit described above.
+    check "the query was typed, then Return pressed" actions_are run \
+        '(Enter the query into .*|Replace the text in .* with the query) \| Press Return$'
 }
 
 # An unreachable goal hands over; a supervisor's note makes the resumed run reach it.
@@ -334,6 +410,7 @@ means the About screen under General; the goal is reached when the About screen 
     jsu resume session resume "$session" -d "$DEVICE" --max-steps 8
     check "the resumed run exits 0" status_is resume 0
     check "the About screen shows" heading_is About
+    check "it is the About screen under General, as the note says" back_is General
     check "the finished session is deleted" negate session_exists "$session"
 }
 
@@ -351,29 +428,50 @@ goal_calendar() {
     local title=E2E-Standup
     open_calendar || return 1
     jsu run "Create a new event titled with the title text, set its Alert to 15 minutes before, open its date and \
-time to set Repeat to Every Week, then save it" -t title="$title" -d "$DEVICE" --max-steps 12
+time to set Repeat to Every Week, then save it; the goal is reached when the event shows in the list" \
+        -t title="$title" -d "$DEVICE" --max-steps 12
     check "exit status 0" status_is run 0
     check "the list shows the event" screen_has '(.label // "") | startswith($a)' "$title"
+    # The second run changes the alert, so the first run's alert and repeat are read here, by opening the event
+    # without Jev.
+    if open_calendar_event "$title"; then
+        check "the event's details show the alert asked for" screen_has '.uniqueId == "alert-cell" and .label == $a' \
+            "Alert, 15 minutes before"
+        check "the event repeats weekly" screen_has '.uniqueId == "event-details-recurrence-button"
+            and ((.label // "") | test("weekly"; "i"))'
+    else
+        check "the event opens from the list" false
+    fi
     open_calendar_list || return 1
-    jsu run2 "Open the event titled with the title text and change its alert to 5 minutes before, then save the \
-change" -t title="$title" -d "$DEVICE" --max-steps 8
+    jsu run2 "Open the event titled with the title text and change its alert to 5 minutes before, then save it for \
+future events" -t title="$title" -d "$DEVICE" --max-steps 8
     check "the edit exits 0" status_is run2 0
     check "the event's details show the new alert" screen_has '.uniqueId == "alert-cell" and .label == $a' \
         "Alert, 5 minutes before"
     check "the event still repeats weekly" screen_has '.uniqueId == "event-details-recurrence-button"
         and ((.label // "") | test("weekly"; "i"))'
+    # Saved for future events, the next week's occurrence has the new alert too; saved for this event only, it would
+    # keep the old one.
+    if open_calendar_list && open_calendar_event "$title" 1; then
+        check "the next occurrence shows the new alert too" screen_has '.uniqueId == "alert-cell" and .label == $a' \
+            "Alert, 5 minutes before"
+    else
+        check "the next occurrence opens from the list" false
+    fi
     check "the event is deleted afterwards" open_calendar
 }
 
 # Searching Maps with a typed place and opening it with Return. Needs the network.
 goal_maps() {
-    open_app "$MAPS" Maps || return 1
+    open_app "$MAPS" Maps location || return 1
     tap_id_if_shown CardButtonTypeClose
     jsu run "Search for the place in the Maps search field, then press Return" -t place="Golden Gate Bridge" \
         -d "$DEVICE" --max-steps 6 --actions tap,type,return
     check "exit status 0" status_is run 0
     check "the place card for the place shows" screen_has '.uniqueId == "PlaceHeaderView"
         and ((.label // "") | startswith("Golden Gate Bridge"))'
+    check "the place was typed, then Return pressed" actions_are run \
+        '^(Enter the place into .*|Replace the text in .* with the place) \| Press Return$'
     tap_id_if_shown CardButtonTypeClose
 }
 
@@ -384,6 +482,8 @@ goal_photos() {
     jsu run "Open the first photo in the library, then go back to the library" -d "$DEVICE" --max-steps 6
     check "exit status 0" status_is run 0
     check "two actions ran: opening the photo and going back" stdout_has run "after 2 action(s)."
+    # Every cell is labelled "Photo", so which photo opened cannot be told from the log; that it was a photo can.
+    check "a photo was opened, then the run went back" actions_are run '^Tap the Image labelled "Photo" \| Go back$'
     check "the library grid shows again" screen_has '.uniqueId == "LibraryTab" and (.states | index("selected"))'
 }
 
@@ -400,7 +500,28 @@ longer shows" -t title="$title" \
         -d "$DEVICE" --max-steps 5 --actions tap,swipe
     check "the deletion exits 0" status_is run2 0
     check "the reminder is gone" negate screen_has '(.label // "") | startswith($a)' "$title"
+    check "the deletion used a swipe action" took_action run2 '^Swipe'
     check "no reminder is left behind" open_reminders
+}
+
+# Stops the recording `$1` without ever blocking the suite: SIGINT makes simctl write the file, and the suite once
+# waited 26 minutes on a recorder that had inherited an ignored SIGINT. If it is still running 10 s after SIGINT, it is
+# killed and the goal's checks note it: the file may be truncated, and a recorder that did not stop on SIGINT left the
+# simulator's recording busy ("Host recording is already in progress") until the simulator rebooted, so later goals
+# may go unrecorded (a recorder that cannot start exits at once). SIGTERM is no gentler: it wrote an empty file.
+stop_recorder() {
+    local pid=$1
+    kill -INT "$pid" 2>/dev/null
+    for _ in $(seq 1 20); do
+        kill -0 "$pid" 2>/dev/null || {
+            wait "$pid" 2>/dev/null
+            return 0
+        }
+        sleep 0.5
+    done
+    kill -KILL "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    echo "NOTE  the recording may be truncated: the recorder ignored SIGINT for 10 s and was killed" >>"$run_dir/checks.txt"
 }
 
 # --- Driver --------------------------------------------------------------------------------------------------------
@@ -419,13 +540,16 @@ for name in "${selected[@]}"; do
         : >"$run_dir/checks.txt"
         echo "== $name (run $run)" >&2
 
-        xcrun simctl io "$DEVICE" recordVideo --codec h264 --force "$run_dir/recording.mp4" >/dev/null 2>&1 &
+        # A non-interactive shell starts background jobs with SIGINT ignored; restoring it lets SIGINT finish the file.
+        (
+            trap - INT
+            exec xcrun simctl io "$DEVICE" recordVideo --codec h264 --force "$run_dir/recording.mp4" >/dev/null 2>&1
+        ) &
         recorder=$!
         started=$(date +%s)
         "goal_${name//-/_}" || echo "FAIL  setup: could not reach the starting screen" >>"$run_dir/checks.txt"
         wall=$(($(date +%s) - started))
-        kill -INT "$recorder" 2>/dev/null
-        wait "$recorder" 2>/dev/null
+        stop_recorder "$recorder"
 
         for prefix in run run2 resume; do
             [[ -f $run_dir/$prefix.stdout.txt ]] || continue
