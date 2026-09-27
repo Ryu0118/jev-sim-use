@@ -70,7 +70,9 @@ Never write unit tests after the code.
   daemon 10-20 s or never; under a load average of 100-400 healthy reads took 2-4 s, which a fixed 3 s cut. Past its
   deadline a call is killed and `daemon stop --device <udid> --timeout 1` runs (the only place that stops daemons),
   once per hang: a read is retried once with `SIM_USE_NO_DAEMON=1` (reported as a warning), an action is never
-  re-sent and throws `SimUseError.callTimedOut`, as does a retried read that hangs too. Only answered calls enter the
+  re-sent and throws `SimUseError.callTimedOut`, as does a retried read that hangs too. The retried read reports the
+  app from before the hang as gone only when its bundle id (`appPackage`; the label lags a launch) is off screen in
+  two readings in a row, SpringBoard with buttons (an alert over the app) aside. Only answered calls enter the
   baseline, so a hang cannot poison it. Outer (`AgentLoop+Timeout`): one cycle (read, plan, act) gets
   `--step-timeout` (default 20 s, 0/off disables it) or, when longer, three read deadlines plus the longest action's
   plus Jev's room (8 times its recent median, at least 10 s), so a hung call meets its own deadline first. The
