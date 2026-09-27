@@ -93,7 +93,11 @@ Never write unit tests after the code.
   file's bytes in a raw string (a file holding the terminator fails the build). Releases ship the executable alone,
   so there is no resource bundle. Editing the Markdown is enough; `SkillEmbeddingTests` checks the plugin's output
   against the directory. The plugin targets set `path:` because `plugins/` is the agent plugin (and, on a
-  case-insensitive disk, SwiftPM's default `Plugins`). CLI:
+  case-insensitive disk, SwiftPM's default `Plugins`). SKILL.md's frontmatter carries `metadata.version` (the Agent Skills spec's free-form map; Claude Code, Codex, and
+  `gh skill` ignore keys they do not know), equal to `JevSimUseVersion.current` (`SkillVersionCheckTests`).
+  `SkillVersionCheck` compares the copies `skill install` writes (`~/.claude/skills`, `~/.agents/skills`) with the
+  binary: `run` warns once per mismatched copy at its start and `doctor` fails its `skill` check; no installed copy is
+  fine, a copy without a version or unreadable counts as outdated, and versions compare by `major.minor.patch`. CLI:
   `jev-sim-use skill install|uninstall|print [<path>]` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
 - Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
   `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are
@@ -291,7 +295,9 @@ pop-up menu", "the dismiss button") and keep raw logs local.
 
 ## Release
 
-`.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
+`.github/workflows/release.yml` runs `scripts/bump-version.sh` via `workflow_dispatch`: `Version.swift`, SKILL.md's
+version (frontmatter and its `--version` line), `apm.yml`, and the plugin manifests, in the build job (so the embedded
+skill matches) and again in the job that commits the bump.
 It builds the universal binary with `scripts/build-release.sh` (`--build-system swiftbuild`: Swift 6.3's default
 build system cannot resolve the EmbedSkill plugin in a multi-arch build), which CI's `Universal Release Build` job
 also runs on every change.
