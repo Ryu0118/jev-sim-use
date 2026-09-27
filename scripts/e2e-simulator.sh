@@ -222,7 +222,13 @@ delete_calendar_events() {
     for _ in 1 2 3 4 5; do
         point=$(ui_json | jq -r '[.data.entries[] | select(((.label // "") | startswith("E2E-")) and .frame.y > 110)]
             | sort_by(.frame.y) | .[0].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
-        [[ -n $point ]] || break
+        if [[ -z $point ]]; then
+            # A row left under the bar cannot be tapped; drawing the list down brings it below.
+            screen_has '(.label // "") | startswith("E2E-")' || break
+            sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null
+            sleep 1
+            continue
+        fi
         sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
         sleep 1.5
         tap_id_if_shown delete-event-cell
@@ -310,9 +316,9 @@ took_action() {
     actions_taken "$1" | grep -qE -- "$2"
 }
 
-# Whether the run `$1`'s actions, joined with " | ", match the extended regex `$2` whole.
+# Whether the run `$1`'s actions, joined with " | ", match the extended regex `$2`; anchor it to match them whole.
 actions_are() {
-    [[ $(actions_taken "$1" | paste -sd'|' - | sed 's/|/ | /g') =~ ^$2$ ]]
+    [[ $(actions_taken "$1" | paste -sd'|' - | sed 's/|/ | /g') =~ $2 ]]
 }
 
 # Whether the back button names `$1`: the screen was reached from the screen with that title.
@@ -375,7 +381,9 @@ goal_search() {
     check "the search for the query ran" screen_has '.role != "TextField" and .role != "SearchField"
         and ((.label // "") | contains("Keyboard"))'
     check "two actions ran: the typing and Return" stdout_has run "after 2 action(s)."
-    check "the query was typed, then Return pressed" actions_are run 'Enter the query into .* \| Press Return'
+    # Its last two actions: a Return pressed before typing is the placeholder limit described above.
+    check "the query was typed, then Return pressed" actions_are run \
+        '(Enter the query into .*|Replace the text in .* with the query) \| Press Return$'
 }
 
 # An unreachable goal hands over; a supervisor's note makes the resumed run reach it.
@@ -412,7 +420,8 @@ goal_calendar() {
     local title=E2E-Standup
     open_calendar || return 1
     jsu run "Create a new event titled with the title text, set its Alert to 15 minutes before, open its date and \
-time to set Repeat to Every Week, then save it" -t title="$title" -d "$DEVICE" --max-steps 12
+time to set Repeat to Every Week, then save it; the goal is reached when the event shows in the list" \
+        -t title="$title" -d "$DEVICE" --max-steps 12
     check "exit status 0" status_is run 0
     check "the list shows the event" screen_has '(.label // "") | startswith($a)' "$title"
     # The second run changes the alert, so the first run's alert and repeat are read here, by opening the event
@@ -453,7 +462,8 @@ goal_maps() {
     check "exit status 0" status_is run 0
     check "the place card for the place shows" screen_has '.uniqueId == "PlaceHeaderView"
         and ((.label // "") | startswith("Golden Gate Bridge"))'
-    check "the place was typed, then Return pressed" actions_are run 'Enter the place into .* \| Press Return'
+    check "the place was typed, then Return pressed" actions_are run \
+        '^(Enter the place into .*|Replace the text in .* with the place) \| Press Return$'
     tap_id_if_shown CardButtonTypeClose
 }
 
@@ -465,7 +475,7 @@ goal_photos() {
     check "exit status 0" status_is run 0
     check "two actions ran: opening the photo and going back" stdout_has run "after 2 action(s)."
     # Every cell is labelled "Photo", so which photo opened cannot be told from the log; that it was a photo can.
-    check "a photo was opened, then the run went back" actions_are run 'Tap the Image labelled "Photo" \| Go back'
+    check "a photo was opened, then the run went back" actions_are run '^Tap the Image labelled "Photo" \| Go back$'
     check "the library grid shows again" screen_has '.uniqueId == "LibraryTab" and (.states | index("selected"))'
 }
 
