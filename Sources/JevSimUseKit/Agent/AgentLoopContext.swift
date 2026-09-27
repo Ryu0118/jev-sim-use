@@ -4,6 +4,8 @@ struct AgentLoopContext: Sendable {
     var progress: AgentProgress
     /// The screen the last action was taken on; `nil` once a plan's target was gone from the screen.
     var actedOn: UISnapshot?
+    /// When the last action was sent, for the screen-change watcher: its effect can start before the call returns.
+    var actedAt: ContinuousClock.Instant?
     /// The field and text of the last action when it typed, until the next reading shows whether the text landed.
     var typing: (field: Int, text: InputText)?
     /// Times this step was planned again because the screen moved on while Jev decided to stop.

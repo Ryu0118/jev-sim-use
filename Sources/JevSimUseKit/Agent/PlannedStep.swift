@@ -11,4 +11,6 @@ struct PlannedStep: Sendable {
     /// Whether the two readings agree: the same elements in the same places (values aside, as relative times tick),
     /// or the same elements and states wherever they sit (a tab switch still animating the same content).
     let settled: Bool
+    /// When planning began, before the confirming reading was taken: a change after it may not be in that reading.
+    let plannedAt: ContinuousClock.Instant
 }
