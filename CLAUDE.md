@@ -62,22 +62,27 @@ Never write unit tests after the code.
   via ProcessRunning, which collects both streams concurrently and stops reading once the child exits.
 - `JevSimUseKit/SimUse`: locate sim-use on `PATH` through `FileManagerProtocol` (not via `/usr/bin/env`, so "not
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
-  `SimUseDaemonWatchdog` gives every iOS `ui` read through the daemon a 3 s deadline (healthy reads 0.45-0.67 s, a
-  hung daemon's 10-20 s or never): past it the read is cancelled, `daemon stop --device <udid> --timeout 1` runs, and
-  the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run, reported as a warning. After that reads are
-  waited out up to 30 s (`SimUseError.readTimedOut` past it): a natural hang answered in about 10 s and a fresh daemon
-  hung again within a minute, so failing sooner would end runs that finish today. The outer backstop is the step
-  timeout (`--step-timeout`, default 20 s, `AgentLoop+Timeout`): one cycle (read, plan, act) that does not finish in
-  time is cancelled, which kills the sim-use child or the Jev request it waits on (and the confirming read), the
-  daemon is stopped, one warning is reported, and the step is recorded as cut off (its action "may or may not have
-  landed", not marked tried). The loop then reads and plans again instead of re-sending the action, waiting for a
-  late effect as after any action; a second cut in a row ends the run as `AgentOutcome.stepTimedOut`, exit 3, with
-  the session kept for resume. A re-plan on a screen that moved on starts its own cycle, and the hand-over wait and
-  `wait` extend the deadline by their own settings; a Jev call past 20 s (swift-jev retries three times, each up to
-  60 s) is a network fault, so it is cut too. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
+  One timing policy covers hangs, in two layers. Inner (`SimUseClient+Daemon`, `CallBaselines`): every iOS sim-use
+  call, reads and actions, gets a deadline of `factor` (8) times the median of the device's last 15 answered calls of
+  its kind, at least 3 s, capped at a 4 s baseline, 15 s for a run's first three calls (which also start the
+  daemon), with an action's own duration (`--duration`, or sim-use's 0.8 s long-press / 0.5 s swipe default) added
+  over its overhead. Measured under light load: `ui` median 0.62 s, 99th percentile 3.5 s, slowest 4.7 s; a hung
+  daemon 10-20 s or never; under a load average of 100-400 healthy reads took 2-4 s, which a fixed 3 s cut. Past its
+  deadline a call is killed and `daemon stop --device <udid> --timeout 1` runs (the only place that stops daemons),
+  once per hang: a read is retried once with `SIM_USE_NO_DAEMON=1` (reported as a warning), an action is never
+  re-sent and throws `SimUseError.callTimedOut`, as does a retried read that hangs too. Only answered calls enter the
+  baseline, so a hang cannot poison it. Outer (`AgentLoop+Timeout`): one cycle (read, plan, act) gets
+  `--step-timeout` (default 20 s, 0/off disables it) or, when longer, three read deadlines plus the longest action's
+  plus Jev's room (8 times its recent median, at least 10 s), so a hung call meets its own deadline first. The
+  unchanged-screen and hand-over waits and `wait` stand outside that clock (their reads are guarded) and take at least
+  3 and 7 reads. A cycle past its deadline is cancelled, killing the sim-use child or Jev request (and the confirming
+  read), without stopping the daemon again. A cut cycle and a timed-out call are one kind of hang incident: recorded
+  as a cut step (its action "may or may not have landed", not marked tried), re-read and planned again, waiting for
+  a late effect as after any action; two in a row end the run as `AgentOutcome.stepTimedOut`, exit 3, with the
+  session kept for resume. The step line shows `read …s (baseline …s)` when the baseline stretched a deadline. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
   report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
   counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
-  the default `--timeout`). Android reads have no deadline: their normal time was never measured.
+  the default `--timeout`). Android calls have no deadline: their normal time was never measured.
 - `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
   `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
   numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.

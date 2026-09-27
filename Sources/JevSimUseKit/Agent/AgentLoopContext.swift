@@ -14,8 +14,10 @@ struct AgentLoopContext: Sendable {
     var timing = StepTiming()
     /// Where the finished steps' time went.
     var finishedTiming = StepTiming()
-    /// Cycles in a row cut off by the step timeout.
+    /// Cycles in a row that ended in a hang: cut off by the cycle deadline, or a sim-use call that timed out.
     var consecutiveCuts = 0
+    /// Jev's time on recent steps, for the cycle's deadline.
+    var recentJev: [Double] = []
     /// What the current cycle is doing, for the step timeout.
     let watch = StepWatch()
 
@@ -44,6 +46,7 @@ struct AgentLoopContext: Sendable {
         }
         staleReplans = 0
         disagreements = 0
+        recentJev = Array((recentJev + [timing.jev]).suffix(10))
         finishedTiming += timing
         timing = StepTiming()
         return step

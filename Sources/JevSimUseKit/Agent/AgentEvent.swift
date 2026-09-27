@@ -2,7 +2,7 @@
 package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
     /// `step` did not finish within `seconds` while waiting on `waitingOn`; it was cut off and the sim-use daemon
     /// stopped (`daemonStopped` tells whether it went). When `retrying`, the screen is read and planned again.
-    case stepCutOff(step: Int, waitingOn: StepTiming.Part, seconds: Int, daemonStopped: Bool, retrying: Bool)
+    case stepCutOff(step: Int, waitingOn: StepTiming.Part, seconds: Int, daemonStopped: Bool?, retrying: Bool)
     /// A plan was made for `step`.
     case planned(step: Int, plan: StepPlan)
     /// The step would hand over, so it is asked again with the screen's accessibility hints.
@@ -25,7 +25,8 @@ package enum AgentEvent: Sendable, Hashable, CustomStringConvertible {
             "[\(step)] unsure; asking again with the screen's accessibility hints"
         case let .stepCutOff(step, waitingOn, seconds, daemonStopped, retrying):
             "[\(step)] warning: cut off after \(seconds) s waiting on \(waitingOn.rawValue); "
-                + (daemonStopped ? "the sim-use daemon was stopped" : "the sim-use daemon could not be stopped")
+                + (daemonStopped.map { $0 ? "the sim-use daemon was stopped" : "the sim-use daemon could not be stopped" }
+                    ?? "the step was cancelled")
                 + (retrying ? ", and the screen is read and planned again" : "")
         case let .lowConfidence(step, confidence):
             "[\(step)] acting with moderate confidence \(Self.format(confidence))"

@@ -21,7 +21,7 @@ extension SimUseError {
         switch self {
         case .notInstalled, .unreadableVersion, .outdated, .noDevice, .multipleDevices, .hardwareKeyboardRequired,
              .pasteboardUnavailable, .typedTextNotLanded: true
-        case .commandFailed, .malformedOutput, .readTimedOut, .targetNotRevealed: false
+        case .commandFailed, .malformedOutput, .callTimedOut, .targetNotRevealed: false
         }
     }
 }

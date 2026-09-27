@@ -48,4 +48,4 @@ rules:
   doc: skills/jev-sim-use/SKILL.md
   message: A CLI option, default, exit status, or stop reason changed; update skills/jev-sim-use/SKILL.md
     (the next build embeds it).
-  checksum: b0e1f0e51d337c26bad02304488e390075bda5ea240201cc4ed9fc53a7f07445
+  checksum: 7d379e2c3e58e9d6c0c41457ee6e53a53c7274ec8b678d7dea30b1837bc5e99e

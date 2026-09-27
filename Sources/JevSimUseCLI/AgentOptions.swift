@@ -17,8 +17,8 @@ struct AgentOptions: ParsableArguments {
     var actions: String?
 
     @Option(help: ArgumentHelp(
-        "Cut a step (read, plan, act) off after this many seconds, restart the sim-use daemon, and plan it again; a "
-            + "second cut in a row ends the run (exit 3). 0 or off disables it.",
+        "Cut a step (read, plan, act) off after at least this many seconds, more on a slow device, and plan it again; "
+            + "two hangs in a row end the run (exit 3). 0 or off disables the step limit.",
         valueName: "seconds",
     ))
     var stepTimeout = "20"

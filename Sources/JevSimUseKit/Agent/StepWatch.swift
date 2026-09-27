@@ -11,6 +11,7 @@ final class StepWatch: Sendable {
         var action: AgentAction?
         var plannedOn: UISnapshot?
         var latest: AgentLoopContext?
+        var pausedAt: ContinuousClock.Instant?
     }
 
     private let state = Mutex(State())
@@ -52,15 +53,30 @@ final class StepWatch: Sendable {
         }
     }
 
-    /// Moves the deadline out by `duration`, for a wait whose length its own setting bounds.
-    func extend(by duration: Duration) {
-        state.withLock { $0.deadline += duration }
+    /// Stops the cycle's clock for a wait whose every read has its own deadline (the unchanged-screen wait, the
+    /// hand-over wait, `wait`): on a slow device those waits take as long as their minimum reads need.
+    func pause() {
+        state.withLock { $0.pausedAt = $0.pausedAt ?? .now }
     }
 
-    /// Returns once the deadline has passed, rechecking it as waits extend it.
+    /// Starts the clock again, moving the deadline by the time it stood.
+    func resume() {
+        state.withLock { state in
+            guard let pausedAt = state.pausedAt else { return }
+            state.deadline += ContinuousClock.now - pausedAt
+            state.pausedAt = nil
+        }
+    }
+
+    /// Sets the deadline `timeout` from the cycle's start.
+    func limit(to timeout: Duration, from start: ContinuousClock.Instant) {
+        state.withLock { $0.deadline = start + timeout }
+    }
+
+    /// Returns once the deadline has passed, rechecking it while the clock stands or waits move it.
     func sleepUntilDeadline() async throws {
         while true {
-            let remaining = state.withLock { $0.deadline } - .now
+            let remaining = state.withLock { $0.pausedAt == nil ? $0.deadline - .now : .milliseconds(100) }
             guard remaining > .zero else { return }
             try await Task.sleep(for: min(remaining, .milliseconds(100)))
         }

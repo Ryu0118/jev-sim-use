@@ -100,6 +100,13 @@ extension AgentLoop {
         return []
     }
 
+    /// Readings after an action that left the screen as it was, however long they take: `unchangedWait` held three
+    /// healthy reads (0.62 s each), and a slow Mac, whose reads took 2-4 s, still needs them to see a slow save land.
+    static let minUnchangedReads = 3
+
+    /// Readings before a hand-over, however long they take: `handOverWait` held seven healthy reads.
+    static let minHandOverReads = 7
+
     /// How long a live run keeps reading for a screen that moves on before handing over.
     static let handOverWait: Duration = .seconds(5)
 
@@ -118,13 +125,18 @@ extension AgentLoop {
     /// read again, back to back (one `ui` read takes about 0.4 s, so no sleep is needed between them), until it
     /// changes or `unchangedWait` passes. `settled` reads until two readings agree each time, for when overlapped
     /// confirmation keeps disagreeing.
-    func observeAfterAction(on previous: UISnapshot?, settled: Bool) async throws -> ScreenObservation {
+    func observeAfterAction(on previous: UISnapshot?, settled: Bool, watch: StepWatch? = nil) async throws -> ScreenObservation {
         let read = { settled ? try await observeSettled() : try await driver.observe() }
         var observation = try await read()
         guard let previous else { return observation }
+        // Each read has its own deadline, so the wait stands outside the cycle's; a slow device gets its reads.
+        watch?.pause()
+        defer { watch?.resume() }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.unchangedWait)
-        while clock.now < deadline, observation.snapshot.identity == previous.identity {
+        var reads = 1
+        while clock.now < deadline || reads < configuration.minUnchangedReads, observation.snapshot.identity == previous.identity {
+            reads += 1
             let next = try await read()
             observation = ScreenObservation(
                 snapshot: next.snapshot, disappearedApps: observation.disappearedApps + next.disappearedApps,
@@ -142,13 +154,15 @@ extension AgentLoop {
         let deadline = clock.now.advanced(by: configuration.handOverWait)
         var disappeared: [String] = []
         var reading: ScreenObservation
+        var reads = 0
         repeat {
+            reads += 1
             reading = try await driver.observe()
             disappeared += reading.disappearedApps
             if reading.snapshot.layout != snapshot.layout {
                 break
             }
-        } while clock.now < deadline
+        } while clock.now < deadline || reads < configuration.minHandOverReads
         reading.disappearedApps = disappeared
         return (reading, reading.snapshot.layout != snapshot.layout)
     }

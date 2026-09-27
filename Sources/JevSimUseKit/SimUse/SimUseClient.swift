@@ -6,19 +6,26 @@ package struct SimUseClient: DeviceDriving {
     /// The device every command targets.
     package let device: SimUseDevice
     let invoker: SimUseInvoker
-    let watchdog: SimUseDaemonWatchdog
+    /// Recent call durations on this device, which set each call's deadline (see `SimUseClient+Daemon`).
+    let timing: CallBaselines
+    /// Receives each replacement of a hung daemon.
+    let report: @Sendable (DaemonRecovery) -> Void
 
-    init(device: SimUseDevice, invoker: SimUseInvoker, watchdog: SimUseDaemonWatchdog = SimUseDaemonWatchdog()) {
+    init(
+        device: SimUseDevice, invoker: SimUseInvoker, timing: CallBaselines = CallBaselines(),
+        report: @escaping @Sendable (DaemonRecovery) -> Void = { _ in },
+    ) {
         self.device = device
         self.invoker = invoker
-        self.watchdog = watchdog
+        self.timing = timing
+        self.report = report
     }
 
-    /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. On iOS a read that outlasts the watchdog's
-    /// deadline replaces the hung daemon (see `SimUseDaemonWatchdog`); Android read times were never measured, so
-    /// Android reads have no deadline.
+    /// Runs `sim-use ui`, which also refreshes the alias cache `tap` uses. On iOS a read that outlasts its deadline
+    /// replaces the hung daemon (see `guardedRead`); Android call times were never measured, so Android calls have no
+    /// deadline.
     package func observe() async throws -> ScreenObservation {
-        device.platform == SimUseContract.Platform.ios ? try await watchedRead() : try await read()
+        device.platform == SimUseContract.Platform.ios ? try await guardedRead() : try await read()
     }
 
     /// Runs `sim-use tap @alias`. An iOS switch ignores that instant tap at the row's centre, so a toggle is tapped on
@@ -153,9 +160,8 @@ package struct SimUseClient: DeviceDriving {
         struct KeyboardState: Decodable, Sendable {
             let visible: Bool?
         }
-        let envelope = try await invoker.invoke(
-            [SimUseContract.Command.keyboardState] + deviceArguments, as: KeyboardState.self,
-        )
+        let arguments = [SimUseContract.Command.keyboardState] + deviceArguments
+        let envelope = try await guarded(.read, arguments) { try await invoker.invoke(arguments, as: KeyboardState.self) }
         return envelope.data?.visible ?? false
     }
 
@@ -163,12 +169,13 @@ package struct SimUseClient: DeviceDriving {
         [SimUseContract.deviceFlag, device.deviceId]
     }
 
+    /// Runs an action within its deadline (see `guarded`).
     private func run(
         _ arguments: [String], operands: [String] = [], environment: [String: String] = [:],
     ) async throws -> [String] {
-        let envelope = try await invoker.invoke(
-            arguments + deviceArguments, operands: operands, environment: environment, as: EmptyPayload.self,
-        )
+        let envelope = try await guarded(.action, arguments) {
+            try await invoker.invoke(arguments + deviceArguments, operands: operands, environment: environment, as: EmptyPayload.self)
+        }
         return envelope.process?.disappearedBundleIDs ?? []
     }
 }

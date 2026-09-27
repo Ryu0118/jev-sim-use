@@ -72,6 +72,15 @@ struct StepTimingTests {
         #expect(timing.handOver == 0 && abs(timing.total - 0.8) < 0.0001)
         #expect(!timing.description.contains("hand-over"))
     }
+
+    @Test("shows the read baseline when the read deadline stretched past its floor, and decodes timings saved without it")
+    func baselineShown() throws {
+        var timing = StepTiming(read: 2.8, jev: 0.2, act: 0.1)
+        timing.readBaseline = 1.9
+        #expect(timing.description.hasPrefix("read 2.80s (baseline 1.90s)"))
+        let old = try JSONDecoder().decode(StepTiming.self, from: Data(#"{"read":0.5,"jev":0.2,"act":0.1,"hand_over":0}"#.utf8))
+        #expect(old.readBaseline == nil && !old.description.contains("baseline"))
+    }
 }
 
 /// Delays every screen read by `readDelay`.
