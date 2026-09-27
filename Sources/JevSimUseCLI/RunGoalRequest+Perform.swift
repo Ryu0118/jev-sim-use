@@ -20,6 +20,7 @@ extension RunGoalRequest {
         context.output.standardOutput("\(result.outcome)")
         guard !result.outcome.isSuccess else { return }
         context.output.standardOutput("Session: \(result.sessionID)")
-        throw ExitCode.failure
+        // A step cut off twice means sim-use or Jev stopped answering: a runtime failure, with the session kept.
+        throw result.outcome.isRuntimeFailure ? ExitCode(ExitStatus.runtime) : ExitCode.failure
     }
 }

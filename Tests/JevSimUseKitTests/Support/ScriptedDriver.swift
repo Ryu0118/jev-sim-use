@@ -7,6 +7,8 @@ final class ScriptedDriver: DeviceDriving {
     private let readings: [ScreenObservation]
     private let reads = Mutex(0)
     private let actions = Mutex<[String]>([])
+    /// What `pasteboardHolds` answers: whether the simulator's pasteboard holds the pasted text, `nil` for unknown.
+    private let pasteboard: Bool?
 
     var performedActions: [String] {
         actions.withLock { $0 }
@@ -19,8 +21,9 @@ final class ScriptedDriver: DeviceDriving {
         })
     }
 
-    init(readings: [UISnapshot]) {
+    init(readings: [UISnapshot], pasteboard: Bool? = nil) {
         self.readings = readings.map { ScreenObservation(snapshot: $0, disappearedApps: []) }
+        self.pasteboard = pasteboard
     }
 
     func observe() async throws -> ScreenObservation {
@@ -44,6 +47,10 @@ final class ScriptedDriver: DeviceDriving {
 
     func paste(_ text: String, replacing: Bool) async throws -> [String] {
         record(replacing ? "paste --replace \(text)" : "paste \(text)")
+    }
+
+    func pasteboardHolds(_: String) async -> Bool? {
+        pasteboard
     }
 
     private func record(_ action: String) -> [String] {

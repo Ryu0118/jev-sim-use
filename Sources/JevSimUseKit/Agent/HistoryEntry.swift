@@ -10,6 +10,8 @@ package struct HistoryEntry: Codable, Sendable, Hashable {
     package var timing: StepTiming?
     /// Whether the action's effect can leave the screen as it was (a refresh); `nil` in sessions saved before it.
     package var effectMayNotShow: Bool?
+    /// `false` when typed text did not show in its field on the next reading; `nil` otherwise. The text is not kept.
+    package var textLanded: Bool?
 
     package init(
         step: Int, action: String, screenChanged: Bool?, effectMayNotShow: Bool? = nil, timing: StepTiming? = nil,
@@ -27,5 +29,6 @@ package struct HistoryEntry: Codable, Sendable, Hashable {
         case screenChanged = "screen_changed"
         case timing
         case effectMayNotShow = "effect_may_not_show"
+        case textLanded = "text_landed"
     }
 }

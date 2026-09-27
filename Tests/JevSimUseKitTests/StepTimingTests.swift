@@ -30,9 +30,10 @@ struct StepTimingTests {
     @Test("blames a slow Jev reply on Jev, not on the screen reads it overlapped")
     func slowJevIsJev() async throws {
         let (result, _) = try await Self.run(readDelay: .zero, planDelay: Self.slow)
-        // Two plans each wait `slow`. Blamed on reading, the confirming read would count about as much as Jev.
+        // Two plans each wait `slow`. Blamed on reading, the confirming read would count about as much as Jev, twice
+        // `slow`; a CI runner spent 0.26 s on the reads themselves, so the bound is one `slow`.
         #expect(result.timing.jev >= 2 * Self.slowSeconds)
-        #expect(result.timing.read < Self.slowSeconds / 2)
+        #expect(result.timing.read < Self.slowSeconds)
     }
 
     @Test("counts the wait for a confirming read that outlasts Jev's reply as reading")
@@ -60,7 +61,8 @@ struct StepTimingTests {
         let configuration = AgentConfiguration(goal: "g", handOverWait: Self.slow)
         let result = try await AgentLoop(driver: driver, planner: FakePlanner([.blocked()]), configuration: configuration).run()
         #expect(result.timing.handOver >= Self.slowSeconds)
-        #expect(result.timing.read < Self.slowSeconds / 2)
+        // Blamed on reading, the wait would add a whole `slow`; a CI runner spent 0.29 s on the reads themselves.
+        #expect(result.timing.read < Self.slowSeconds)
         #expect(result.timing.description.contains("hand-over"))
     }
 

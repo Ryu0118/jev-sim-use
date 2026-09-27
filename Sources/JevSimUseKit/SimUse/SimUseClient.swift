@@ -61,6 +61,17 @@ package struct SimUseClient: DeviceDriving {
         return try await run([SimUseContract.Command.paste] + replace, operands: [text])
     }
 
+    /// Reads a simulator's pasteboard with `xcrun simctl pbpaste`, which sim-use's paste fills with `simctl pbcopy`.
+    /// `nil` for other devices, or when it cannot be read.
+    package func pasteboardHolds(_ text: String) async -> Bool? {
+        guard device.kind == Self.simulatorKind else { return nil }
+        // A failed read is "unknown", which only records the step as not landed instead of stopping the run.
+        guard let output = try? await invoker.runner.run(Self.xcrun, arguments: ["simctl", "pbpaste", device.deviceId], environment: [:]),
+              output.exitCode == 0
+        else { return nil }
+        return String(decoding: output.stdout, as: UTF8.self) == text
+    }
+
     /// Taps `entry` by coordinates: a switch or value row on its trailing control, anything else at its centre.
     package func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
         guard let frame = entry.frame else { return try await tapInPlace(alias: entry.aliases.alias, on: snapshot) }

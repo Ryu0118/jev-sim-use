@@ -1,5 +1,5 @@
 /// A plan with the readings it was made on and checked against.
-struct PlannedStep {
+struct PlannedStep: Sendable {
     /// The reading Jev planned on.
     let observation: ScreenObservation
     /// The confirming reading taken while Jev planned, or `observation` when none was taken.

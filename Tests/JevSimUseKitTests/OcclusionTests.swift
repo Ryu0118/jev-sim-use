@@ -197,6 +197,24 @@ struct OcclusionTests {
         #expect(snapshot.cover(of: row) == nil)
     }
 
+    @Test("a row scrolled under the navigation bar does not cover the bar's buttons, which the bar draws over it")
+    func barButtonOverRowBeneathBar() {
+        let bar = entry(12, "", ElementFrame(x: 0, y: 62, width: 402, height: 54), role: "Group", band: "Top", depth: 1)
+        let add = entry(11, "Add", ElementFrame(x: 345, y: 66, width: 37, height: 36), band: "Top")
+        let row = entry(7, "Holiday, all-day", ElementFrame(x: 0, y: 51, width: 402, height: 44), role: "StaticText",
+                        region: ElementRegion(kind: "Group", label: "Events"))
+        let snapshot = Fixtures.snapshot(entries: [row, add, bar])
+        #expect(snapshot.cover(of: add) == nil)
+        #expect(snapshot.cover(of: row) == bar)
+    }
+
+    @Test("an element at the same depth still covers a target's centre when nothing shallower is drawn over it")
+    func sameDepthOverlayWithoutBar() {
+        let button = entry(3, "Share", ElementFrame(x: 300, y: 400, width: 40, height: 40))
+        let panel = entry(4, "Panel", ElementFrame(x: 0, y: 410, width: 402, height: 100), role: "GenericElement")
+        #expect(Fixtures.snapshot(entries: [button, panel]).cover(of: button) == panel)
+    }
+
     private func entry(
         _ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", band: String? = nil, depth: Int = 2,
         region: ElementRegion? = nil,

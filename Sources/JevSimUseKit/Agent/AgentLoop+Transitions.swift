@@ -8,10 +8,14 @@ extension AgentLoop {
         let observation = if let pending, context.overlapped {
             pending
         } else {
-            try await context.timing.add(to: \.read) { try await observeAfterAction(on: actedOn, settled: settled) }
+            try await context.timed(\.read) { try await observeAfterAction(on: actedOn, settled: settled) }
         }
         if let outcome = context.progress.record(observation, stallLimit: configuration.stallLimit) {
             return .finished(outcome)
+        }
+        if let typing = context.typing {
+            context.typing = nil
+            try await checkLanded(typing, in: observation.snapshot, context: &context)
         }
         return .planning(observation)
     }
@@ -26,7 +30,7 @@ extension AgentLoop {
         let plan: StepPlan
         let progress = context.progress
         do {
-            plan = try await context.timing.add(to: \.jev) { try await self.plan(for: observation.snapshot, progress: progress) }
+            plan = try await context.timed(\.jev) { try await self.plan(for: observation.snapshot, progress: progress) }
         } catch {
             confirmation?.cancel()
             throw error
@@ -38,15 +42,21 @@ extension AgentLoop {
            let target = stableBarTarget(of: plan, on: observation.snapshot, before: context.actedOn, progress: context.progress),
            case let .act(action) = decide(on: plan, progress: context.progress)
         {
-            let disappeared = try await context.timing.add(to: \.act) {
-                try await driver.tapWhereShown(target, on: observation.snapshot)
+            context.watch.acting(action, on: observation.snapshot)
+            let disappeared: [String]
+            do {
+                disappeared = try await context.timed(\.act) { try await driver.tapWhereShown(target, on: observation.snapshot) }
+            } catch {
+                confirmation?.cancel()
+                throw error
             }
-            let late = try await context.timing.add(to: \.read) { try await confirmation?.value }
+            context.watch.acting(nil, on: nil)
+            let late = try await context.timed(\.read) { try await Self.value(of: confirmation) }
             acted(action, disappeared: disappeared + (late?.disappearedApps ?? []), on: observation.snapshot, context: &context)
             return .observing(pending: nil)
         }
         // Only the wait after Jev answered counts: the rest of the confirming read ran under Jev's request.
-        let fresh = try await context.timing.add(to: \.read) { try await confirmation?.value } ?? observation
+        let fresh = try await context.timed(\.read) { try await Self.value(of: confirmation) } ?? observation
         // The confirming reading follows the planned one with no action between: what changed is changing on its own.
         if confirmation != nil {
             context.progress.noteReading(fresh.snapshot)
@@ -67,7 +77,7 @@ extension AgentLoop {
         if shouldRetryWithHints(decision, on: step.observation.snapshot) {
             report(.retryingWithHints(step: context.progress.nextStep))
             let progress = context.progress
-            let hinted = try await context.timing.add(to: \.jev) {
+            let hinted = try await context.timed(\.jev) {
                 try await plan(for: step.observation.snapshot, progress: progress, withHints: true)
             }
             decision = decide(on: hinted, progress: context.progress)
@@ -88,7 +98,8 @@ extension AgentLoop {
         // scrolled at 0.40 and stopped. Before handing over, keep reading briefly and plan again if the screen moved on
         // (jev-ultrafast checks freshness the same way), a bounded number of times per step.
         guard context.staleReplans < Self.staleReplanLimit, outcome.isHandOver else { return .finished(outcome) }
-        let (again, changed) = try await context.timing.add(to: \.handOver) { try await reading(changedFrom: step.fresh.snapshot) }
+        context.watch.extend(by: configuration.handOverWait)
+        let (again, changed) = try await context.timed(\.handOver) { try await reading(changedFrom: step.fresh.snapshot) }
         // An app that disappeared while the wait read is a crash, whether or not the screen moved on.
         if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
             return .finished(crash)
@@ -103,7 +114,7 @@ extension AgentLoop {
         let target = if step.overlapped {
             confirmed(action, planned: step.observation.snapshot, fresh: step.fresh.snapshot, progress: context.progress)
         } else {
-            try await context.timing.add(to: \.read) { [progress = context.progress] in
+            try await context.timed(\.read) { [progress = context.progress] in
                 try await isStillCurrent(step.observation.snapshot, progress: progress)
             } ? action : nil
         }
@@ -117,9 +128,42 @@ extension AgentLoop {
         {
             return .finished(outcome)
         }
-        let (performed, disappeared) = try await context.timing.add(to: \.act) { try await perform(target, on: step.fresh.snapshot) }
+        context.watch.acting(target, on: step.fresh.snapshot)
+        if target == .wait {
+            context.watch.extend(by: configuration.waitDuration)
+        }
+        let (performed, disappeared) = try await context.timed(\.act) { try await perform(target, on: step.fresh.snapshot) }
+        context.watch.acting(nil, on: nil)
         acted(performed, disappeared: disappeared, on: step.fresh.snapshot, context: &context)
         return .observing(pending: nil)
+    }
+
+    /// The confirming reading, cancelled with the caller: a cut-off cycle must not leave it running.
+    static func value(of confirmation: Task<ScreenObservation, any Error>?) async throws -> ScreenObservation? {
+        guard let confirmation else { return nil }
+        return try await withTaskCancellationHandler {
+            try await confirmation.value
+        } onCancel: {
+            confirmation.cancel()
+        }
+    }
+
+    /// Checks that typed text shows in its field on the reading after it (iOS only: Android field values were never
+    /// observed). sim-use reports a paste as done even when nothing arrived: on one simulator neither the pasteboard
+    /// nor key events reached the app, and an event was saved without its title while the run claimed success. When
+    /// the simulator's pasteboard does not hold the text the device is at fault and the run stops; otherwise the step
+    /// is marked so Jev can retry, and a second miss in a row stops the run.
+    private func checkLanded(_ typing: (field: Int, text: InputText), in fresh: UISnapshot, context: inout AgentLoopContext) async throws {
+        guard let before = context.actedOn, before.platform == SimUseContract.Platform.ios,
+              before.typedText(typing.text.value, landedIn: typing.field, after: fresh) == false
+        else { return }
+        if await driver.pasteboardHolds(typing.text.value) == false {
+            throw SimUseError.pasteboardUnavailable
+        }
+        if context.progress.history.dropLast().last?.textLanded == false {
+            throw SimUseError.typedTextNotLanded
+        }
+        context.progress.markTextNotLanded()
     }
 
     /// Records the action that ended a step and reports where the step's time went.

@@ -116,14 +116,21 @@ open_settings() {
 
 # Sets the switch with identifier `$1` to `$2` ("1" or "0") and confirms it on screen. iOS switches ignore a centre
 # tap, so this taps the trailing edge with a short hold, as the tool itself does.
+# Taps the switch `$1` until it reads `$2`: at most two taps, each followed by up to 3 s of readings. Under heavy host
+# load one tap followed by a fixed 1 s wait left the switch as it was, while the goal's own flip had worked.
 set_switch() {
     local id=$1 want=$2 x y
-    [[ $(value_of "$id") == "$want" ]] && return 0
-    read -r x y < <(ui_json | jq -r --arg a "$id" '[.data.entries[] | select(.uniqueId == $a)][0].frame
-        | "\(.x + .width - 26) \(.y + .height / 2)"')
-    SIM_USE_NO_DAEMON=1 sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
-    sleep 1
-    [[ $(value_of "$id") == "$want" ]]
+    for _ in 1 2; do
+        [[ $(value_of "$id") == "$want" ]] && return 0
+        read -r x y < <(ui_json | jq -r --arg a "$id" '[.data.entries[] | select(.uniqueId == $a)][0].frame
+            | "\(.x + .width - 26) \(.y + .height / 2)"')
+        SIM_USE_NO_DAEMON=1 sim-use tap -x "$x" -y "$y" --duration 0.05 --device "$DEVICE" --json >/dev/null
+        for _ in 1 2 3 4 5 6; do
+            sleep 0.5
+            [[ $(value_of "$id") == "$want" ]] && return 0
+        done
+    done
+    return 1
 }
 
 # Relaunches the app `$1` in English and waits until sim-use reads it as `$2`, past the screens a fresh simulator shows
@@ -182,13 +189,13 @@ tap_id_if_shown() {
 # sits under the bar, so the list is drawn down until it shows; the goals are about the event form, not reaching it.
 open_calendar_list() {
     open_app "$CALENDAR" Calendar location || return 1
-    if ! screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List; then
+    if ! screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list; then
         sim-use tap --id toggle-day-list-view --device "$DEVICE" --json >/dev/null && sleep 1
         sim-use tap --id list-view --device "$DEVICE" --json >/dev/null && sleep 1
     fi
     tap_id_if_shown today-button
     sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null && sleep 1
-    screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List
+    screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list
 }
 
 # Opens the event in the list whose label starts with `$1`, the first one below the bar that covers the list's top or
@@ -232,6 +239,7 @@ delete_calendar_events() {
         sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
         sleep 1.5
         tap_id_if_shown delete-event-cell
+        tap_id_if_shown delete-event-button
         tap_id_if_shown delete-all-future-events-alert-button
         tap_id_if_shown delete-alert-button
         sleep 1
@@ -483,7 +491,7 @@ goal_photos() {
 goal_reminders() {
     local title=E2E-Task
     open_reminders || return 1
-    jsu run "Add a new reminder titled with the title text" -t title="$title" -d "$DEVICE" --max-steps 5
+    jsu run "Add the title text to this list as a new reminder" -t title="$title" -d "$DEVICE" --max-steps 5
     check "exit status 0" status_is run 0
     check "the list shows the reminder" screen_has '(.label // "") | startswith($a)' "$title"
     open_reminders_list || return 1

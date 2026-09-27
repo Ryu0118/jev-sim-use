@@ -22,6 +22,14 @@ struct ArgumentParsingTests {
         #expect(routed == expected)
     }
 
+    @Test("reads --step-timeout as seconds, 20 by default, and 0 or off as no timeout at all", arguments: [
+        ([], Duration?.some(.seconds(20))), (["--step-timeout", "7.5"], .milliseconds(7500)),
+        (["--step-timeout", "0"], nil), (["--step-timeout", "off"], nil),
+    ] as [([String], Duration?)])
+    func stepTimeout(flags: [String], expected: Duration?) throws {
+        #expect(try RunCommand.parse(["x"] + flags).agent.stepTimeoutDuration == expected)
+    }
+
     @Test("reads --actions groups around spaces, all groups without it, and -t values that contain =")
     func values() throws {
         #expect(try RunCommand.parse(["x", "--actions", "tap, scroll"]).agent.allowedOperations == [.tap, .scroll])
@@ -38,6 +46,8 @@ struct ArgumentParsingTests {
         ["run", "x", "--min-confidence", "2"],
         ["run", "x", "--min-confidence", "-0.1"],
         ["run", "x", "--actions", "tap,fly"],
+        ["run", "x", "--step-timeout", "soon"],
+        ["run", "x", "--step-timeout", "-5"],
         ["run", "x", "-t", "ramen"],
         ["run", "x", "-t", "=ramen"],
         ["run", "x", "-t", "q=a", "-t", "q=b"],

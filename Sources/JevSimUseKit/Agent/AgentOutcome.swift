@@ -14,10 +14,21 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
     case noActionFits(step: Int)
     /// Jev chose DONE with support below `ActionPolicy.doneMinimum`: probably reached, but not enough to claim success.
     case goalProbablyReached(steps: Int, probability: Double)
+    /// Two cycles in a row did not finish within the step timeout; the second one, at `step`, waited on `waitingOn`.
+    case stepTimedOut(step: Int, waitingOn: StepTiming.Part, seconds: Int)
 
     /// Whether the goal was reached.
     package var isSuccess: Bool {
         if case .goalReached = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Whether the run stopped because sim-use or Jev stopped answering, which exits as a runtime failure.
+    package var isRuntimeFailure: Bool {
+        if case .stepTimedOut = self {
             true
         } else {
             false
@@ -46,6 +57,11 @@ package enum AgentOutcome: Sendable, Hashable, CustomStringConvertible {
             "Stopped after \(steps) action(s): the goal is probably reached (p="
                 + "\(probability.formatted(.number.precision(.fractionLength(2))))), but not surely; check the screen."
         case let .noActionFits(step): "Stopped at step \(step): no offered action advances the goal on this screen."
+        case let .stepTimedOut(step, waitingOn, seconds):
+            "Stopped at step \(step): two steps in a row did not finish within \(seconds) s (the last waited on "
+                + "\(waitingOn.rawValue)). Check `jev-sim-use exec daemon status`, stop a hung daemon with "
+                + "`jev-sim-use exec daemon stop --device <udid>`, check the network, then resume the session, or pass a "
+                + "longer --step-timeout."
         }
     }
 }

@@ -8,6 +8,8 @@ package struct RunGoalRequest: Sendable, Equatable {
     package var minConfidence: Double
     /// The operations Jev may choose from in this run (`--actions`).
     package var allowedOperations: Set<OperationGroup>
+    /// How long one step may take before it is cut off (`--step-timeout`); `nil` when off.
+    package var stepTimeout: Duration?
     /// `--device`, or `nil` to use the session's device, then `$SIM_USE_DEVICE`, then the only usable device.
     package var deviceID: String?
     /// `--base-url`, if given.
@@ -20,6 +22,7 @@ package struct RunGoalRequest: Sendable, Equatable {
         maxSteps: Int,
         minConfidence: Double,
         allowedOperations: Set<OperationGroup> = OperationGroup.all,
+        stepTimeout: Duration? = AgentLoop.defaultStepTimeout,
         deviceID: String?,
         baseURL: String?,
         model: String?,
@@ -28,6 +31,7 @@ package struct RunGoalRequest: Sendable, Equatable {
         self.maxSteps = maxSteps
         self.minConfidence = minConfidence
         self.allowedOperations = allowedOperations
+        self.stepTimeout = stepTimeout
         self.deviceID = deviceID
         self.baseURL = baseURL
         self.model = model

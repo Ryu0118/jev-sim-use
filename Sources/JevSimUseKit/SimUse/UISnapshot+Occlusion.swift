@@ -31,6 +31,12 @@ extension UISnapshot {
             if let bar, other.region != bar, !shallower {
                 return false
             }
+            // A container drawn over `other` that holds the target puts the target above `other`: a list row scrolled
+            // under a navigation bar held its Add button's centre, and every tap on Add first scrolled the list
+            // (3.5 s instead of 0.3 s).
+            if !shallower, holdsAbove(target, over: frame, depth: other.depth ?? 0) {
+                return false
+            }
             let isChild = target.contains(frame) && (other.depth ?? 0) > (entry.depth ?? 0)
             let underTopBar = shallower && platform == SimUseContract.Platform.ios
                 && other.region.map { Self.topBarKinds.contains($0.kind) } == true && center.y < frame.y
@@ -40,6 +46,17 @@ extension UISnapshot {
             let beneath = (other.depth ?? 0) > (entry.depth ?? 0)
             return !isChild && !beneath && (floatsOver || frame.x <= center.x && center.x <= frame.x + frame.width
                 && frame.y <= center.y && center.y <= frame.y + frame.height)
+        }
+    }
+}
+
+extension UISnapshot {
+    /// Whether an element shallower than `depth` contains `target` and overlaps `frame`, so it is drawn over `frame`
+    /// with `target` inside it.
+    private func holdsAbove(_ target: ElementFrame, over frame: ElementFrame, depth: Int) -> Bool {
+        (entries ?? []).contains { container in
+            guard let bounds = container.frame, (container.depth ?? 0) < depth else { return false }
+            return bounds.contains(target) && bounds.overlaps(frame) && !bounds.contains(frame)
         }
     }
 }
