@@ -65,7 +65,7 @@ step's time:
 
 **A warning that a sim-use screen read had no answer after N s** means the device's sim-use daemon hung. A hung
 daemon's readings take 10-20 s instead of under one, or never answer. On iOS every sim-use call has a deadline of
-eight times the device's recent median for its kind (at least 3 s, 15 s for a run's first calls, an action's own
+eight times the device's recent median for its kind (at least 6 s, 15 s for a run's first calls, an action's own
 duration on top), so a busy Mac stretches it instead of tripping it. Past it jev-sim-use cancels the call and stops
 the device's daemon. A reading is taken once more without the daemon and the run goes on; an action is never sent
 again, since it may have landed: the step is recorded as cut off and the screen read and planned again. A step that

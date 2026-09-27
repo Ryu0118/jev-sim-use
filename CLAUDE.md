@@ -64,13 +64,16 @@ Never write unit tests after the code.
   installed" is distinct from exit 127), version gate, device pinning, and `--json` envelope decoding.
   One timing policy covers hangs, in two layers. Inner (`SimUseClient+Daemon`, `CallBaselines`): every iOS sim-use
   call, reads and actions, gets a deadline of `factor` (8) times the median of the device's last 15 answered calls of
-  its kind, at least 3 s, capped at a 4 s baseline, 15 s for a run's first three calls (which also start the
+  its kind, at least 6 s, capped at a 4 s baseline, 15 s for a run's first two calls (which also start the
   daemon), with an action's own duration (`--duration`, or sim-use's 0.8 s long-press / 0.5 s swipe default) added
   over its overhead. Measured under light load: `ui` median 0.62 s, 99th percentile 3.5 s, slowest 4.7 s; a hung
-  daemon 10-20 s or never; under a load average of 100-400 healthy reads took 2-4 s, which a fixed 3 s cut. Past its
+  daemon 10-20 s or never; under a load average of 100-400 healthy reads took 2-4 s, which a fixed 3 s cut, and
+  opening a sheet takes one healthy 3.05 s read at any load, so the floor sits well above both. Past its
   deadline a call is killed and `daemon stop --device <udid> --timeout 1` runs (the only place that stops daemons),
   once per hang: a read is retried once with `SIM_USE_NO_DAEMON=1` (reported as a warning), an action is never
-  re-sent and throws `SimUseError.callTimedOut`, as does a retried read that hangs too. Only answered calls enter the
+  re-sent and throws `SimUseError.callTimedOut`, as does a retried read that hangs too. The retried read reports the
+  app from before the hang as gone only when its bundle id (`appPackage`; the label lags a launch) is off screen in
+  two readings in a row, SpringBoard with buttons (an alert over the app) aside. Only answered calls enter the
   baseline, so a hang cannot poison it. Outer (`AgentLoop+Timeout`): one cycle (read, plan, act) gets
   `--step-timeout` (default 20 s, 0/off disables it) or, when longer, three read deadlines plus the longest action's
   plus Jev's room (8 times its recent median, at least 10 s), so a hung call meets its own deadline first. The

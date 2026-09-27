@@ -35,12 +35,13 @@ package struct CallTimingPolicy: Sendable, Hashable {
 
     /// The live policy, from `ui` reads on an iOS 26 simulator: a median of 0.62 s, a 99th percentile 5.7 times that and
     /// a slowest read 7.6 times it (3.5 s and 4.7 s) under light load, while a hung daemon answered in 10-20 s or never.
-    /// A factor of 8 keeps the slowest healthy read under the deadline (5 s at that median); the 3 s floor still catches
-    /// a hang on a fast device. The ceiling stops a stretch of slow reads that did answer from pushing a read's deadline
+    /// A factor of 8 keeps the slowest healthy read under the deadline (5 s at that median). The 6 s floor keeps a fast
+    /// device's deadline clear of those reads too: opening a sheet made one healthy read take 3.05 s every time, among
+    /// reads of 0.55 s, and a 3 s floor took it for a hang. It still catches a hang well before 10 s. The ceiling stops a stretch of slow reads that did answer from pushing a read's deadline
     /// past 32 s. A run's first read also starts the daemon, so it gets 15 s; two samples end the cold start, since a
     /// daemon frozen early left no read to record and kept every later read at 15 s.
     package static let standard = CallTimingPolicy(
-        floor: .seconds(3), factor: 8, window: 15, ceiling: .seconds(4), coldStart: .seconds(15), coldSamples: 2,
+        floor: .seconds(6), factor: 8, window: 15, ceiling: .seconds(4), coldStart: .seconds(15), coldSamples: 2,
     )
 
     /// The time an action takes by its own arguments: its `--duration`, or sim-use's default hold for a long-press
@@ -101,7 +102,8 @@ package final class CallBaselines: Sendable {
         return min(recent.sorted()[recent.count / 2], policy.ceiling)
     }
 
-    /// The app the last read showed, to tell whether it disappeared across a daemon replacement.
+    /// The bundle id of the app the last read showed, SpringBoard aside, to tell whether it disappeared across a daemon
+    /// replacement.
     var lastApp: String? {
         get { samples.withLock { $0.lastApp } }
         set { samples.withLock { $0.lastApp = newValue } }
