@@ -162,13 +162,13 @@ tap_id_if_shown() {
 # sits under the bar, so the list is drawn down until it shows; the goals are about the event form, not reaching it.
 open_calendar_list() {
     open_app "$CALENDAR" Calendar || return 1
-    if ! screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List; then
+    if ! screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list; then
         sim-use tap --id toggle-day-list-view --device "$DEVICE" --json >/dev/null && sleep 1
         sim-use tap --id list-view --device "$DEVICE" --json >/dev/null && sleep 1
     fi
     tap_id_if_shown today-button
     sim-use swipe --from 200,300 --to 200,420 --duration 1 --device "$DEVICE" --json >/dev/null && sleep 1
-    screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List
+    screen_has '.uniqueId == "toggle-day-list-view" and (.label | ascii_downcase) == $a' list
 }
 
 # Calendar's list view without any event an earlier run left behind.
@@ -190,6 +190,7 @@ delete_calendar_events() {
         sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
         sleep 1.5
         tap_id_if_shown delete-event-cell
+        tap_id_if_shown delete-event-button
         tap_id_if_shown delete-all-future-events-alert-button
         tap_id_if_shown delete-alert-button
         sleep 1
