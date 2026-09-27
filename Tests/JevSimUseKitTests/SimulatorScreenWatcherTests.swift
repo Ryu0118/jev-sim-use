@@ -69,6 +69,7 @@ struct SimulatorScreenWatcherTests {
                 try await Task.sleep(for: .milliseconds(10))
             }
         }
+        #expect(try await watcher.waitForChange(after: .now, until: Self.deadline(2000)))
         let started = ContinuousClock.now
         let still = try await watcher.waitUntilStill(for: .milliseconds(150), until: Self.deadline(500))
         animation.cancel()

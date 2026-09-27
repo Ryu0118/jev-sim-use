@@ -9,8 +9,8 @@ import Synchronization
 final class FakeDisplayDescriptor: NSObject, @unchecked Sendable {
     private struct State {
         var surface: IOSurface
-        var damage: [UUID: @convention(block) (NSArray) -> Void] = [:]
-        var surfaces: [UUID: @convention(block) (AnyObject?) -> Void] = [:]
+        var damage: [UUID: @convention(block) @Sendable (NSArray) -> Void] = [:]
+        var surfaces: [UUID: @convention(block) @Sendable (AnyObject?) -> Void] = [:]
         var registered: [String] = []
         var unregistered: [String] = []
     }
@@ -70,7 +70,7 @@ final class FakeDisplayDescriptor: NSObject, @unchecked Sendable {
     }
 
     @objc(registerCallbackWithUUID:damageRectanglesCallback:)
-    func registerDamage(_ uuid: NSUUID, callback: @escaping @convention(block) (NSArray) -> Void) {
+    func registerDamage(_ uuid: NSUUID, callback: @escaping @convention(block) @Sendable (NSArray) -> Void) {
         state.withLock {
             $0.damage[uuid as UUID] = callback
             $0.registered.append("damage \(uuid)")
@@ -78,7 +78,7 @@ final class FakeDisplayDescriptor: NSObject, @unchecked Sendable {
     }
 
     @objc(registerCallbackWithUUID:ioSurfacesChangeCallback:)
-    func registerSurfaces(_ uuid: NSUUID, callback: @escaping @convention(block) (AnyObject?) -> Void) {
+    func registerSurfaces(_ uuid: NSUUID, callback: @escaping @convention(block) @Sendable (AnyObject?) -> Void) {
         state.withLock {
             $0.surfaces[uuid as UUID] = callback
             $0.registered.append("surfaces \(uuid)")

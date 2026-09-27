@@ -103,8 +103,11 @@ struct ScreenWatchLoopTests {
     @Test("reads back to back for at least the minimum reads when no watcher is available, as before")
     func withoutWatcherPolls() async throws {
         let driver = Self.driver(["A"])
+        var configuration = Self.configuration
+        configuration.unchangedWait = .zero
+        configuration.handOverWait = .zero
         _ = try await AgentLoop(
-            driver: driver, planner: FakePlanner([.tapNext(), .blocked()]), configuration: Self.configuration,
+            driver: driver, planner: FakePlanner([.tapNext(), .blocked()]), configuration: configuration,
         ).run()
         // First reading, its confirmation, three after the tap, a confirmation, and seven in the hand-over wait.
         #expect(driver.readCount == 13)
