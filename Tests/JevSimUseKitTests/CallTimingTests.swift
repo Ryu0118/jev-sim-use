@@ -42,6 +42,16 @@ struct CallTimingTests {
         #expect(baselines.deadline(for: .read) == .milliseconds(800))
     }
 
+    @Test("times a run's first actions by its reads, since the reads already started the daemon")
+    func coldActionUsesReads() {
+        let baselines = CallBaselines(policy: Self.policy)
+        #expect(baselines.deadline(for: .action, intrinsic: .milliseconds(1500)) == .milliseconds(1900))
+        for _ in 0 ..< 3 {
+            baselines.record(.read, .milliseconds(40))
+        }
+        #expect(baselines.deadline(for: .action, intrinsic: .milliseconds(1500)) == .milliseconds(1660))
+    }
+
     @Test("keeps reads and action overhead apart, and adds an action's own duration on top")
     func actionsApart() {
         let baselines = CallBaselines(policy: Self.policy)
