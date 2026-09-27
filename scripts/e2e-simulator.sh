@@ -383,7 +383,7 @@ goal_photos() {
 goal_reminders() {
     local title=E2E-Task
     open_reminders || return 1
-    jsu run "Add a new reminder titled with the title text" -t title="$title" -d "$DEVICE" --max-steps 5
+    jsu run "Add the title text to this list as a new reminder" -t title="$title" -d "$DEVICE" --max-steps 5
     check "exit status 0" status_is run 0
     check "the list shows the reminder" screen_has '(.label // "") | startswith($a)' "$title"
     open_reminders_list || return 1
