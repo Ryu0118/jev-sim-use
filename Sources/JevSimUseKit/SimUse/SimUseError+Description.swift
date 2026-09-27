@@ -47,13 +47,6 @@ extension SimUseError: CustomStringConvertible {
             """
         case let .malformedOutput(arguments, detail):
             "`sim-use \(arguments.joined(separator: " "))` produced unexpected output: \(detail)\nHint: \(Self.contractHint)"
-        case let .readTimedOut(deviceID, seconds):
-            """
-            `sim-use ui` gave no answer within \(seconds.formatted()) s, after its daemon had already been replaced \
-            \(SimUseDaemonWatchdog.recoveryLimit) times in this run. The sim-use daemon for this device has stopped answering: \
-            check `jev-sim-use exec daemon status`, stop it with `jev-sim-use exec daemon stop --device \(deviceID)`, then \
-            `jev-sim-use session resume`.
-            """
         case let .callTimedOut(command, seconds, daemonStopped):
             "`sim-use \(command)` gave no answer within \(seconds.formatted()) s and was stopped; the sim-use daemon "
                 + (daemonStopped ? "was stopped too." : "could not be stopped.")

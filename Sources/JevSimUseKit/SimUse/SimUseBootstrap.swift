@@ -49,7 +49,7 @@ package struct SimUseBootstrap: Sendable {
         }
         let device = try DeviceSelection.select(deviceID, from: devices)
         return SimUseConnection(
-            client: SimUseClient(device: device, invoker: invoker, watchdog: SimUseDaemonWatchdog(report: onDaemonRecovery)),
+            client: SimUseClient(device: device, invoker: invoker, report: onDaemonRecovery),
             version: version,
         )
     }

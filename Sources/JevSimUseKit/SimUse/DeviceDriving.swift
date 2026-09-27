@@ -16,6 +16,8 @@ package protocol DeviceDriving: Sendable {
     func perform(_ action: SimUseDeviceAction, in space: ScreenSpace) async throws -> [String]
     /// Stops this device's sim-use daemon, so the next command starts a fresh one; returns whether it stopped.
     func stopDaemon() async -> Bool
+    /// The deadlines sim-use calls get now, for the cycle's own deadline and the timing line; `nil` without any.
+    func callDeadlines() -> CallDeadlines?
     /// Pastes `text` into the focused field, in place of its content when `replacing`. Paste handles Unicode on iOS,
     /// unlike `type`.
     func paste(_ text: String, replacing: Bool) async throws -> [String]
@@ -47,6 +49,11 @@ package extension DeviceDriving {
     /// Drivers without a daemon have nothing to stop.
     func stopDaemon() async -> Bool {
         false
+    }
+
+    /// Drivers without deadlines report none.
+    func callDeadlines() -> CallDeadlines? {
+        nil
     }
 
     /// Taps by alias; drivers without an alias cache have nothing a concurrent read could change.
