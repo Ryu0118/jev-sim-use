@@ -137,7 +137,7 @@ Jev request, the action). When the goal was not reached, `Session: <id>` follows
 | 0 | Goal reached | Read the screen and verify before relying on it |
 | 1 | Stopped before the goal | Read the reason below, then supervise the session |
 | 2 | Setup problem | Run `jev-sim-use doctor` and fix what it reports |
-| 3 | sim-use or Jev failed mid-run | Read the screen first (the failed step may have scrolled or moved it), then retry once; if it repeats, read the error |
+| 3 | sim-use or Jev failed mid-run, or two steps in a row hit `--step-timeout` | Read the screen first (the failed step may have scrolled or moved it, and a cut-off action may have landed), then retry once or `session resume`; if it repeats, read the error |
 
 Exit 0 is Jev's judgment, not proof. Read the screen once the app has settled: a saved item can take a second or two
 to show up in a list, so read, wait about two seconds, and judge the second reading.
@@ -206,6 +206,7 @@ them. Anything else sim-use can do, such as Siri or other keys, is left to you t
 | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
+| `--step-timeout` | 20 | Seconds one step (read, plan, act) may take. A cut step restarts the sim-use daemon and is planned again from a fresh reading, never re-sent; a second cut in a row stops with exit 3. `0` or `off` disables it |
 | `--actions` | all | Comma-separated operation groups Jev may choose from (below). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
 What each `--actions` group lets Jev do; leaving a group out removes all of it:
