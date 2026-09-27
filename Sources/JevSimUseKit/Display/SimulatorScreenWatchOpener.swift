@@ -10,18 +10,25 @@ package struct SimulatorScreenWatchOpener: ScreenWatchOpening {
 
     private let environment: [String: String]
     private let runner: any CommandRunning
+    private let onChange: (@Sendable (ContinuousClock.Instant) -> Void)?
 
-    /// Creates an opener that reads the switch and the developer directory from `environment`.
-    package init(environment: [String: String], runner: some CommandRunning = SubprocessCommandRunner()) {
+    /// Creates an opener that reads the switch and the developer directory from `environment`. Its watchers pass the
+    /// time of each frame that changed the content to `onChange`.
+    package init(
+        environment: [String: String],
+        runner: some CommandRunning = SubprocessCommandRunner(),
+        onChange: (@Sendable (ContinuousClock.Instant) -> Void)? = nil,
+    ) {
         self.environment = environment
         self.runner = runner
+        self.onChange = onChange
     }
 
     /// A watcher on the booted simulator `simulatorID`'s main display.
     package func open(simulatorID: String) async throws(ScreenWatchError) -> any ClosableScreenWatcher {
         guard environment[Self.switchVariable] != "0" else { throw .disabled }
         let locator = try await CoreSimulatorLocator(developerDirectory: developerDirectory())
-        return try SimulatorScreenWatcher(display: locator.mainDisplay(ofDevice: simulatorID))
+        return try SimulatorScreenWatcher(display: locator.mainDisplay(ofDevice: simulatorID), onChange: onChange)
     }
 
     private func developerDirectory() async throws(ScreenWatchError) -> String {
