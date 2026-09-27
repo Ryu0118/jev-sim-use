@@ -169,12 +169,13 @@ open_calendar_list() {
     screen_has '.uniqueId == "toggle-day-list-view" and .label == $a' List
 }
 
-# Opens the first event in the list whose label starts with `$1`, below the bar that covers the list's top, and waits
-# for its details.
+# Opens the event in the list whose label starts with `$1`, the first one below the bar that covers the list's top or
+# the `$2`th after it (a later occurrence of a repeating event), and waits for its details.
 open_calendar_event() {
     local point
-    point=$(ui_json | jq -r --arg a "$1" '[.data.entries[] | select(((.label // "") | startswith($a)) and .frame.y > 110)]
-        | sort_by(.frame.y) | .[0].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
+    point=$(ui_json | jq -r --arg a "$1" --argjson n "${2:-0}" '[.data.entries[]
+        | select(((.label // "") | startswith($a)) and .frame.y > 110)]
+        | sort_by(.frame.y) | .[$n].frame | select(. != null) | "\(.x + .width / 2) \(.y + .height / 2)"')
     [[ -n $point ]] || return 1
     sim-use tap -x "${point% *}" -y "${point#* }" --device "$DEVICE" --json >/dev/null || return 1
     for _ in $(seq 1 10); do
@@ -403,13 +404,21 @@ time to set Repeat to Every Week, then save it" -t title="$title" -d "$DEVICE" -
         check "the event opens from the list" false
     fi
     open_calendar_list || return 1
-    jsu run2 "Open the event titled with the title text and change its alert to 5 minutes before, then save the \
-change" -t title="$title" -d "$DEVICE" --max-steps 8
+    jsu run2 "Open the event titled with the title text and change its alert to 5 minutes before, then save it for \
+future events" -t title="$title" -d "$DEVICE" --max-steps 8
     check "the edit exits 0" status_is run2 0
     check "the event's details show the new alert" screen_has '.uniqueId == "alert-cell" and .label == $a' \
         "Alert, 5 minutes before"
     check "the event still repeats weekly" screen_has '.uniqueId == "event-details-recurrence-button"
         and ((.label // "") | test("weekly"; "i"))'
+    # Saved for future events, the next week's occurrence has the new alert too; saved for this event only, it would
+    # keep the old one.
+    if open_calendar_list && open_calendar_event "$title" 1; then
+        check "the next occurrence shows the new alert too" screen_has '.uniqueId == "alert-cell" and .label == $a' \
+            "Alert, 5 minutes before"
+    else
+        check "the next occurrence opens from the list" false
+    fi
     check "the event is deleted afterwards" open_calendar
 }
 
@@ -455,6 +464,28 @@ longer shows" -t title="$title" \
     check "no reminder is left behind" open_reminders
 }
 
+# Stops the recording `$1` without ever blocking the suite: simctl's recorder once ignored SIGINT and held a goal for 26
+# minutes (a non-interactive shell starts background jobs with SIGINT ignored, so only simctl's own handler stops it).
+# It gets 10 s to finish the file after SIGINT, then SIGTERM and SIGKILL. A recorder stopped that way may leave the file
+# truncated and the simulator's recording busy ("Host recording is already in progress"), so later goals may go
+# unrecorded; the goal's checks note it, and a later recorder that cannot start exits at once.
+stop_recorder() {
+    local pid=$1
+    kill -INT "$pid" 2>/dev/null
+    for _ in $(seq 1 20); do
+        kill -0 "$pid" 2>/dev/null || {
+            wait "$pid" 2>/dev/null
+            return 0
+        }
+        sleep 0.5
+    done
+    kill -TERM "$pid" 2>/dev/null
+    sleep 2
+    kill -KILL "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    echo "NOTE  the recording may be truncated: the recorder ignored SIGINT for 10 s" >>"$run_dir/checks.txt"
+}
+
 # --- Driver --------------------------------------------------------------------------------------------------------
 
 summary="$OUT/summary.md"
@@ -476,8 +507,7 @@ for name in "${selected[@]}"; do
         started=$(date +%s)
         "goal_${name//-/_}" || echo "FAIL  setup: could not reach the starting screen" >>"$run_dir/checks.txt"
         wall=$(($(date +%s) - started))
-        kill -INT "$recorder" 2>/dev/null
-        wait "$recorder" 2>/dev/null
+        stop_recorder "$recorder"
 
         for prefix in run run2 resume; do
             [[ -f $run_dir/$prefix.stdout.txt ]] || continue
