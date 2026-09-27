@@ -5,6 +5,8 @@ package struct AgentLoop: Sendable {
     let driver: any DeviceDriving
     let planner: any StepPlanning
     let configuration: AgentConfiguration
+    /// Tells when to read after an action and before a hand-over; without one the loop reads back to back.
+    let screen: (any ScreenChangeWatching)?
     let report: @Sendable (AgentEvent) -> Void
 
     /// Creates a loop. `report` receives progress events as they happen.
@@ -12,11 +14,13 @@ package struct AgentLoop: Sendable {
         driver: any DeviceDriving,
         planner: any StepPlanning,
         configuration: AgentConfiguration,
+        screen: (any ScreenChangeWatching)? = nil,
         report: @escaping @Sendable (AgentEvent) -> Void = { _ in },
     ) {
         self.driver = driver
         self.planner = planner
         self.configuration = configuration
+        self.screen = screen
         self.report = report
     }
 
