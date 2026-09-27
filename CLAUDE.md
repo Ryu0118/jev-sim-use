@@ -85,6 +85,9 @@ Never write unit tests after the code.
   report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
   counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
   the default `--timeout`). Android calls have no deadline: their normal time was never measured.
+  iOS taps go through the daemon like every other call. Sent outside it (`SIM_USE_NO_DAEMON`), a tap without a hold
+  reported ok and did nothing on iOS 26.5 and 27.0, and a 0.05 s hold landed on one but not the other; through the
+  daemon the same point landed every time, at about 0.3 s more per tap (0.5-1.0 s against 0.3-0.4 s under load).
 - `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
   `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
   numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.
@@ -255,7 +258,8 @@ Never write unit tests after the code.
   `blocked` hands over (`AgentOutcome.noActionFits`).
 - Loops are code's job: an action already tried on a screen is never offered again there
   (`AgentProgress.ineffectiveActions`, keyed by screen because scrolls can bounce between two states), choosing one
-  anyway hands over, and landing on screens already seen counts toward the stall limit. The same action repeated on a
+  anyway hands over (`AgentOutcome.tapHadNoEffect`, naming the tap, when the last action was a tap that left the
+  screen as it was: it may never have landed), and landing on screens already seen counts toward the stall limit. The same action repeated on a
   screen showing the same elements as one it was taken on (`UISnapshot.skeleton`) hands over once its last
   `AgentProgress.repeatLimit` repeats each left the elements' values and states as a state already seen in the run
   (`AgentProgress.isFutileRepeat`): a row tapped 26 times never opened while a relative time on it ticked, so every
