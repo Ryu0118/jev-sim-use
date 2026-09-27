@@ -37,12 +37,15 @@ struct PlanningState: Encodable, Sendable {
         /// Reported as "no visible effect", a refresh that had run read as failed: the satisfied answer fell from
         /// 0.73-0.90 to 0.10-0.45, and Jev pulled again or gave up. "done; its effect does not show on screen" still
         /// left it at 0.43-0.56; saying an unchanged screen is not a failure gave 0.79-0.91.
+        /// The result of typing whose text did not show in the field on the next reading.
+        static let textNotLanded = "the typed text did not appear in the field"
+
         static let unseenEffect = "done; it can succeed and leave the screen as it was, so an unchanged screen is not a failure"
 
         init(_ entry: HistoryEntry) {
             step = entry.step
             action = entry.action
-            result = entry.screenChanged.map { changed in
+            result = entry.textLanded == false ? Self.textNotLanded : entry.screenChanged.map { changed in
                 changed ? "screen changed" : entry.effectMayNotShow == true ? Self.unseenEffect : "no visible effect"
             }
         }

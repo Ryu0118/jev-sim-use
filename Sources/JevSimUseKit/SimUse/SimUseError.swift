@@ -14,6 +14,11 @@ package enum SimUseError: Error, Sendable, Equatable {
     case commandFailed(arguments: [String], message: String, hint: String?)
     /// Text entry needs a connected hardware keyboard: without one iOS drops sim-use's paste.
     case hardwareKeyboardRequired
+    /// Pasted text did not show in its field, and the simulator's pasteboard did not hold it: sim-use's paste cannot
+    /// reach the app on this device.
+    case pasteboardUnavailable
+    /// Pasted text did not show in its field twice in a row, although the pasteboard held it or could not be read.
+    case typedTextNotLanded
     /// `sim-use` exited without an output this tool understands.
     case malformedOutput(arguments: [String], detail: String)
     /// A screen read on `deviceID` still had no answer after `seconds`, after the run's daemon replacements were used up.

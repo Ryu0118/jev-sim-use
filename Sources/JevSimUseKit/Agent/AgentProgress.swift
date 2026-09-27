@@ -139,6 +139,12 @@ struct AgentProgress: Sendable {
         cutAwaitsReading = true
     }
 
+    /// Marks the last step's typed text as not shown in its field.
+    mutating func markTextNotLanded() {
+        guard !history.isEmpty else { return }
+        history[history.count - 1].textLanded = false
+    }
+
     mutating func recordAction(_ action: AgentAction, disappeared: [String], timing: StepTiming? = nil) {
         history.append(HistoryEntry(
             step: nextStep, action: action.description, screenChanged: nil,

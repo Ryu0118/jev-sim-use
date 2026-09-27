@@ -13,6 +13,10 @@ extension AgentLoop {
         if let outcome = context.progress.record(observation, stallLimit: configuration.stallLimit) {
             return .finished(outcome)
         }
+        if let typing = context.typing {
+            context.typing = nil
+            try await checkLanded(typing, in: observation.snapshot, context: &context)
+        }
         return .planning(observation)
     }
 
@@ -142,6 +146,24 @@ extension AgentLoop {
         } onCancel: {
             confirmation.cancel()
         }
+    }
+
+    /// Checks that typed text shows in its field on the reading after it (iOS only: Android field values were never
+    /// observed). sim-use reports a paste as done even when nothing arrived: on one simulator neither the pasteboard
+    /// nor key events reached the app, and an event was saved without its title while the run claimed success. When
+    /// the simulator's pasteboard does not hold the text the device is at fault and the run stops; otherwise the step
+    /// is marked so Jev can retry, and a second miss in a row stops the run.
+    private func checkLanded(_ typing: (field: Int, text: InputText), in fresh: UISnapshot, context: inout AgentLoopContext) async throws {
+        guard let before = context.actedOn, before.platform == SimUseContract.Platform.ios,
+              before.typedText(typing.text.value, landedIn: typing.field, after: fresh) == false
+        else { return }
+        if await driver.pasteboardHolds(typing.text.value) == false {
+            throw SimUseError.pasteboardUnavailable
+        }
+        if context.progress.history.dropLast().last?.textLanded == false {
+            throw SimUseError.typedTextNotLanded
+        }
+        context.progress.markTextNotLanded()
     }
 
     /// Records the action that ended a step and reports where the step's time went.
