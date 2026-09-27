@@ -120,22 +120,25 @@ extension AgentLoop {
     /// How long a live run keeps reading after an action that left the screen as it was.
     static let unchangedWait: Duration = .seconds(2)
 
-    /// Reads the screen after acting on `previous`. Saving a memo kept its form on screen for over a second while the
-    /// save went through, and Jev, planning on the form, tapped the screen that replaced it. So an unchanged screen is
-    /// read again, back to back (one `ui` read takes about 0.4 s, so no sleep is needed between them), until it
-    /// changes or `unchangedWait` passes. `settled` reads until two readings agree each time, for when overlapped
-    /// confirmation keeps disagreeing.
+    /// Reads the screen after acting on `previous`, or after nothing when it is `nil`. Saving a memo kept its form on
+    /// screen for over a second while the save went through, and Jev, planning on the form, tapped the screen that
+    /// replaced it. So an unchanged screen is read again, back to back (one `ui` read takes about 0.4 s, so no sleep is
+    /// needed between them), until it changes or `unchangedWait` passes. `settled` reads until two readings agree each
+    /// time, for when overlapped confirmation keeps disagreeing. A blank reading (`isBlank`) is read past the same way,
+    /// even with no `previous`: Jev, shown a list mid-redraw after a save, answered wait below the bar.
     func observeAfterAction(on previous: UISnapshot?, settled: Bool, watch: StepWatch? = nil) async throws -> ScreenObservation {
         let read = { settled ? try await observeSettled() : try await driver.observe() }
         var observation = try await read()
-        guard let previous else { return observation }
+        guard previous != nil || observation.snapshot.isBlank else { return observation }
         // Each read has its own deadline, so the wait stands outside the cycle's; a slow device gets its reads.
         watch?.pause()
         defer { watch?.resume() }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.unchangedWait)
         var reads = 1
-        while clock.now < deadline || reads < configuration.minUnchangedReads, observation.snapshot.identity == previous.identity {
+        while clock.now < deadline || reads < configuration.minUnchangedReads,
+              observation.snapshot.isBlank || observation.snapshot.identity == previous?.identity
+        {
             reads += 1
             let next = try await read()
             observation = ScreenObservation(
@@ -159,12 +162,12 @@ extension AgentLoop {
             reads += 1
             reading = try await driver.observe()
             disappeared += reading.disappearedApps
-            if reading.snapshot.layout != snapshot.layout {
+            if !reading.snapshot.isBlank, reading.snapshot.layout != snapshot.layout {
                 break
             }
         } while clock.now < deadline || reads < configuration.minHandOverReads
         reading.disappearedApps = disappeared
-        return (reading, reading.snapshot.layout != snapshot.layout)
+        return (reading, !reading.snapshot.isBlank && reading.snapshot.layout != snapshot.layout)
     }
 
     /// The element `plan` taps when it can be tapped without waiting for the confirming reading: a confident tap on

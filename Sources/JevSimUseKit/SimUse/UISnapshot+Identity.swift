@@ -14,6 +14,15 @@ extension UISnapshot {
 }
 
 extension UISnapshot {
+    /// Whether the reading lists no element at all once the status bar is dropped. A list redrawn after a save read as
+    /// the status bar alone for about a second, so such a reading is a screen still being drawn more often than a
+    /// screen; physical iOS devices, which list no elements, never read as blank.
+    var isBlank: Bool {
+        entries?.isEmpty == true
+    }
+}
+
+extension UISnapshot {
     /// Which elements are where, without their values: two readings with the same layout show the same controls in
     /// the same places. Values are left out because some change on their own (a row reading "12 seconds ago"), and
     /// requiring them to match kept a list of recent items from ever reading the same twice.

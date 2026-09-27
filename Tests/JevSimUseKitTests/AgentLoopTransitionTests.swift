@@ -94,6 +94,58 @@ struct AgentLoopTransitionTests {
         #expect(planner.outlines.prefix(4) == ["S1", "S2a", "S2b", "S1"])
     }
 
+    @Test("keeps reading past a blank reading after an action, and plans on the screen that follows it")
+    func blankAfterAction() async throws {
+        let planner = OutlinePlanner { $0.outline == "A" ? Self.tapHeading($0) : $0.outline == "L" ? .done() : .blocked() }
+        let driver = ScriptedDriver(readings: Self.screens(["A", "A", "Blank", "L", "L"]))
+        let outcome = try await AgentLoop(
+            driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g", unchangedWait: .seconds(1)),
+        ).run().outcome
+        #expect(planner.outlines == ["A", "L"])
+        #expect(outcome == .goalReached(steps: 1))
+    }
+
+    @Test("does not plan on a blank confirming reading, but reads again")
+    func blankConfirmation() async throws {
+        let planner = OutlinePlanner { $0.outline == "A" ? Self.tapHeading($0) : $0.outline == "B" ? .done() : .blocked() }
+        let driver = ScriptedDriver(readings: Self.screens(["A", "A", "B", "Blank", "B", "B"]))
+        let outcome = try await AgentLoop(
+            driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g", unchangedWait: .seconds(1)),
+        ).run().outcome
+        #expect(!planner.outlines.contains("Blank"))
+        #expect(outcome == .goalReached(steps: 1))
+    }
+
+    @Test("does not take a blank reading in the hand-over wait for the screen moving on")
+    func blankInHandOver() async throws {
+        let planner = OutlinePlanner { $0.outline == "B" ? .done() : .blocked() }
+        let driver = ScriptedDriver(readings: Self.screens(["A", "A", "Blank", "B", "B"]))
+        let outcome = try await AgentLoop(
+            driver: driver, planner: planner,
+            configuration: AgentConfiguration(goal: "g", unchangedWait: .seconds(1), handOverWait: .seconds(1)),
+        ).run().outcome
+        #expect(planner.outlines == ["A", "B"])
+        #expect(outcome == .goalReached(steps: 0))
+    }
+
+    @Test("still plans on a screen that stays blank once the wait for it is over")
+    func blankScreenStays() async throws {
+        let planner = OutlinePlanner { $0.outline == "A" ? Self.tapHeading($0) : .blocked() }
+        let driver = ScriptedDriver(readings: Self.screens(["A", "A", "Blank"]))
+        _ = try await AgentLoop(
+            driver: driver, planner: planner, configuration: AgentConfiguration(goal: "g", unchangedWait: .milliseconds(50)),
+        ).run()
+        #expect(planner.outlines == ["A", "Blank"])
+    }
+
+    /// A list redrawn after a save read, for about a second, as the status bar alone: nothing once that is dropped. Jev,
+    /// shown no elements, answered wait below the bar or stopped, right after the save had worked.
+    private static let blank = Fixtures.snapshot(outline: "Blank", entries: [])
+
+    private static func screens(_ outlines: [String]) -> [UISnapshot] {
+        outlines.map { $0 == "Blank" ? blank : Fixtures.snapshot(outline: $0, entries: [Fixtures.entry(0, $0, role: "Heading")]) }
+    }
+
     /// A tap on the heading that names the screen, so a plan made on one reading misses its target on another.
     private static func tapHeading(_ snapshot: UISnapshot) -> StepPlan {
         StepPlan(action: .tap(alias: 0, role: "Heading", label: snapshot.outline), confidence: 0.9, costUSD: 0)

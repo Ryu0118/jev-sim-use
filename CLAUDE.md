@@ -239,7 +239,10 @@ Never write unit tests after the code.
   identifier sends no title rather than its first section's. Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
   agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen
   as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
-  `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. If Jev planned on
+  `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. A blank reading (no
+  element once the status bar is dropped) is read past the same way, after an action, as a confirming reading, and in
+  the hand-over wait: a list redrawn after a save read as the status bar alone for about a second, and Jev, shown
+  nothing, answered wait below the bar. A screen still blank when the wait ends is planned on. If Jev planned on
   a screen whose last action had not shown its effect, the screen is read once more right before acting and a stale
   plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped. Before handing over (low
   support, BLOCKED, probably done), the screen is read once more and the step planned again if it moved on, at

@@ -5,10 +5,14 @@ extension AgentLoop {
         try Task.checkCancellation()
         // Falling back discards a pending reading: it was one of the readings that kept disagreeing.
         let (actedOn, settled, watch) = (context.actedOn, !context.overlapped, context.watch)
-        let observation = if let pending, context.overlapped {
+        // A blank pending reading, a confirming or hand-over reading taken mid-redraw, is read past like any other.
+        var observation = if let pending, context.overlapped, !pending.snapshot.isBlank {
             pending
         } else {
             try await context.timed(\.read) { try await observeAfterAction(on: actedOn, settled: settled, watch: watch) }
+        }
+        if let pending, context.overlapped, pending.snapshot.isBlank {
+            observation.disappearedApps = pending.disappearedApps + observation.disappearedApps
         }
         if let outcome = context.progress.record(observation, stallLimit: configuration.stallLimit) {
             return .finished(outcome)

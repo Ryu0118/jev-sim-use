@@ -37,6 +37,14 @@ struct StatusBarTests {
         #expect(try JSONDecoder().decode(UISnapshot.self, from: Data(json.utf8)).entries?.map(\.label) == expected)
     }
 
+    /// A sheet opening over a list read, for a few readings, as the app with no children and the marked clock twice.
+    @Test("a reading of the status-bar clock alone is blank")
+    func clockAloneIsBlank() throws {
+        let marked = Self.node("10:41", frame: #"{"x":50,"y":21.7,"width":48,"height":21.7}"#, statusBar: true)
+        let json = #"{"platform":"ios","outline":"o","entries":[\#(Self.entry("10:41", frame: Self.clock))],"raw":[{"traits":null,"children":[]},\#(marked),\#(marked)]}"#
+        #expect(try JSONDecoder().decode(UISnapshot.self, from: Data(json.utf8)).isBlank)
+    }
+
     @Test("a status-bar clock that ticks does not make a new screen or a new tap target")
     func clockDoesNotChangeIdentity() throws {
         func screen(_ time: String) throws -> UISnapshot {
