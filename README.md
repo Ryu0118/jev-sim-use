@@ -12,9 +12,9 @@ and it taps its way there on its own. Each step sends the screen's visible label
 ## Features
 
 - ⚡ **Ultrafast navigation** — one small Jev request per step instead of an LLM reasoning turn per tap
-- 🪶 **Token-efficient requests** — each step sends only the offered operations' rules, a pruned screen, and hints only when Jev is unsure, about $0.00015 a step
 - 🔗 **Built on [sim-use](https://github.com/lycorp-jp/sim-use)** — `exec` runs any sim-use command on the same device, so navigating and exact checks share one tool
 - 🤝 **Hand-off with your agent** — stops instead of guessing, leaving a session your agent can inspect, teach, and resume
+- 🪶 **Token-efficient requests** — each step sends only the offered operations' rules, a pruned screen, and hints only when Jev is unsure
 
 ## Installation
 
