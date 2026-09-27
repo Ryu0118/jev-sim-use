@@ -206,7 +206,7 @@ them. Anything else sim-use can do, such as Siri or other keys, is left to you t
 | `-d, --device` | the only usable device | A sim-use device id (list them with sim-use through `exec`) |
 | `--max-steps` | 15 | Upper bound on actions in this run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Lower it to hand over less often, raise it to be more careful |
-| `--step-timeout` | 20 | Seconds one step (read, plan, act) may take. A cut step restarts the sim-use daemon and is planned again from a fresh reading, never re-sent; a second cut in a row stops with exit 3. `0` or `off` disables it |
+| `--step-timeout` | 20 | The shortest time one step (read, plan, act) gets; on a slow device it stretches with the measured pace. A cut step is planned again from a fresh reading, never re-sent; two hangs in a row stop with exit 3. `0` or `off` disables the step limit, not the per-call deadlines |
 | `--actions` | all | Comma-separated operation groups Jev may choose from (below). Naming only what the goal needs, such as `tap,type,scroll,back,wait` for form and navigation flows, shortens every request and rules out wrong gestures and hardware buttons |
 
 What each `--actions` group lets Jev do; leaving a group out removes all of it:

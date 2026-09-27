@@ -38,8 +38,8 @@ what is really on screen, bring the control back (scroll the list to the top), a
 **Search.** A search field that acts on Return is fine; Jev can press Return. A results screen without a heading
 often ends as "probably reached"; read the screen to confirm.
 
-**Slow submits.** After an action the run keeps reading for up to 2 s while the screen has not changed, and before
-handing over it waits up to 5 s more for the screen to move on. It does not repeat an action that changed nothing on
+**Slow submits.** After an action the run keeps reading for up to 2 s (at least three readings) while the screen has
+not changed, and before handing over it waits up to 5 s more (at least seven readings) for the screen to move on. It does not repeat an action that changed nothing on
 the same screen, but a submit that only shows a spinner has changed the screen; if the stop reason mentions the
 submit screen, check whether it went through before resuming.
 
@@ -60,14 +60,18 @@ step's time:
   `jev` with a normal `read` is the API or the network, not the device.
 - `act`: the action. A tap takes about 0.2 s. A tap on a row that first has to be scrolled into view includes that
   scroll and the readings after it, and `wait` includes its pause.
+- `(baseline …)` after `read` appears on a slow device: the median of its recent readings, which stretched the
+  deadlines below. On a busy Mac (load average 100 or more) readings of 2-4 s are normal and not a hang.
 
-**A warning that a sim-use screen read had no answer after 3 s** means the device's sim-use daemon hung. A hung
-daemon's readings take 10-20 s instead of under one, or never answer. On iOS jev-sim-use handles this itself: it
-cancels the reading, stops the device's daemon, reads the screen without it, and goes on; that step's `read` includes
-the 3 s and the restart. This happens at most twice per run; after that, slow readings are waited out, and only a
-reading with no answer after 30 s (a daemon that stopped answering altogether) stops the run with exit 3. Android readings
-have no such deadline, so there a `read` far above the usual, on a step that did not hand over, points to the same
-cause. To fix it by hand, whether after that exit or while running sim-use yourself:
+**A warning that a sim-use screen read had no answer after N s** means the device's sim-use daemon hung. A hung
+daemon's readings take 10-20 s instead of under one, or never answer. On iOS every sim-use call has a deadline of
+eight times the device's recent median for its kind (at least 3 s, 15 s for a run's first calls, an action's own
+duration on top), so a busy Mac stretches it instead of tripping it. Past it jev-sim-use cancels the call and stops
+the device's daemon. A reading is taken once more without the daemon and the run goes on; an action is never sent
+again, since it may have landed: the step is recorded as cut off and the screen read and planned again. A step that
+still hangs, or one that runs past its own deadline (`--step-timeout` or more on a slow device), counts as a hang;
+two in a row stop the run with exit 3, with the session kept. Android calls have no such deadline, so there a `read`
+far above the usual, on a step that did not hand over, points to the same cause. To fix it by hand, whether after that exit or while running sim-use yourself:
 
 ```sh
 jev-sim-use exec daemon status                      # a daemon listed as unreachable, or one with errno=60 in its log

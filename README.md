@@ -194,7 +194,7 @@ jev-sim-use skill install|uninstall|print [<path>]  the agent skill (--client cl
 | `-t, --text` | none | `name=value` to enter into a field; Jev sees only the name. Repeatable |
 | `--max-steps` | 15 | Per run; `session resume` gets a fresh budget |
 | `--min-confidence` | 0.55 | Below this, it hands over instead of guessing |
-| `--step-timeout` | 20 | Seconds one step (read, plan, act) may take before it is cut off, the sim-use daemon restarted, and the step planned again; a second cut in a row stops the run with exit 3. `0` or `off` disables it |
+| `--step-timeout` | 20 | The shortest time one step (read, plan, act) gets before it is cut off and planned again; on a slow device the limit stretches with its measured pace. Two hangs in a row stop the run with exit 3. `0` or `off` disables it |
 | `--actions` | all | Comma-separated operation groups Jev may choose from (`tap`, `type`, `scroll`, `back`, `return`, `long-press`, `swipe`, `pinch`, `rotate`, `two-finger`, `buttons`, `keys`, `wait`). `scroll` includes pull to refresh, `type` includes replacing a field's text, and `keys` is Escape; the skill lists every group |
 | `--base-url` | `$TYPESAFE_BASE_URL`, then `config`, then `https://api.typesafe.ai` | HTTPS, or HTTP on localhost |
 | `--model` | `$TYPESAFE_MODEL`, then `config`, then `jev-1.13.0` (pinned; `jev-latest` also works) | |
