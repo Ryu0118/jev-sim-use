@@ -73,14 +73,16 @@ struct StepTimeoutTests {
 
     @Test("keeps its minimum reads after an unchanged action on a slow device, without the cycle's deadline cutting them")
     func waitsKeepTheirReads() async throws {
-        let driver = HangingDriver(outlines: ["A"], readDelay: .milliseconds(120))
+        let driver = HangingDriver(outlines: ["A"], readDelay: .milliseconds(100))
+        // The first cycle's own reads (settling, confirming) must fit the deadline even on a slow CI runner, which a
+        // 300 ms deadline over 120 ms reads did not; eight reads after the tap still outlast it.
         let configuration = AgentConfiguration(
-            goal: "g", maxSteps: 1, unchangedWait: .milliseconds(10), stepTimeout: .milliseconds(300), minUnchangedReads: 4,
+            goal: "g", maxSteps: 1, unchangedWait: .milliseconds(10), stepTimeout: .milliseconds(600), minUnchangedReads: 8,
         )
         let result = try await AgentLoop(driver: driver, planner: SlowPlanner([.tapNext(), .blocked()], delay: .zero), configuration: configuration)
             .run()
-        // Four reads of 120 ms after the tap outlast the 300 ms cycle deadline; the wait is not part of it.
-        #expect(driver.readsAfterFirstTap >= 4)
+        // Eight reads of 100 ms after the tap outlast the 600 ms cycle deadline; the wait is not part of it.
+        #expect(driver.readsAfterFirstTap >= 8)
         if case .stepTimedOut = result.outcome {
             Issue.record("the wait's reads were cut off")
         }
