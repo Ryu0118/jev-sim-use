@@ -91,6 +91,18 @@ Never write unit tests after the code.
   iOS taps go through the daemon like every other call. Sent outside it (`SIM_USE_NO_DAEMON`), a tap without a hold
   reported ok and did nothing on iOS 26.5 and 27.0, and a 0.05 s hold landed on one but not the other; through the
   daemon the same point landed every time, at about 0.3 s more per tap (0.5-1.0 s against 0.3-0.4 s under load).
+- `JevSimUseKit/Display`: `ScreenChangeWatching` tells the loop when the screen image changed and when it went still,
+  without sim-use. The live `SimulatorScreenWatcher` takes idb's framebuffer path through CoreSimulator (loaded with
+  `dlopen` from `/Library/Developer/PrivateFrameworks`, every message through `PrivateMessage`): the pinned booted
+  device's IO port whose display class is 0, its `framebufferSurface` (an IOSurface this process maps; no Simulator
+  window or screen-recording permission), and its `damageRectanglesCallback` / `ioSurfacesChangeCallback`. On Xcode 27
+  the damage array is always empty and frames that change no pixel are reported too, so a callback only notes the
+  frame and one task compares the surface at most every 30 ms, below the status bar's band (`FrameBaseline`, the top
+  6.5 %, every second row): the clock is not a change. `RunGoalRunner` opens it (`SimulatorScreenWatchOpener`:
+  `DEVELOPER_DIR`, else `xcode-select -p`) for an iOS simulator and closes it however the run ends; any failure, or
+  `JEV_SIM_USE_SCREEN_WATCH=0`, leaves the loop polling as before, with one `RunGoalEvent.debug` note the CLI prints
+  only with `JEV_SIM_USE_DEBUG=1`. The hidden `watch-screen` command and `scripts/screen-watch-probe.sh <udid> <x> <y>`
+  print when changes came after a tap, for latency measurements.
 - `JevSimUseKit/Session`: the supervisor loop. A frontier agent reads `session show` and `exec ui`, adds facts with
   `session tell`, and `session resume`s; there are no per-run hint flags. Resume continues `history`, `notes`, and step
   numbers, but `maxSteps` and loop detection (`AgentProgress`) start fresh, so a stalled or step-limited run can move.
@@ -245,7 +257,13 @@ Never write unit tests after the code.
   `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. A blank reading (no
   element once the status bar is dropped) is read past the same way, after an action, as a confirming reading, and in
   the hand-over wait: a list redrawn after a save read as the status bar alone for about a second, and Jev, shown
-  nothing, answered wait below the bar. A screen still blank when the wait ends is planned on. If Jev planned on
+  nothing, answered wait below the bar. A screen still blank when the wait ends is planned on. With a screen-change watcher (`AgentLoop+ScreenWatch`) the
+  unchanged-screen and hand-over waits read no more back to back: they wait for the image to change after the action
+  was sent (or planning began), then for `quietPeriod` (0.3 s) of stillness, at most `settleWait` (1.5 s), and read
+  once. A reading that still shows the old elements (a tap's highlight settles before its transition) or the old
+  layout (a blinking caret) waits for the next change; with no change the screen is read once at the deadline, which
+  is the configured wait or, when longer, the minimum reads at the device's read pace. The reading, not the watcher,
+  still decides what changed. If Jev planned on
   a screen whose last action had not shown its effect, the screen is read once more right before acting and a stale
   plan is dropped (jev-ultrafast's freshness check); after a visible change that read is skipped. Before handing over (low
   support, BLOCKED, probably done), the screen is read once more and the step planned again if it moved on, at
