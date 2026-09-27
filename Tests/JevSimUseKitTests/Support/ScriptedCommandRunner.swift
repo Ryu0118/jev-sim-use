@@ -35,9 +35,13 @@ final class ScriptedCommandRunner: CommandRunning {
 }
 
 extension CommandOutput {
-    /// A `ui` envelope on `platform` showing `app`, with no elements.
-    static func screen(app: String, platform: String = "ios") -> CommandOutput {
-        .json(#"{"ok":true,"data":{"platform":"\#(platform)","outline":"App: \#(app)","appLabel":"\#(app)","entries":[]}}"#)
+    /// A `ui` envelope on `platform` showing `app`, whose bundle id is `bundle` (`app` itself by default), with
+    /// `entries`, a JSON array.
+    static func screen(app: String, bundle: String? = nil, platform: String = "ios", entries: String = "[]") -> CommandOutput {
+        .json(
+            #"{"ok":true,"data":{"platform":"\#(platform)","outline":"App: \#(app)","appLabel":"\#(app)","#
+                + #""appPackage":"\#(bundle ?? app)","entries":\#(entries)}}"#,
+        )
     }
 
     /// `daemon stop`'s envelope for one daemon.

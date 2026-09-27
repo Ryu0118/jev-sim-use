@@ -24,18 +24,24 @@ struct DaemonWatchdogTests {
         )
     }
 
-    /// Daemon reads whose index is in `hanging` hang, the others show `app`; reads outside the daemon show `reread`.
+    /// Daemon reads whose index is in `hanging` hang, the others show `app`; reads outside the daemon show `reread`, or
+    /// `rereads` in turn, the last one repeated.
     private static func runner(
         hanging: Set<Int>, for delay: Duration = hang, app: String = "A", reread: String = "A",
-        stop: CommandOutput = .daemonStop(stopped: true),
+        rereads: [CommandOutput] = [], stop: CommandOutput = .daemonStop(stopped: true),
     ) -> ScriptedCommandRunner {
         let daemonReads = Mutex(0)
+        let outsideReads = Mutex(0)
         return ScriptedCommandRunner { call in
             if call.arguments.first == SimUseContract.Command.daemon {
                 return stop
             }
             if call.bypassedDaemon {
-                return .screen(app: reread)
+                let index = outsideReads.withLock { reads in
+                    defer { reads += 1 }
+                    return reads
+                }
+                return rereads.isEmpty ? .screen(app: reread) : rereads[min(index, rereads.count - 1)]
             }
             let index = daemonReads.withLock { reads in
                 defer { reads += 1 }
@@ -98,6 +104,69 @@ struct DaemonWatchdogTests {
         let recovered = try await client.observe()
         #expect(recovered.disappearedApps.count == 1)
         #expect(recovered.disappearedApps.first?.hasPrefix("A") == true)
+    }
+
+    @Test("goes by the bundle id across the restart: right after a launch the label still named the previous app")
+    func labelLags() async throws {
+        let client = Self.client(Self.runner(hanging: [1], rereads: [.screen(app: "Previous", bundle: "A")]))
+        _ = try await client.observe()
+        #expect(try await client.observe().disappearedApps.isEmpty)
+    }
+
+    @Test("reads once more before calling the app gone, and keeps that reading, when the first one caught a transition")
+    func rereadsBeforeCrash() async throws {
+        let client = Self.client(Self.runner(hanging: [1], rereads: [.screen(app: "Home"), .screen(app: "A")]))
+        _ = try await client.observe()
+        let recovered = try await client.observe()
+        #expect(recovered.disappearedApps.isEmpty)
+        #expect(recovered.snapshot.appLabel == "A")
+    }
+
+    @Test("takes SpringBoard showing an alert over the app for the app still there, and its home screen for it gone")
+    func springBoard() async throws {
+        let alert = CommandOutput.screen(app: "SpringBoard", bundle: SimUseContract.springBoardBundle, entries: Self.alertEntries)
+        let overApp = Self.client(Self.runner(hanging: [1], rereads: [alert]))
+        _ = try await overApp.observe()
+        #expect(try await overApp.observe().disappearedApps.isEmpty)
+
+        let home = CommandOutput.screen(app: "SpringBoard", bundle: SimUseContract.springBoardBundle)
+        let toHome = Self.client(Self.runner(hanging: [1], rereads: [home]))
+        _ = try await toHome.observe()
+        #expect(try await toHome.observe().disappearedApps.first?.hasPrefix("A") == true)
+    }
+
+    private static let alertEntries = #"[{"aliases":{"at":1},"depth":2,"frame":{"height":48,"width":288,"x":57,"y":458},"#
+        + #""label":"B","role":"Button","states":[]}]"#
+
+    @Test("leaves one slow but healthy read after a sheet opened alone under the live policy: no stop, no crash", .timeLimit(.minutes(1)))
+    func slowHealthyRead() async throws {
+        // Opening a sheet made one `ui` read take 3.05 s against reads of 0.54-0.59 s either side, every
+        // time, at a load average of 9-13; the fixed 3 s deadline took it for a hang and the app check then for a crash.
+        let reads = Mutex(0)
+        let runner = ScriptedCommandRunner { call in
+            guard call.arguments.first == SimUseContract.Command.ui else { return .daemonStop(stopped: true) }
+            let index = reads.withLock { reads in
+                defer { reads += 1 }
+                return reads
+            }
+            try await Task.sleep(for: index == 2 ? .milliseconds(3050) : .milliseconds(10))
+            return .screen(app: "A")
+        }
+        let reports = Reports()
+        let timing = CallBaselines()
+        for _ in 0 ..< 5 {
+            timing.record(.read, .milliseconds(550))
+        }
+        let client = SimUseClient(
+            device: Fixtures.device(Fixtures.simulator),
+            invoker: SimUseInvoker(executable: URL(filePath: "/sim-use"), runner: runner),
+            timing: timing, report: { reports.append($0) },
+        )
+        for _ in 0 ..< 4 {
+            #expect(try await client.observe().disappearedApps.isEmpty)
+        }
+        #expect(runner.recordedCalls.allSatisfy { $0.arguments.first == "ui" && !$0.bypassedDaemon })
+        #expect(reports.all.isEmpty)
     }
 
     @Test("keeps the same app across the restart as no disappearance")
