@@ -136,11 +136,11 @@ struct DaemonWatchdogTests {
     }
 
     private static let alertEntries = #"[{"aliases":{"at":1},"depth":2,"frame":{"height":48,"width":288,"x":57,"y":458},"#
-        + #""label":"Allow","role":"Button","states":[]}]"#
+        + #""label":"B","role":"Button","states":[]}]"#
 
     @Test("leaves one slow but healthy read after a sheet opened alone under the live policy: no stop, no crash", .timeLimit(.minutes(1)))
     func slowHealthyRead() async throws {
-        // Opening a new-event sheet made one `ui` read take 3.05 s against reads of 0.54-0.59 s either side, every
+        // Opening a sheet made one `ui` read take 3.05 s against reads of 0.54-0.59 s either side, every
         // time, at a load average of 9-13; the 3 s deadline took it for a hang and the app check then for a crash. A
         // device whose reads take 0.3 s puts the adaptive deadline on its floor, so the floor alone must clear it.
         let reads = Mutex(0)
