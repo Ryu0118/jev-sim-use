@@ -1,6 +1,8 @@
 ---
 name: jev-sim-use
 description: Reach a screen, setting, or filled-in form in an iOS Simulator or Android app with one command instead of driving sim-use tap by tap. Use it whenever an agent needs to navigate an app to some state before checking or testing something there ("open Settings > Display", "search for ramen and show the results", "sign in with this email", "create a memo and save it"), even if the user only says "go to", "open", or "get to". jev-sim-use hands each step to Jev, a fast typed-judgment model, so navigation costs one shell call rather than one reasoning turn per tap. Also runs any sim-use command through `jev-sim-use exec`.
+metadata:
+  version: "0.3.0"
 ---
 
 # jev-sim-use
@@ -23,8 +25,15 @@ it stops.
 ## Before the first run
 
 ```sh
+jev-sim-use --version  # must be 0.3.0, the version this skill is for
 jev-sim-use doctor     # sim-use installed, one usable device, TYPESAFE_API_KEY set
 ```
+
+- If `--version` differs, update the older side first; the run and `doctor` also warn about an installed skill that
+  does not match. The binary: `curl -fsSL https://raw.githubusercontent.com/Ryu0118/jev-sim-use/main/install.sh |
+  FORCE=1 bash`, `mise upgrade github:Ryu0118/jev-sim-use`, or `nest install Ryu0118/jev-sim-use`. The skill:
+  `jev-sim-use skill install --client claude|agents --force`, or reinstall it the way you installed it (plugin,
+  apm, `gh skill`).
 
 - Open the app yourself; sim-use cannot launch apps. Give it a few seconds, then dismiss any late prompt (rating
   request, tracking, notifications, password save). These appear after launch and derail a run midway.

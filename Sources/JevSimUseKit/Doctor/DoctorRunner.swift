@@ -19,7 +19,12 @@ package struct DoctorRunner: Sendable {
             DoctorCheck(name: "device", status: .skipped("sim-use is not ready"))
         }
         let jev = await check("jev") { try jevDetail(request) }
-        return DoctorReport(checks: [simUse, device, jev])
+        // An installed skill for another version fails the check; no installed skill passes.
+        let skillWarnings = SkillVersionCheck(environment: environment).warnings()
+        let skill = DoctorCheck(name: "skill", status: skillWarnings.isEmpty
+            ? .passed("no installed copy is for another version than \(JevSimUseVersion.current)")
+            : .failed(skillWarnings.joined(separator: "\n")))
+        return DoctorReport(checks: [simUse, device, jev, skill])
     }
 
     private func check(_ name: String, _ body: () async throws -> String) async -> DoctorCheck {

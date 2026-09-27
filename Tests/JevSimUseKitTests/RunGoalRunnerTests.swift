@@ -7,6 +7,8 @@ import Testing
 /// reached.
 struct RunGoalRunnerTests {
     private let environment = [
+        // A throwaway home, so the check of an installed skill never reads the developer's own.
+        "HOME": FileManager.default.temporaryDirectory.appending(path: UUID().uuidString).path(),
         JevSettings.apiKeyVariable: "k",
         "XDG_CONFIG_HOME": NSTemporaryDirectory(),
         "XDG_STATE_HOME": FileManager.default.temporaryDirectory.appending(path: UUID().uuidString).path(),
@@ -33,6 +35,33 @@ struct RunGoalRunnerTests {
             makeSessionID: { "s1" },
             makePlanner: { _ in FakePlanner(plans) },
         )
+    }
+
+    @Test("warns once at the start about an installed skill for another version, and says nothing without one")
+    func outdatedSkillWarning() async throws {
+        let quiet = Mutex<[RunGoalEvent]>([])
+        _ = try await runner().run(request()) { event in quiet.withLock { $0.append(event) } }
+        #expect(!quiet.withLock { $0.contains {
+            if case .warning = $0 {
+                true
+            } else {
+                false
+            }
+        } })
+
+        let skill = URL(filePath: environment["HOME"] ?? "").appending(path: ".claude/skills/jev-sim-use")
+        try FileManager.default.createDirectory(at: skill, withIntermediateDirectories: true)
+        try Data("---\nname: jev-sim-use\nmetadata:\n  version: \"0.0.1\"\n---\n".utf8).write(to: skill.appending(path: "SKILL.md"))
+        let events = Mutex<[RunGoalEvent]>([])
+        _ = try await runner().run(request()) { event in events.withLock { $0.append(event) } }
+        let warnings = events.withLock { $0.filter {
+            if case .warning = $0 {
+                true
+            } else {
+                false
+            }
+        } }
+        #expect(warnings.count == 1)
     }
 
     @Test("saves the session with its device, history, and run outcome")
