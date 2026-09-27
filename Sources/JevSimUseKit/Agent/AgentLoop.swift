@@ -29,9 +29,9 @@ package struct AgentLoop: Sendable {
         var state = AgentLoopState.observing(pending: nil)
         while true {
             switch state {
-            case let .observing(pending): state = try await observe(pending: pending, context: &context)
-            case let .planning(observation): state = try await planStep(on: observation, context: &context)
-            case let .deciding(step): state = try await decideStep(step, context: &context)
+            case .observing where configuration.stepTimeout != nil:
+                (state, context) = try await timedCycle(from: state, context: context)
+            case .observing, .planning, .deciding: state = try await transition(from: state, context: &context)
             case let .finished(outcome):
                 // The last step took no action, so nothing reported its time yet.
                 if context.timing.total > 0 {

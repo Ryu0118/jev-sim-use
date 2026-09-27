@@ -22,6 +22,8 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var waitDuration: Duration
     /// How long to keep reading for a screen that moves on before handing over.
     package var handOverWait: Duration
+    /// How long one cycle (read, plan, act) may take before it is cut off; `nil` turns the cut-off off.
+    package var stepTimeout: Duration?
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -35,6 +37,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         unchangedWait: Duration = .zero,
         waitDuration: Duration = .zero,
         handOverWait: Duration = .zero,
+        stepTimeout: Duration? = nil,
     ) {
         self.goal = goal
         self.texts = texts
@@ -46,5 +49,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.unchangedWait = unchangedWait
         self.waitDuration = waitDuration
         self.handOverWait = handOverWait
+        self.stepTimeout = stepTimeout
     }
 }

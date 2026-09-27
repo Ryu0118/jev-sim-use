@@ -44,6 +44,23 @@ package struct StepTiming: Codable, Sendable, Hashable, CustomStringConvertible 
         handOver = try container.decodeIfPresent(Double.self, forKey: .handOver) ?? 0
     }
 
+    /// What a step waited on, for a message about a step that did not finish.
+    package enum Part: String, Sendable, Hashable {
+        case read
+        case jev = "Jev"
+        case act
+        case handOver = "hand-over"
+
+        init(_ keyPath: WritableKeyPath<StepTiming, Double>) {
+            self = switch keyPath {
+            case \StepTiming.jev: .jev
+            case \StepTiming.act: .act
+            case \StepTiming.handOver: .handOver
+            default: .read
+            }
+        }
+    }
+
     /// Seconds with two decimals.
     package static func format(_ seconds: Double) -> String {
         seconds.formatted(.number.precision(.fractionLength(2))) + "s"

@@ -1,5 +1,12 @@
 /// Replacing a hung sim-use daemon; the policy is `SimUseDaemonWatchdog`'s.
 extension SimUseClient {
+    /// Runs `daemon stop` for this device and returns whether the daemon is gone. A daemon that stopped answering
+    /// altogether ignored the stop and reported `stopped: false`; a failed stop still lets the read outside the daemon
+    /// go ahead, so it is reported rather than thrown.
+    package func stopDaemon() async -> Bool {
+        await (try? stopDaemonReporting()) ?? false
+    }
+
     /// Reads through the daemon within the watchdog's deadline. Past it, the read is cancelled, the daemon stopped, and
     /// the screen read outside it; with no replacement left, the read is waited out up to the watchdog's cap. Only the
     /// time triggers this: an error envelope, such as a device that is gone, comes back within a quarter second and is
@@ -23,7 +30,7 @@ extension SimUseClient {
 
     /// Stops the hung daemon and reads the screen outside it.
     private func replaceDaemon(lastApp: String?, left: Int) async throws -> ScreenObservation {
-        let stopped = try await stopDaemon()
+        let stopped = try await stopDaemonReporting()
         var reading = try await read(environment: SimUseContract.noDaemonEnvironment)
         watchdog.noteReading(of: reading.snapshot.appLabel)
         // The daemon reports an app that disappeared on its next command, and that report went with the stopped
@@ -49,10 +56,7 @@ extension SimUseClient {
         }
     }
 
-    /// Runs `daemon stop` for this device and returns whether the daemon is gone. A daemon that stopped answering
-    /// altogether ignored the stop and reported `stopped: false`; a failed stop still lets the read outside the daemon
-    /// go ahead, so it is reported rather than thrown.
-    private func stopDaemon() async throws -> Bool {
+    private func stopDaemonReporting() async throws -> Bool {
         struct StopPayload: Decodable, Sendable {
             struct Entry: Decodable, Sendable {
                 let stopped: Bool?
