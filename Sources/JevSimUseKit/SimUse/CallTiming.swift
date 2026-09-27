@@ -85,7 +85,11 @@ package final class CallBaselines: Sendable {
 
     /// The deadline for the next call of `kind`, with `intrinsic` added for an action.
     func deadline(for kind: CallKind, intrinsic: Duration = .zero) -> Duration {
-        guard let baseline = baseline(kind) else { return policy.coldStart + intrinsic }
+        // A run's first actions come after its reads started the daemon, so the read baseline stands in for theirs;
+        // a first hung gesture waited the whole cold start (17 s) otherwise.
+        guard let baseline = baseline(kind) ?? (kind == .action ? baseline(.read) : nil) else {
+            return policy.coldStart + intrinsic
+        }
         return max(policy.floor, baseline * policy.factor) + intrinsic
     }
 
