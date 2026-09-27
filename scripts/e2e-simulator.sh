@@ -127,9 +127,14 @@ set_switch() {
 }
 
 # Relaunches the app `$1` in English, waits until sim-use reads it as `$2`, and answers first-run prompts, which appear
-# only on a fresh simulator. The launch arguments leave the simulator's own language as it is.
+# only on a fresh simulator. The launch arguments leave the simulator's own language as it is. Each further argument is
+# a `simctl privacy` service granted first: its permission alert belongs to the system, is shown in the simulator's own
+# language, and stayed over every later app until answered, so it is granted rather than tapped away.
 open_app() {
-    local bundle=$1 name=$2
+    local bundle=$1 name=$2 service
+    for service in "${@:3}"; do
+        xcrun simctl privacy "$DEVICE" grant "$service" "$bundle" || return 1
+    done
     xcrun simctl terminate "$DEVICE" "$bundle" >/dev/null 2>&1
     xcrun simctl launch "$DEVICE" "$bundle" -AppleLanguages "(en)" -AppleLocale en_US >/dev/null || return 1
     for _ in $(seq 1 20); do
@@ -410,7 +415,7 @@ change" -t title="$title" -d "$DEVICE" --max-steps 8
 
 # Searching Maps with a typed place and opening it with Return. Needs the network.
 goal_maps() {
-    open_app "$MAPS" Maps || return 1
+    open_app "$MAPS" Maps location || return 1
     tap_id_if_shown CardButtonTypeClose
     jsu run "Search for the place in the Maps search field, then press Return" -t place="Golden Gate Bridge" \
         -d "$DEVICE" --max-steps 6 --actions tap,type,return
