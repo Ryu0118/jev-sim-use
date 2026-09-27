@@ -20,14 +20,23 @@ package struct ScreenSpace: Sendable, Hashable {
 
     /// The device-native point for `x`, `y` as describe-ui shows it. Found on a simulator by touching a switch in both
     /// landscape orientations. Portrait, an unknown orientation, and upside-down (unverified) pass through unchanged.
+    ///
+    /// The point is first kept `edgeInset` inside the screen as shown, where frames are measured: one built from a row
+    /// an earlier swipe had moved left lay at x -4, which no command can touch. Without a screen size it stays as it is.
     func native(x: Double, y: Double) -> (x: Double, y: Double) {
-        guard platform == SimUseContract.Platform.ios, let screen else { return (x, y) }
+        guard let screen else { return (x, y) }
+        let x = min(max(x, screen.x + Self.edgeInset), screen.x + screen.width - Self.edgeInset)
+        let y = min(max(y, screen.y + Self.edgeInset), screen.y + screen.height - Self.edgeInset)
+        guard platform == SimUseContract.Platform.ios else { return (x, y) }
         return switch orientation {
         case Self.landscapeRight: (screen.height - y, x)
         case Self.landscapeLeft: (y, screen.width - x)
         default: (x, y)
         }
     }
+
+    /// How far inside the screen's edges a generated point stays, in the frames' units.
+    static let edgeInset = 8.0
 
     static let landscapeRight = "landscape-right"
     static let landscapeLeft = "landscape-left"

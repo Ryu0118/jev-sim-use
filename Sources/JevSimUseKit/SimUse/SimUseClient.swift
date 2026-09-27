@@ -97,7 +97,10 @@ package struct SimUseClient: DeviceDriving {
         let x = trailing ? max(frame.center.x, frame.x + frame.width - (entry.isToggle ? 26 : 18)) : frame.center.x
         let hold = trailing ? [SimUseContract.Tap.duration, SimUseContract.Tap.switchHoldSeconds] : []
         let point = space.native(x: x, y: frame.center.y)
-        return [SimUseContract.Command.tap, SimUseContract.Tap.x, "\(point.x)", SimUseContract.Tap.y, "\(point.y)"] + hold
+        return [
+            SimUseContract.Command.tap, SimUseContract.option(SimUseContract.Tap.x, "\(point.x)"),
+            SimUseContract.option(SimUseContract.Tap.y, "\(point.y)"),
+        ] + hold
     }
 
     /// Scrolls `entry` into reach, reads the screen until the scroll has stopped (a tap on a list still coasting

@@ -34,12 +34,12 @@ struct SimUseClientTests {
 
     @Test("aims each element action where the element answers it", arguments: [
         ("a switch: its trailing edge, held briefly", entry("CheckBox", ElementFrame(x: 36, y: 184, width: 330, height: 28)),
-         ElementGesture?.none, ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
+         ElementGesture?.none, ["tap", "-x=340.0", "-y=198.0", "--duration", "0.05"]),
         ("a control with the toggle trait, whatever its role: as a switch", toggleTrait, nil,
-         ["tap", "-x", "340.0", "-y", "198.0", "--duration", "0.05"]),
+         ["tap", "-x=340.0", "-y=198.0", "--duration", "0.05"]),
         ("a full-width value row: its trailing control, held briefly",
          entry("Button", value: "Azure", ElementFrame(x: 32, y: 406, width: 338, height: 28)), nil,
-         ["tap", "-x", "352.0", "-y", "420.0", "--duration", "0.05"]),
+         ["tap", "-x=352.0", "-y=420.0", "--duration", "0.05"]),
         ("a wide list row with a value and custom actions: its alias", actionable(ElementFrame(x: 51, y: 408, width: 335, height: 20)),
          nil, ["tap", "@9"]),
         ("a tall card with a value and custom actions: its alias", actionable(ElementFrame(x: 16, y: 300, width: 370, height: 174)),
@@ -48,9 +48,9 @@ struct SimUseClientTests {
          nil, ["tap", "@9"]),
         ("a long press: the alias", entry("Button", row), .longPress, ["long-press", "@9"]),
         ("a sideways swipe: 40% of the width, short of a row's full delete swipe", entry("Button", row), .swipeLeft,
-         ["swipe", "--from", "336.0,200.0", "--to", "200.0,200.0"]),
+         ["swipe", "--from=336.0,200.0", "--to=200.0,200.0"]),
         ("a two-finger gesture: the element's centre", entry("Button", row), .pinchOut,
-         ["gesture", "pinch-out", "--center-x", "200.0", "--center-y", "200.0"]),
+         ["gesture", "pinch-out", "--center-x=200.0", "--center-y=200.0"]),
     ] as [(String, UIEntry, ElementGesture?, [String])])
     func elementAction(_: String, target: UIEntry, gesture: ElementGesture?, expected: [String]) async throws {
         let ok = CommandOutput.json(#"{"ok":true,"data":{}}"#)
