@@ -141,6 +141,24 @@ struct FrameBaselineTests {
         #expect(!Self.absorb(Self.frame(0x7F, rows: rows), into: &baseline))
     }
 
+    /// A text field's caret blinks for as long as the field has focus: counted as a change, a screen with a focused
+    /// field never goes still, and every wait after typing ran to its deadline.
+    @Test("ignores a change only a few pixels wide, such as a blinking caret, and counts a wider one", arguments: [
+        (100 ..< 112, false), (100 ..< 400, true),
+    ])
+    func narrowChange(columns: Range<Int>, counts: Bool) {
+        let bytesPerRow = 4000
+        var baseline = FrameBaseline()
+        let blank = [UInt8](repeating: 0, count: bytesPerRow * Self.height)
+        var drawn = blank
+        for row in 150 ..< 180 {
+            drawn.replaceSubrange(row * bytesPerRow + columns.lowerBound ..< row * bytesPerRow + columns.upperBound,
+                                  with: repeatElement(0x7F, count: columns.count))
+        }
+        _ = blank.withUnsafeBytes { baseline.absorb($0, bytesPerRow: bytesPerRow, height: Self.height) }
+        #expect(drawn.withUnsafeBytes { baseline.absorb($0, bytesPerRow: bytesPerRow, height: Self.height) } == counts)
+    }
+
     @Test("starts over when the frame's size changes, as after the surface was replaced")
     func resized() {
         var baseline = FrameBaseline()
