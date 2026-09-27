@@ -40,6 +40,7 @@ package struct RunGoalRunner: Sendable {
         let settings = try JevSettings.resolve(
             baseURLFlag: request.baseURL, modelFlag: request.model, config: configStore.load(), environment: environment,
         )
+        SkillVersionCheck(environment: environment).warnings().forEach { report(.warning($0)) }
         try sessionStore.removeExpired(now: now())
         let (loaded, resumed) = switch request.session {
         case let .new(goal, texts): (SessionRecord(id: makeSessionID(), goal: goal, texts: texts, updatedAt: now()), false)

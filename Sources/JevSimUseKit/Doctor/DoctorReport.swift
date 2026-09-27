@@ -10,7 +10,7 @@ package enum DoctorCheckStatus: Sendable, Equatable {
 
 /// One named readiness check.
 package struct DoctorCheck: Sendable, Equatable {
-    /// `sim-use`, `device`, or `jev`.
+    /// `sim-use`, `device`, `jev`, or `skill`.
     package let name: String
     /// What the check found.
     package let status: DoctorCheckStatus
