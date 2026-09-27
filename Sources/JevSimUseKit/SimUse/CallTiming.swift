@@ -101,7 +101,8 @@ package final class CallBaselines: Sendable {
         return min(recent.sorted()[recent.count / 2], policy.ceiling)
     }
 
-    /// The app the last read showed, to tell whether it disappeared across a daemon replacement.
+    /// The bundle id of the app the last read showed, SpringBoard aside, to tell whether it disappeared across a daemon
+    /// replacement.
     var lastApp: String? {
         get { samples.withLock { $0.lastApp } }
         set { samples.withLock { $0.lastApp = newValue } }

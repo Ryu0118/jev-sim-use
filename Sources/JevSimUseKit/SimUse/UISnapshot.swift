@@ -20,11 +20,13 @@ package struct UISnapshot: Decodable, Sendable, Hashable {
     package var screen: ElementFrame?
     /// sim-use's reading of the screen's orientation, such as `portrait` or `landscape-left`.
     package var orientation: String?
+    /// The foreground app's bundle id, which keeps up with a launch that the label lags behind.
+    package var appPackage: String?
 }
 
 extension UISnapshot {
     private enum CodingKeys: String, CodingKey {
-        case platform, outline, appLabel, entries, crashDialog, raw, screen, orientation
+        case platform, outline, appLabel, entries, crashDialog, raw, screen, orientation, appPackage
     }
 
     package init(from decoder: any Decoder) throws {
@@ -42,6 +44,7 @@ extension UISnapshot {
             crashDialog: container.decodeIfPresent(CrashDialog.self, forKey: .crashDialog),
             screen: container.decodeIfPresent(ElementFrame.self, forKey: .screen),
             orientation: container.decodeIfPresent(String.self, forKey: .orientation),
+            appPackage: container.decodeIfPresent(String.self, forKey: .appPackage),
         )
     }
 }

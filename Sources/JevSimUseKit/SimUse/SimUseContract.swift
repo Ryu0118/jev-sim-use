@@ -15,6 +15,8 @@ package enum SimUseContract {
     /// 0.4 s through the daemon, which checks for crashed apps on every command. The daemon still reports an app that
     /// disappeared on its next command, which is always the `ui` read after a tap.
     static let noDaemonEnvironment = ["SIM_USE_NO_DAEMON": "1"]
+    /// The iOS home screen's and system alerts' bundle id.
+    static let springBoardBundle = "com.apple.springboard"
     /// Ends option parsing, so user text such as `-5` is never read as a flag.
     static let operandTerminator = "--"
 
