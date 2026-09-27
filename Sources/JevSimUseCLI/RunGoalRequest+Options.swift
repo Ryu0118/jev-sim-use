@@ -5,7 +5,7 @@ extension RunGoalRequest {
     init(session: SessionStart, connection: ConnectionOptions, agent: AgentOptions) throws {
         try self.init(
             session: session, maxSteps: agent.maxSteps, minConfidence: agent.minConfidence,
-            allowedOperations: agent.allowedOperations,
+            allowedOperations: agent.allowedOperations, stepTimeout: agent.stepTimeoutDuration,
             deviceID: connection.device, baseURL: connection.baseURL, model: connection.model,
         )
     }
