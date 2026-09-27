@@ -30,6 +30,8 @@ struct AgentProgress: Sendable {
     private var repeatRun: (action: String, skeletons: Set<String>, states: [[String: String]])?
     /// Whether the next recorded screen is the one the last action left, to add to `repeatRun`.
     private var awaitsRepeatState = false
+    /// Whether the last history entry is a cut-off step whose effect the next reading tells.
+    private var cutAwaitsReading = false
 
     /// How many repeats in a row may leave the screen in a state already seen in the run before the next is refused.
     ///
@@ -97,7 +99,10 @@ struct AgentProgress: Sendable {
         if let previous = currentOutline, let action = lastActionName {
             triedActions[previous, default: []].insert(action)
             history[history.count - 1].screenChanged = previous != outline
+        } else if let previous = currentOutline, cutAwaitsReading {
+            history[history.count - 1].screenChanged = previous != outline
         }
+        cutAwaitsReading = false
         let title = observation.snapshot.title
         if let previousTitle = currentTitle, let label = lastTapLabel, previousTitle != title {
             exploredBranches[previousTitle, default: []].insert(label)
@@ -117,6 +122,21 @@ struct AgentProgress: Sendable {
         revisitCount = revisited ? revisitCount + 1 : 0
         currentOutline = outline
         return revisitCount >= stallLimit ? .stalled(steps: steps) : nil
+    }
+
+    /// Records a cycle cut off by the step timeout as a step of its own, in words that do not claim what happened: an
+    /// action in flight may or may not have landed. The action is not marked as tried, so Jev may take it again once
+    /// the next reading shows nothing changed.
+    mutating func recordCutOff(_ description: String, timing: StepTiming) {
+        history.append(HistoryEntry(step: nextStep, action: description, screenChanged: nil, timing: timing))
+        steps += 1
+        lastActionName = nil
+        lastTapLabel = nil
+        menuOpener = nil
+        repeatRun = nil
+        awaitsRepeatState = false
+        pendingDisappearances = []
+        cutAwaitsReading = true
     }
 
     mutating func recordAction(_ action: AgentAction, disappeared: [String], timing: StepTiming? = nil) {

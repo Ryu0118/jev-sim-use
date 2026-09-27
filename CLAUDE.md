@@ -66,7 +66,15 @@ Never write unit tests after the code.
   hung daemon's 10-20 s or never): past it the read is cancelled, `daemon stop --device <udid> --timeout 1` runs, and
   the screen is read with `SIM_USE_NO_DAEMON=1`; at most twice per run, reported as a warning. After that reads are
   waited out up to 30 s (`SimUseError.readTimedOut` past it): a natural hang answered in about 10 s and a fresh daemon
-  hung again within a minute, so failing sooner would end runs that finish today. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
+  hung again within a minute, so failing sooner would end runs that finish today. The outer backstop is the step
+  timeout (`--step-timeout`, default 20 s, `AgentLoop+Timeout`): one cycle (read, plan, act) that does not finish in
+  time is cancelled, which kills the sim-use child or the Jev request it waits on (and the confirming read), the
+  daemon is stopped, one warning is reported, and the step is recorded as cut off (its action "may or may not have
+  landed", not marked tried). The loop then reads and plans again instead of re-sending the action, waiting for a
+  late effect as after any action; a second cut in a row ends the run as `AgentOutcome.stepTimedOut`, exit 3, with
+  the session kept for resume. A re-plan on a screen that moved on starts its own cycle, and the hand-over wait and
+  `wait` extend the deadline by their own settings; a Jev call past 20 s (swift-jev retries three times, each up to
+  60 s) is a network fault, so it is cut too. Only the deadline triggers it; error envelopes are thrown as before. A stopped daemon loses its
   report of apps that disappeared, and a no-daemon read has none, so an app no longer on screen after a replacement
   counts as disappeared. `daemon stop` on a daemon that stopped answering reports `stopped: false` (and took 6 s at
   the default `--timeout`). Android reads have no deadline: their normal time was never measured.

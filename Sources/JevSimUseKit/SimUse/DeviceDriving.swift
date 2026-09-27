@@ -14,6 +14,8 @@ package protocol DeviceDriving: Sendable {
     func perform(_ gesture: ElementGesture, alias: Int, on snapshot: UISnapshot) async throws -> [String]
     /// Performs a device-level action on the screen `space` describes.
     func perform(_ action: SimUseDeviceAction, in space: ScreenSpace) async throws -> [String]
+    /// Stops this device's sim-use daemon, so the next command starts a fresh one; returns whether it stopped.
+    func stopDaemon() async -> Bool
     /// Pastes `text` into the focused field, in place of its content when `replacing`. Paste handles Unicode on iOS,
     /// unlike `type`.
     func paste(_ text: String, replacing: Bool) async throws -> [String]
@@ -34,6 +36,11 @@ package struct ScreenObservation: Sendable, Hashable {
 }
 
 package extension DeviceDriving {
+    /// Drivers without a daemon have nothing to stop.
+    func stopDaemon() async -> Bool {
+        false
+    }
+
     /// Taps by alias; drivers without an alias cache have nothing a concurrent read could change.
     func tapWhereShown(_ entry: UIEntry, on snapshot: UISnapshot) async throws -> [String] {
         try await tap(alias: entry.aliases.alias, on: snapshot)

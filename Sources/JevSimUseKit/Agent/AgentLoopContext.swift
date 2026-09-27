@@ -1,5 +1,5 @@
 /// What a run of `AgentLoop` carries from one step to the next.
-struct AgentLoopContext {
+struct AgentLoopContext: Sendable {
     /// History, loop detection, and the other per-run bookkeeping.
     var progress: AgentProgress
     /// The screen the last action was taken on; `nil` once a plan's target was gone from the screen.
@@ -12,6 +12,16 @@ struct AgentLoopContext {
     var timing = StepTiming()
     /// Where the finished steps' time went.
     var finishedTiming = StepTiming()
+    /// Cycles in a row cut off by the step timeout.
+    var consecutiveCuts = 0
+    /// What the current cycle is doing, for the step timeout.
+    let watch = StepWatch()
+
+    /// Runs `body`, adding its time to `part` of the step's timing and noting that the cycle waits on it.
+    mutating func timed<T>(_ part: WritableKeyPath<StepTiming, Double> & Sendable, _ body: () async throws -> T) async rethrows -> T {
+        watch.enter(part)
+        return try await timing.add(to: part, body)
+    }
 
     /// Whether a confirming reading runs while Jev plans. After `AgentLoop.disagreementLimit` disagreements the loop
     /// reads until two readings agree instead, and plans without one.

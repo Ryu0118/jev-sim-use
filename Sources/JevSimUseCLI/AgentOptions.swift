@@ -16,6 +16,26 @@ struct AgentOptions: ParsableArguments {
     ))
     var actions: String?
 
+    @Option(help: ArgumentHelp(
+        "Cut a step (read, plan, act) off after this many seconds, restart the sim-use daemon, and plan it again; a "
+            + "second cut in a row ends the run (exit 3). 0 or off disables it.",
+        valueName: "seconds",
+    ))
+    var stepTimeout = "20"
+
+    /// `--step-timeout` as a duration, or `nil` when it is off.
+    var stepTimeoutDuration: Duration? {
+        get throws {
+            if stepTimeout == "off" {
+                return nil
+            }
+            guard let seconds = Double(stepTimeout), seconds >= 0, seconds.isFinite else {
+                throw ValidationError("--step-timeout must be a number of seconds, 0, or off.")
+            }
+            return seconds == 0 ? nil : .milliseconds(Int(seconds * 1000))
+        }
+    }
+
     /// The groups `--actions` names, or all of them.
     var allowedOperations: Set<OperationGroup> {
         get throws {
@@ -33,6 +53,7 @@ struct AgentOptions: ParsableArguments {
 
     func validate() throws {
         _ = try allowedOperations
+        _ = try stepTimeoutDuration
         guard maxSteps > 0 else { throw ValidationError("--max-steps must be positive.") }
         guard (0 ... 1).contains(minConfidence) else { throw ValidationError("--min-confidence must be within 0...1.") }
     }
