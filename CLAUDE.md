@@ -83,17 +83,23 @@ Never write unit tests after the code.
   deciding, finished) with one transition each in `AgentLoop+Transitions`; `AgentLoopContext` carries what outlives a
   step (progress, the acted-on screen, re-plan and disagreement counters, the step's `StepTiming`). Each step ends
   with a `[n] took …s (read …, jev …, act …)` line: the loop's own waits, which never overlap, so the confirming read
-  under Jev's request counts only for the wait after Jev answered. `JevStepPlanner` sends one request asking which
+  under Jev's request counts only for the wait after Jev answered. A step that waited to hand over adds `hand-over …`:
+  counted as reading, that wait made stopped steps look like slow first reads. `JevStepPlanner` sends one request asking which
   operation to run, which target it would use, whether it would finish the goal, and whether its tap is irreversible.
-- `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `SkillBundle+Generated.swift` embeds
-  `skills/jev-sim-use/` (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes
-  alongside it) via `mise run generate-skill`, guarded by `SkillBundleDriftTests`. CLI:
+- `JevSimUseKit/Skill`: `SkillRunner` installs / uninstalls / prints the agent skill. `skills/jev-sim-use/` is the only
+  copy (SSoT: SKILL.md plus `references/*.md`, which SKILL.md links to and `skill install` writes alongside it): the
+  `EmbedSkill` build tool plugin (`BuildPlugins/`, run through the `EmbedSkillTool` executable) generates
+  `SkillBundle.files` from it into the build directory on every build, SKILL.md first and the references sorted, each
+  file's bytes in a raw string (a file holding the terminator fails the build). Releases ship the executable alone,
+  so there is no resource bundle. Editing the Markdown is enough; `SkillEmbeddingTests` checks the plugin's output
+  against the directory. The plugin targets set `path:` because `plugins/` is the agent plugin (and, on a
+  case-insensitive disk, SwiftPM's default `Plugins`). CLI:
   `jev-sim-use skill install|uninstall|print [<path>]` (`--client claude|agents` or `--dest`), mirroring `sim-use init`.
 - Distribution: `.claude-plugin/marketplace.json` + `.claude/plugins/jev-sim-use` (Claude Code),
   `.agents/plugins/marketplace.json` + `plugins/jev-sim-use` (Codex), `apm.yml` + `.apm/skills` (APM); skill dirs are
   symlinks to `skills/jev-sim-use`. `release.yml` bumps all manifest versions; `install.sh` is the curl installer.
   The docsync rule `skill-cli` ties SKILL.md to the CLI options and `AgentOutcome`: after changing them, update
-  SKILL.md, run `mise run generate-skill`, then `docsync update-checksum`.
+  SKILL.md, then `docsync update-checksum`.
 
 ## sim-use contract (verified against v0.14.0)
 
@@ -149,7 +155,9 @@ Never write unit tests after the code.
   keeps each of those answers, and the progress line lists them when there is more than one.
 - Every sim-use action is reachable: taps; element gestures (long-press, swipes, pinch, rotate); typing that appends
   (`enter_text`) or replaces (`replace_text`, `paste --replace`, offered only when a field holds a value: appending
-  left the old title in front of the new one); screen-level scrolls in
+  left the old title in front of the new one; the two are `Operation.equivalents`, so their support adds up and the
+  more probable one runs, since apart they split an empty title 0.53 / 0.43 on a form whose other fields showed
+  placeholders, and typing a text a field already holds exactly always replaces); screen-level scrolls in
   four directions, go back (on iOS only when a `BackButton` shows a navigation stack, and done by tapping it, since a
   map on a detail screen swallowed the left-edge swipe; the swipe does
   nothing on a sheet or a tab's root, where Jev chose it at 0.79-0.88), a right-edge swipe, Return (`ios key 40`; a typed newline on Android, which has no `key`
@@ -204,7 +212,9 @@ Never write unit tests after the code.
   elements carrying `hint`: the one exception to one request per step, spent only where the run would otherwise stop.
 - State (`PlanningState`) is named JSON: `rules`, `goal`, `notes` (supervisor facts), `platform`, `screen.elements` (id `eN`,
   role, label, value, states, region), and `history` (`step`, `action`, `result`: "screen changed" / "no visible
-  effect"). Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
+  effect"). `screen.title` (`UISnapshot.title`) is a top-bar heading, or a large title: the first content heading
+  with no content above it. A heading below fields is a section, so a sheet whose top bar names it only in an
+  identifier sends no title rather than its first section's. Questions refer to it by backticked paths. `AgentLoop` plans only on a settled screen (two readings that
   agree): a mid-transition reading made Jev tap again and hit an element of the next screen. After an action that left the screen
   as it was, it reads again back to back (a `ui` read takes ~0.6 s, so no sleep) until the screen changes or
   `AgentLoop.unchangedWait` (2 s) passes: a memo's save kept the form up for over a second. If Jev planned on
@@ -282,4 +292,7 @@ pop-up menu", "the dismiss button") and keep raw logs local.
 ## Release
 
 `.github/workflows/release.yml` bumps `Sources/JevSimUseKit/Version.swift` via `workflow_dispatch`.
+It builds the universal binary with `scripts/build-release.sh` (`--build-system swiftbuild`: Swift 6.3's default
+build system cannot resolve the EmbedSkill plugin in a multi-arch build), which CI's `Universal Release Build` job
+also runs on every change.
 Keep `THIRD_PARTY_LICENSES` in sync when dependencies change.

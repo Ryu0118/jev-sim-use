@@ -41,6 +41,9 @@ package enum Operation: Sendable, Hashable {
         switch self {
         case .gesture(.rotateClockwise), .gesture(.rotateCounterclockwise):
             [.gesture(.rotateClockwise), .gesture(.rotateCounterclockwise)]
+        // Both type the chosen text into the chosen field; only what happens to the field's earlier text differs. Apart,
+        // they split an empty title 0.53 / 0.43 when another field on the form held text, and the run stopped.
+        case .enterText, .replaceText: [.enterText, .replaceText]
         default: [self]
         }
     }

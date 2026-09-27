@@ -19,6 +19,34 @@ struct OcclusionTests {
         #expect(Fixtures.snapshot(entries: [time, image, tab]).cover(of: tab) == nil)
     }
 
+    /// A day view: the week strip's container and the date header sit shallower than the timeline, whose rows sim-use
+    /// puts in a labelled group. Frames from an iOS 26 reading.
+    private var dayView: (container: UIEntry, header: UIEntry, strip: UIEntry, event: UIEntry) {
+        let timeline = ElementRegion(kind: "Group", label: "Day")
+        let container = entry(8, "", ElementFrame(x: 0, y: 62, width: 402, height: 121), role: "Group", band: "Content", depth: 1)
+        let header = entry(16, "Date", ElementFrame(x: 119, y: 192, width: 164, height: 18), role: "Heading", band: "Content", depth: 1)
+        let strip = entry(13, "Next day", ElementFrame(x: 287, y: 133, width: 57, height: 43), region: timeline)
+        let event = entry(15, "Event", ElementFrame(x: 68, y: 168, width: 332, height: 50), region: timeline)
+        return (container, header, strip, event)
+    }
+
+    @Test("an event row scrolled under the week strip is covered by the strip's container, and is revealed by scrolling up")
+    func eventUnderWeekStrip() {
+        let view = dayView
+        let screen = entry(1, "", ElementFrame(x: 0, y: 0, width: 402, height: 874), role: "Group", depth: 0)
+        let snapshot = Fixtures.snapshot(entries: [screen, view.container, view.strip, view.event, view.header])
+        #expect(snapshot.cover(of: view.event) != nil)
+        #expect(snapshot.revealingScroll(for: view.event) == .revealContentAbove)
+    }
+
+    @Test("a day button in a labelled group is not covered by the container around it or by an hour row under the strip")
+    func dayButtonStaysTappable() {
+        let view = dayView
+        // The hour row scrolled under the strip, in the content band as in the reading.
+        let row = entry(9, "Hour", ElementFrame(x: 62, y: 118, width: 340, height: 50), role: "StaticText", band: "Content")
+        #expect(Fixtures.snapshot(entries: [view.container, row, view.strip, view.header]).cover(of: view.strip) == nil)
+    }
+
     @Test("a segment of a segmented control, which lacks the tab trait, is still covered by what floats over it")
     func segmentIsNotTab() {
         var segment = entry(8, "Events", ElementFrame(x: 72, y: 780, width: 129, height: 48), role: "RadioButton", band: "Bottom")
@@ -171,8 +199,9 @@ struct OcclusionTests {
 
     private func entry(
         _ alias: Int, _ label: String, _ frame: ElementFrame, role: String = "Button", band: String? = nil, depth: Int = 2,
+        region: ElementRegion? = nil,
     ) -> UIEntry {
-        var entry = Fixtures.entry(alias, label, role: role, frame: frame, band: band)
+        var entry = Fixtures.entry(alias, label, role: role, frame: frame, band: band, region: region)
         entry.depth = depth
         return entry
     }

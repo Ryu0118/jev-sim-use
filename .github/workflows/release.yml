@@ -56,8 +56,10 @@ jobs:
           VERSION: ${{ inputs.version }}
 
 
+      # Builds with swiftbuild and leaves the binary in .build/apple/Products/Release, where the steps below and the
+      # artifact bundle action read it (see the script).
       - name: Build Universal Binary
-        run: swift build -c release --arch arm64 --arch x86_64
+        run: scripts/build-release.sh
 
       - name: Create Archive
         run: |

@@ -37,6 +37,19 @@ let package = Package(
                 .product(name: "ProcessRunning", package: "ProcessRunning"),
                 .product(name: "Subprocess", package: "swift-subprocess"),
             ],
+            plugins: ["EmbedSkill"],
+        ),
+        // Explicit paths: `plugins/jev-sim-use` is the agent plugin, and on a case-insensitive disk it is also
+        // SwiftPM's default `Plugins` directory.
+        .plugin(
+            name: "EmbedSkill",
+            capability: .buildTool(),
+            dependencies: ["EmbedSkillTool"],
+            path: "BuildPlugins/EmbedSkill",
+        ),
+        .executableTarget(
+            name: "EmbedSkillTool",
+            path: "BuildPlugins/EmbedSkillTool",
         ),
         .testTarget(
             name: "JevSimUseCLITests",

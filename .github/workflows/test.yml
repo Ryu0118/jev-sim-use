@@ -8,6 +8,10 @@ on:
       - 'Tests/**'
       - 'Package.swift'
       - 'Package.resolved'
+      - 'BuildPlugins/**'
+      - 'skills/**'
+      - 'scripts/build-release.sh'
+      - '.github/workflows/release.yml'
       - '.swiftformat'
       - '.my-swift-linter.yml'
       - '.swiftlint.yml'
@@ -20,6 +24,10 @@ on:
       - 'Tests/**'
       - 'Package.swift'
       - 'Package.resolved'
+      - 'BuildPlugins/**'
+      - 'skills/**'
+      - 'scripts/build-release.sh'
+      - '.github/workflows/release.yml'
       - '.swiftformat'
       - '.my-swift-linter.yml'
       - '.swiftlint.yml'
@@ -81,3 +89,24 @@ jobs:
 
       - name: Test
         run: swift test
+
+  # The release workflow's universal build, run on every change, so a build-system or plugin problem shows here
+  # instead of in a release.
+  release-build:
+    name: Universal Release Build
+    needs: lint
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build Universal Binary
+        run: scripts/build-release.sh
+
+      - name: Run it
+        run: .build/apple/Products/Release/jev-sim-use --version

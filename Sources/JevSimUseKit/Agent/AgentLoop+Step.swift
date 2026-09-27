@@ -84,8 +84,11 @@ extension AgentLoop {
                 try await driver.perform(.goBack, in: snapshot.space)
             }
         case let .device(deviceAction): try await driver.perform(deviceAction, in: snapshot.space)
+        // Appending and replacing pool, so a retype of a text the field already holds can run as an append; replacing
+        // leaves one copy either way.
         case let .enterText(field, _, text, replacing):
-            try await driver.tap(alias: field, on: snapshot) + driver.paste(text.value, replacing: replacing)
+            try await driver.tap(alias: field, on: snapshot)
+                + driver.paste(text.value, replacing: replacing || snapshot.entry(alias: field)?.value == text.value)
         case .wait: try await pause()
         case .done, .noneApplies: []
         }
