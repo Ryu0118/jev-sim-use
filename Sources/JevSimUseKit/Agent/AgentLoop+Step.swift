@@ -120,13 +120,30 @@ extension AgentLoop {
     /// How long a live run keeps reading after an action that left the screen as it was.
     static let unchangedWait: Duration = .seconds(2)
 
+    /// How long the screen image must stay unchanged to count as still. A guess to tune with the latency probe: long
+    /// enough to bridge the frames of a push or a sheet stuttering on a loaded Mac, short of a caret's half-second blink.
+    static let quietPeriod: Duration = .milliseconds(300)
+
+    /// How long a live run waits for a changed screen image to go still before reading anyway: a screen that animates
+    /// without end (a spinner, a map's location pulse) must not hold the step.
+    static let settleWait: Duration = .milliseconds(1500)
+
+    /// The longest one wait may run in a live run, however slow the reads: a 15 s wait still covers the one-to-eight
+    /// seconds a saved item took to reach its list, and keeps a stopped step from taking minutes on a loaded Mac.
+    static let maxWait: Duration = .seconds(15)
+
     /// Reads the screen after acting on `previous`, or after nothing when it is `nil`. Saving a memo kept its form on
     /// screen for over a second while the save went through, and Jev, planning on the form, tapped the screen that
     /// replaced it. So an unchanged screen is read again, back to back (one `ui` read takes about 0.4 s, so no sleep is
     /// needed between them), until it changes or `unchangedWait` passes. `settled` reads until two readings agree each
     /// time, for when overlapped confirmation keeps disagreeing. A blank reading (`isBlank`) is read past the same way,
     /// even with no `previous`: Jev, shown a list mid-redraw after a save, answered wait below the bar.
-    func observeAfterAction(on previous: UISnapshot?, settled: Bool, watch: StepWatch? = nil) async throws -> ScreenObservation {
+    func observeAfterAction(
+        on previous: UISnapshot?, since actedAt: ContinuousClock.Instant? = nil, settled: Bool, watch: StepWatch? = nil,
+    ) async throws -> ScreenObservation {
+        if let screen, let previous, let actedAt {
+            return try await observeWatching(screen, changedFrom: previous, since: actedAt, watch: watch)
+        }
         let read = { settled ? try await observeSettled() : try await driver.observe() }
         var observation = try await read()
         guard previous != nil || observation.snapshot.isBlank else { return observation }
@@ -135,8 +152,10 @@ extension AgentLoop {
         defer { watch?.resume() }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.unchangedWait)
+        let cap = configuration.maxWait.map { clock.now.advanced(by: $0) }
         var reads = 1
         while clock.now < deadline || reads < configuration.minUnchangedReads,
+              cap.map({ clock.now < $0 }) ?? true,
               observation.snapshot.isBlank || observation.snapshot.identity == previous?.identity
         {
             reads += 1
@@ -152,9 +171,15 @@ extension AgentLoop {
     /// did, and whether it differs. A saved memo reached its list one to eight seconds after the editor closed,
     /// depending on the app's server. The reading carries the disappeared apps of every reading before it: sim-use
     /// reports a disappearance once, so a reading dropped here would take a crash with it.
-    func reading(changedFrom snapshot: UISnapshot) async throws -> (reading: ScreenObservation, changed: Bool) {
+    func reading(
+        changedFrom snapshot: UISnapshot, since readAt: ContinuousClock.Instant? = nil,
+    ) async throws -> (reading: ScreenObservation, changed: Bool) {
+        if let screen, let readAt {
+            return try await readingWatching(screen, changedFrom: snapshot, since: readAt)
+        }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.handOverWait)
+        let cap = configuration.maxWait.map { clock.now.advanced(by: $0) }
         var disappeared: [String] = []
         var reading: ScreenObservation
         var reads = 0
@@ -165,7 +190,7 @@ extension AgentLoop {
             if !reading.snapshot.isBlank, reading.snapshot.layout != snapshot.layout {
                 break
             }
-        } while clock.now < deadline || reads < configuration.minHandOverReads
+        } while (clock.now < deadline || reads < configuration.minHandOverReads) && cap.map({ clock.now < $0 }) ?? true
         reading.disappearedApps = disappeared
         return (reading, !reading.snapshot.isBlank && reading.snapshot.layout != snapshot.layout)
     }

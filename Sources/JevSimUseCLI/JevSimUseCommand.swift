@@ -17,7 +17,7 @@ package struct JevSimUseCommand: AsyncParsableCommand {
         version: JevSimUseVersion.current,
         subcommands: [
             RunCommand.self, SessionCommand.self, ExecCommand.self, DoctorCommand.self, ConfigCommand.self,
-            SkillCommand.self,
+            SkillCommand.self, WatchScreenCommand.self,
         ],
         defaultSubcommand: RunCommand.self,
     )

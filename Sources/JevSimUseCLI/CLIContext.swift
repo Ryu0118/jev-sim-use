@@ -18,3 +18,13 @@ package struct CLIContext: Sendable {
         self.environment = environment
     }
 }
+
+extension CLIContext {
+    /// Set to `1` to print debug notes, such as why the screen is read by polling.
+    static let debugVariable = "JEV_SIM_USE_DEBUG"
+
+    /// Whether debug notes are printed.
+    var showsDebug: Bool {
+        environment[Self.debugVariable] == "1"
+    }
+}

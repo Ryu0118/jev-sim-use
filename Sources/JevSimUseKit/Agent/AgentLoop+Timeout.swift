@@ -87,6 +87,8 @@ extension AgentLoop {
         context.timing = StepTiming()
         // A cut action may still show its effect, so the next reading waits for a change as after any action.
         context.actedOn = plannedOn
+        // When a cut action was sent is not kept, so the next reading polls for its effect.
+        context.actedAt = nil
         context.staleReplans = 0
         context.disagreements = 0
         context.consecutiveCuts += 1

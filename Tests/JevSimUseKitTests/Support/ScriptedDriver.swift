@@ -9,9 +9,16 @@ final class ScriptedDriver: DeviceDriving {
     private let actions = Mutex<[String]>([])
     /// What `pasteboardHolds` answers: whether the simulator's pasteboard holds the pasted text, `nil` for unknown.
     private let pasteboard: Bool?
+    /// What `callDeadlines` answers.
+    private let deadlines: CallDeadlines?
 
     var performedActions: [String] {
         actions.withLock { $0 }
+    }
+
+    /// How many times the screen was read.
+    var readCount: Int {
+        reads.withLock { $0 }
     }
 
     /// Readings whose only element is a heading named by the outline.
@@ -21,9 +28,10 @@ final class ScriptedDriver: DeviceDriving {
         })
     }
 
-    init(readings: [UISnapshot], pasteboard: Bool? = nil) {
+    init(readings: [UISnapshot], pasteboard: Bool? = nil, deadlines: CallDeadlines? = nil) {
         self.readings = readings.map { ScreenObservation(snapshot: $0, disappearedApps: []) }
         self.pasteboard = pasteboard
+        self.deadlines = deadlines
     }
 
     func observe() async throws -> ScreenObservation {
@@ -51,6 +59,10 @@ final class ScriptedDriver: DeviceDriving {
 
     func pasteboardHolds(_: String) async -> Bool? {
         pasteboard
+    }
+
+    func callDeadlines() -> CallDeadlines? {
+        deadlines
     }
 
     private func record(_ action: String) -> [String] {

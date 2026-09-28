@@ -4,12 +4,12 @@ extension AgentLoop {
     func observe(pending: ScreenObservation?, context: inout AgentLoopContext) async throws -> AgentLoopState {
         try Task.checkCancellation()
         // Falling back discards a pending reading: it was one of the readings that kept disagreeing.
-        let (actedOn, settled, watch) = (context.actedOn, !context.overlapped, context.watch)
+        let (actedOn, actedAt, settled, watch) = (context.actedOn, context.actedAt, !context.overlapped, context.watch)
         // A blank pending reading, a confirming or hand-over reading taken mid-redraw, is read past like any other.
         var observation = if let pending, context.overlapped, !pending.snapshot.isBlank {
             pending
         } else {
-            try await context.timed(\.read) { try await observeAfterAction(on: actedOn, settled: settled, watch: watch) }
+            try await context.timed(\.read) { try await observeAfterAction(on: actedOn, since: actedAt, settled: settled, watch: watch) }
         }
         if let pending, context.overlapped, pending.snapshot.isBlank {
             observation.disappearedApps = pending.disappearedApps + observation.disappearedApps
@@ -26,6 +26,7 @@ extension AgentLoop {
 
     /// Plans on `observation` while a confirming reading runs, and taps a stable bar item without waiting for it.
     func planStep(on observation: ScreenObservation, context: inout AgentLoopContext) async throws -> AgentLoopState {
+        let plannedAt = ContinuousClock.now
         let overlapped = context.overlapped
         // The first reading after an action may be mid-transition, so a second one runs while Jev plans and decides
         // whether the plan still applies (see `confirmed`). It replaced reading until two readings agreed before
@@ -47,6 +48,7 @@ extension AgentLoop {
            case let .act(action) = decide(on: plan, progress: context.progress)
         {
             context.watch.acting(action, on: observation.snapshot)
+            context.actedAt = .now
             let disappeared: [String]
             do {
                 disappeared = try await context.timed(\.act) { try await driver.tapWhereShown(target, on: observation.snapshot) }
@@ -72,7 +74,9 @@ extension AgentLoop {
         }
         let settled = fresh.snapshot.layout == observation.snapshot.layout
             || fresh.snapshot.identity == observation.snapshot.identity
-        return .deciding(PlannedStep(observation: observation, fresh: fresh, plan: plan, overlapped: overlapped, settled: settled))
+        return .deciding(PlannedStep(
+            observation: observation, fresh: fresh, plan: plan, overlapped: overlapped, settled: settled, plannedAt: plannedAt,
+        ))
     }
 
     /// Turns the plan, asked again with hints when it would hand over, into a stop or an action.
@@ -105,7 +109,7 @@ extension AgentLoop {
         // Each read of the hand-over wait has its own deadline, so the wait stands outside the cycle's.
         context.watch.pause()
         defer { context.watch.resume() }
-        let (again, changed) = try await context.timed(\.handOver) { try await reading(changedFrom: step.fresh.snapshot) }
+        let (again, changed) = try await context.timed(\.handOver) { try await reading(changedFrom: step.fresh.snapshot, since: step.plannedAt) }
         // An app that disappeared while the wait read is a crash, whether or not the screen moved on.
         if !again.disappearedApps.isEmpty, let crash = context.progress.record(again, stallLimit: configuration.stallLimit) {
             return .finished(crash)
@@ -135,6 +139,7 @@ extension AgentLoop {
             return .finished(outcome)
         }
         context.watch.acting(target, on: step.fresh.snapshot)
+        context.actedAt = .now
         if target == .wait {
             context.watch.pause()
         }

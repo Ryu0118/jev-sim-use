@@ -28,6 +28,13 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var minUnchangedReads: Int
     /// Readings taken before a hand-over, however long `handOverWait` has run.
     package var minHandOverReads: Int
+    /// How long the screen image must stay unchanged to count as still, with a screen-change watcher.
+    package var quietPeriod: Duration
+    /// How long to wait for the screen image to go still after it changed, with a screen-change watcher.
+    package var settleWait: Duration
+    /// The longest one wait (after an action, or before a hand-over) may run, minimum read counts included; `nil` sets
+    /// no cap.
+    package var maxWait: Duration?
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -44,6 +51,9 @@ package struct AgentConfiguration: Sendable, Hashable {
         stepTimeout: Duration? = nil,
         minUnchangedReads: Int = 1,
         minHandOverReads: Int = 1,
+        quietPeriod: Duration = .zero,
+        settleWait: Duration = .zero,
+        maxWait: Duration? = nil,
     ) {
         self.goal = goal
         self.texts = texts
@@ -58,5 +68,8 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.stepTimeout = stepTimeout
         self.minUnchangedReads = minUnchangedReads
         self.minHandOverReads = minHandOverReads
+        self.quietPeriod = quietPeriod
+        self.settleWait = settleWait
+        self.maxWait = maxWait
     }
 }
