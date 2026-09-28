@@ -34,6 +34,9 @@ package enum SimUseContract {
         static let android = "android"
     }
 
+    /// How sim-use's error begins when a command reached its daemon and the daemon closed the connection unanswered.
+    static let daemonDroppedResponse = "The command reached the sim-use daemon but no valid response came back"
+
     /// Subcommands.
     enum Command {
         static let ui = "ui"
