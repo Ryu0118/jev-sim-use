@@ -4,8 +4,10 @@
 extension AgentLoop {
     /// `base`, or as long as `reads` readings take at the device's current pace when that is longer: under load the
     /// app renders as slowly as sim-use reads, and the polling wait gave the effect that many reads.
+    /// Never longer than `maxWait`: on a loaded Mac the stretched span reached 30 s for one hand-over.
     func waitSpan(_ base: Duration, reads: Int) -> Duration {
-        max(base, (driver.callDeadlines()?.stretchedReadBaseline ?? .zero) * reads)
+        let span = max(base, (driver.callDeadlines()?.stretchedReadBaseline ?? .zero) * reads)
+        return configuration.maxWait.map { min(span, $0) } ?? span
     }
 
     /// `observeAfterAction` with a watcher. A change that leaves the elements as they were, such as a tap's touch-down

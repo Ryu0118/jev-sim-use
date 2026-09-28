@@ -73,7 +73,7 @@ package struct RunGoalRunner: Sendable {
                 unchangedWait: AgentLoop.unchangedWait, waitDuration: AgentLoop.waitDuration,
                 handOverWait: AgentLoop.handOverWait, stepTimeout: request.stepTimeout,
                 minUnchangedReads: AgentLoop.minUnchangedReads, minHandOverReads: AgentLoop.minHandOverReads,
-                quietPeriod: AgentLoop.quietPeriod, settleWait: AgentLoop.settleWait,
+                quietPeriod: AgentLoop.quietPeriod, settleWait: AgentLoop.settleWait, maxWait: AgentLoop.maxWait,
             ),
             screen: screen,
             report: { report(.agent($0)) },

@@ -128,6 +128,10 @@ extension AgentLoop {
     /// without end (a spinner, a map's location pulse) must not hold the step.
     static let settleWait: Duration = .milliseconds(1500)
 
+    /// The longest one wait may run in a live run, however slow the reads: a 15 s wait still covers the one-to-eight
+    /// seconds a saved item took to reach its list, and keeps a stopped step from taking minutes on a loaded Mac.
+    static let maxWait: Duration = .seconds(15)
+
     /// Reads the screen after acting on `previous`, or after nothing when it is `nil`. Saving a memo kept its form on
     /// screen for over a second while the save went through, and Jev, planning on the form, tapped the screen that
     /// replaced it. So an unchanged screen is read again, back to back (one `ui` read takes about 0.4 s, so no sleep is
@@ -148,8 +152,10 @@ extension AgentLoop {
         defer { watch?.resume() }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.unchangedWait)
+        let cap = configuration.maxWait.map { clock.now.advanced(by: $0) }
         var reads = 1
         while clock.now < deadline || reads < configuration.minUnchangedReads,
+              cap.map({ clock.now < $0 }) ?? true,
               observation.snapshot.isBlank || observation.snapshot.identity == previous?.identity
         {
             reads += 1
@@ -173,6 +179,7 @@ extension AgentLoop {
         }
         let clock = ContinuousClock()
         let deadline = clock.now.advanced(by: configuration.handOverWait)
+        let cap = configuration.maxWait.map { clock.now.advanced(by: $0) }
         var disappeared: [String] = []
         var reading: ScreenObservation
         var reads = 0
@@ -183,7 +190,7 @@ extension AgentLoop {
             if !reading.snapshot.isBlank, reading.snapshot.layout != snapshot.layout {
                 break
             }
-        } while clock.now < deadline || reads < configuration.minHandOverReads
+        } while (clock.now < deadline || reads < configuration.minHandOverReads) && cap.map({ clock.now < $0 }) ?? true
         reading.disappearedApps = disappeared
         return (reading, !reading.snapshot.isBlank && reading.snapshot.layout != snapshot.layout)
     }
