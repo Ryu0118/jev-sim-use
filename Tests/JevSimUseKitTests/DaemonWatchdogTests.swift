@@ -201,6 +201,27 @@ struct DaemonWatchdogTests {
         #expect(runner.recordedCalls.count == 1)
     }
 
+    /// Under heavy load the daemon closed a read's connection without answering, and the run ended with a runtime
+    /// error although a read changes nothing and could simply be taken again.
+    @Test("reads again outside the daemon when the daemon dropped the read's connection, and reports it once")
+    func droppedConnectionIsReadAgain() async throws {
+        let reports = Reports()
+        let dropped = CommandOutput.json(
+            #"{"ok":false,"error":"The command reached the sim-use daemon but no valid response came back (Daemon closed the connection without sending a response.)"}"#,
+            exitCode: 1,
+        )
+        let runner = ScriptedCommandRunner { call in
+            if call.arguments.first == SimUseContract.Command.daemon {
+                return .daemonStop(stopped: true)
+            }
+            return call.bypassedDaemon ? .screen(app: "A") : dropped
+        }
+        let reading = try await Self.client(runner, reports: reports).observe()
+        #expect(reading.snapshot.appPackage == "A")
+        #expect(runner.recordedCalls.map(\.arguments.first) == ["ui", "daemon", "ui"])
+        #expect(reports.all.count == 1)
+    }
+
     @Test("does not take a cancelled read, such as a confirming read dropped after a planning error, for a hang")
     func cancellationIsNotAHang() async throws {
         let runner = Self.runner(hanging: [0])
