@@ -155,7 +155,10 @@ Never write unit tests after the code.
   validation errors (exit 64) are plain text on stderr, with no envelope.
 - Decode leniently: optional keys, unknown keys ignored. `udid` was removed in 0.10.0 (`deviceId` is canonical).
 - `gesture scroll-up` pages *down* (finger direction). `AgentAction` names options by intent.
-- No launch verb and no wait verb exist. Text input uses `paste` (Unicode-safe on iOS, unlike `type`).
+- No launch verb and no wait verb exist. On an iOS simulator, text within `type`'s US-keyboard set is typed key by
+  key (`ios key-combo` Cmd+A first to replace); other text uses `paste` (Unicode-safe, unlike `type`). Once Xcode 27's
+  Device Hub attached `dtuhidd`, `simctl pbcopy` stopped changing the simulator's pasteboard until a reboot, and
+  every paste entered the last text pasted before; typing does not go through the pasteboard.
 - iOS `paste` is a Cmd+V key event: without a connected hardware keyboard the simulator drops it and sim-use still
   reports `ok`, and `paste --via-menu` found no Paste item in Reminders or Safari. `SimUseClient.paste` reads
   `keyboard-state` first and throws `SimUseError.hardwareKeyboardRequired` (setup, exit 2) while the software keyboard
