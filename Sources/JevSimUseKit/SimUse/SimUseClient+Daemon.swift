@@ -12,14 +12,18 @@ extension SimUseClient {
         let deadline = timing.deadline(for: .read)
         let clock = ContinuousClock()
         let start = clock.now
-        if let reading = try await within(deadline, { try await read() }) {
-            timing.record(.read, clock.now - start)
-            remember(reading.snapshot)
-            return reading
-        }
+        // A read the daemon dropped without answering is taken again outside it, like one past its deadline: under
+        // heavy load the daemon closed a read's connection, and a read changes nothing, so reading again is safe.
+        do {
+            if let reading = try await within(deadline, { try await read() }) {
+                timing.record(.read, clock.now - start)
+                remember(reading.snapshot)
+                return reading
+            }
+        } catch let SimUseError.commandFailed(_, message, _) where message.hasPrefix(SimUseContract.daemonDroppedResponse) {}
         let lastApp = timing.lastApp
         let stopped = await stopDaemon()
-        report(DaemonRecovery(deviceID: device.deviceId, waited: deadline, daemonStopped: stopped))
+        report(DaemonRecovery(deviceID: device.deviceId, waited: clock.now - start, daemonStopped: stopped))
         let outside = { () async throws -> ScreenObservation in
             guard let reading = try await within(deadline, { try await read(environment: SimUseContract.noDaemonEnvironment) })
             else {

@@ -50,9 +50,10 @@ package struct RunGoalRunner: Sendable {
         case let .resume(id): try (sessionStore.load(id), true)
         }
         var session = loaded
+        let recoveryWarnings = RecoveryWarnings()
         let connection = try await bootstrap.connect(
             deviceID: SimUseBootstrap.deviceID(flag: request.deviceID ?? session.deviceID, environment: environment),
-            onDaemonRecovery: { report(.warning($0.description)) },
+            onDaemonRecovery: { recovery in recoveryWarnings.warning(for: recovery).map { report(.warning($0)) } },
         )
         connection.versionWarning.map { report(.warning($0)) }
         report(.connected(device: connection.client.device, endpoint: settings.endpoint))
