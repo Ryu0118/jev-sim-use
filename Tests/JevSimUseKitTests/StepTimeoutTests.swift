@@ -88,6 +88,21 @@ struct StepTimeoutTests {
         }
     }
 
+    /// On a loaded Mac a read took 6 s, and the minimum read counts stretched one hand-over to 30 s of waiting on top
+    /// of the reads: a single stopped step took 100 s.
+    @Test("ends a wait at its cap even when its minimum read count is not reached", arguments: [true, false])
+    func waitsAreCapped(afterAction: Bool) async throws {
+        let driver = HangingDriver(outlines: ["A"], readDelay: .milliseconds(100))
+        let configuration = AgentConfiguration(
+            goal: "g", maxSteps: 1, unchangedWait: .milliseconds(10), handOverWait: .milliseconds(10), stepTimeout: nil,
+            minUnchangedReads: 60, minHandOverReads: 60, maxWait: .milliseconds(500),
+        )
+        let plans: [StepPlan] = afterAction ? [.tapNext(), .blocked()] : [.blocked()]
+        let started = ContinuousClock.now
+        _ = try await AgentLoop(driver: driver, planner: SlowPlanner(plans, delay: .zero), configuration: configuration).run()
+        #expect(ContinuousClock.now - started < .seconds(4))
+    }
+
     @Test("cancels the confirming read when the cut lands while Jev plans")
     func cutCancelsConfirmingRead() async throws {
         let driver = HangingDriver(outlines: ["A"], hangingReadsAfter: 2)

@@ -32,6 +32,9 @@ package struct AgentConfiguration: Sendable, Hashable {
     package var quietPeriod: Duration
     /// How long to wait for the screen image to go still after it changed, with a screen-change watcher.
     package var settleWait: Duration
+    /// The longest one wait (after an action, or before a hand-over) may run, minimum read counts included; `nil` sets
+    /// no cap.
+    package var maxWait: Duration?
 
     /// Creates a configuration; the defaults mirror sim-use's "escalate after 3 retries" guidance.
     package init(
@@ -50,6 +53,7 @@ package struct AgentConfiguration: Sendable, Hashable {
         minHandOverReads: Int = 1,
         quietPeriod: Duration = .zero,
         settleWait: Duration = .zero,
+        maxWait: Duration? = nil,
     ) {
         self.goal = goal
         self.texts = texts
@@ -66,5 +70,6 @@ package struct AgentConfiguration: Sendable, Hashable {
         self.minHandOverReads = minHandOverReads
         self.quietPeriod = quietPeriod
         self.settleWait = settleWait
+        self.maxWait = maxWait
     }
 }
