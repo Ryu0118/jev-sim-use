@@ -60,9 +60,20 @@ package struct SimUseClient: DeviceDriving {
     /// sim-use still reports success; the software keyboard being up after the field's tap means exactly that. The
     /// edit-menu path (`--via-menu`) did not help: its Paste item never appeared in Reminders or Safari. Replacing
     /// selects all with Cmd+A first, another key event with the same need.
+    ///
+    /// On an iOS simulator, text a US keyboard can type is typed key by key instead: once Device Hub attached
+    /// `dtuhidd`, `simctl pbcopy` stopped changing the simulator's pasteboard until a reboot, and every paste entered
+    /// the last text pasted before. Only text `type` cannot enter still goes through the pasteboard.
     package func paste(_ text: String, replacing: Bool) async throws -> [String] {
         if device.platform == SimUseContract.Platform.ios, try await softKeyboardIsVisible() {
             throw SimUseError.hardwareKeyboardRequired
+        }
+        if typesKeys(text) {
+            var disappeared: [String] = []
+            if replacing {
+                disappeared += try await run(SimUseContract.Command.iosKeyCombo + SimUseContract.Typing.selectAll)
+            }
+            return try await disappeared + run([SimUseContract.Command.type], operands: [text])
         }
         let replace = replacing ? [SimUseContract.Paste.replace] : []
         return try await run([SimUseContract.Command.paste] + replace, operands: [text])
@@ -70,8 +81,9 @@ package struct SimUseClient: DeviceDriving {
 
     /// Reads a simulator's pasteboard with `xcrun simctl pbpaste`, which sim-use's paste fills with `simctl pbcopy`.
     /// `nil` for other devices, or when it cannot be read.
+    /// Text `paste` typed key by key never went through the pasteboard, so it has none to report.
     package func pasteboardHolds(_ text: String) async -> Bool? {
-        guard device.kind == Self.simulatorKind else { return nil }
+        guard device.kind == Self.simulatorKind, !typesKeys(text) else { return nil }
         // A failed read is "unknown", which only records the step as not landed instead of stopping the run.
         guard let output = try? await invoker.runner.run(Self.xcrun, arguments: ["simctl", "pbpaste", device.deviceId], environment: [:]),
               output.exitCode == 0
@@ -169,6 +181,11 @@ package struct SimUseClient: DeviceDriving {
 
     var deviceArguments: [String] {
         [SimUseContract.deviceFlag, device.deviceId]
+    }
+
+    /// Whether `paste` types `text` key by key rather than pasting it.
+    private func typesKeys(_ text: String) -> Bool {
+        device.platform == SimUseContract.Platform.ios && device.kind == Self.simulatorKind && SimUseContract.Typing.canType(text)
     }
 
     /// Runs an action within its deadline (see `guarded`).
