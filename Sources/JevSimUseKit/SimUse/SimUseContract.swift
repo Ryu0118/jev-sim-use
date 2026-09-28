@@ -48,7 +48,25 @@ package enum SimUseContract {
         static let daemon = "daemon"
         /// `ios key`: press one HID key on an iOS simulator.
         static let iosKey = ["ios", "key"]
+        /// `ios key-combo`: press a key while holding modifiers on an iOS simulator.
+        static let iosKeyCombo = ["ios", "key-combo"]
         static let type = "type"
+    }
+
+    /// `type`: HID key events, which `sim-use type --help` limits to what a US keyboard types.
+    enum Typing {
+        /// Letters, digits, space, and the symbols `type --help` lists.
+        static let characters = Set(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 !@#$%^&*()_+-={}[]|\\:\";'<>?,./`~",
+        )
+
+        /// Whether `type` can enter `text`.
+        static func canType(_ text: String) -> Bool {
+            !text.isEmpty && text.allSatisfy(characters.contains)
+        }
+
+        /// Cmd+A, which selects a focused field's text so typing replaces it: Left Command (227) and A (4).
+        static let selectAll = ["--modifiers", "227", "--key", "4"]
     }
 
     /// `daemon stop`, which ends the per-device daemon; the next command through the daemon starts a fresh one.

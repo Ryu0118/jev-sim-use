@@ -18,5 +18,7 @@ package extension SimUseContract {
         (MultiTouch.command, MultiTouch.flags + [MultiTouch.duration, deviceFlag, jsonFlag]),
         ([Command.daemon, Daemon.stop].joined(separator: " "), [deviceFlag, Daemon.timeout, jsonFlag]),
         (Command.iosKey.joined(separator: " "), ["\(Key.returnKeycode) - Return", deviceFlag, jsonFlag]),
+        (Command.iosKeyCombo.joined(separator: " "), ["--modifiers", "--key", "227 - Left Command", deviceFlag, jsonFlag]),
+        (Command.type, ["US keyboard characters", deviceFlag, jsonFlag]),
     ]
 }
