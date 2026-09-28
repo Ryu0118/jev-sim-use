@@ -99,10 +99,35 @@ struct SimUseClientTests {
             "paste": .json(#"{"ok":true,"data":{}}"#),
             "keyboard-state": .json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#),
         ])
-        _ = try await Self.client(runner).paste("-5", replacing: false)
-        #expect(runner.recordedCalls.last == ["paste"] + Self.device + ["--json", "--", "-5"])
+        _ = try await Self.client(runner).paste("-5 é", replacing: false)
+        #expect(runner.recordedCalls.last == ["paste"] + Self.device + ["--json", "--", "-5 é"])
+        _ = try await Self.client(runner).paste("新しい", replacing: true)
+        #expect(runner.recordedCalls.last == ["paste", "--replace"] + Self.device + ["--json", "--", "新しい"])
+    }
+
+    /// Once Device Hub attached `dtuhidd`, `simctl pbcopy` stopped changing the simulator's pasteboard until a reboot,
+    /// and every paste entered the last text pasted before. Typing keys does not go through the pasteboard.
+    @Test("types text a US keyboard can type key by key instead of pasting it, selecting all first to replace")
+    func typesKeyboardText() async throws {
+        let runner = FakeCommandRunner([
+            "type": .json(#"{"ok":true,"data":{}}"#),
+            "ios": .json(#"{"ok":true,"data":{}}"#),
+            "keyboard-state": .json(#"{"ok":true,"data":{"visible":false,"platform":"ios"}}"#),
+        ])
+        _ = try await Self.client(runner).paste("-5 Team sync!", replacing: false)
+        #expect(runner.recordedCalls.last == ["type"] + Self.device + ["--json", "--", "-5 Team sync!"])
         _ = try await Self.client(runner).paste("new", replacing: true)
-        #expect(runner.recordedCalls.last == ["paste", "--replace"] + Self.device + ["--json", "--", "new"])
+        #expect(Array(runner.recordedCalls.suffix(2)) == [
+            ["ios", "key-combo", "--modifiers", "227", "--key", "4"] + Self.device + ["--json"],
+            ["type"] + Self.device + ["--json", "--", "new"],
+        ])
+    }
+
+    @Test("reports no pasteboard for text it typed, so a typed text that did not land is not blamed on the pasteboard")
+    func typedTextHasNoPasteboard() async throws {
+        let runner = FakeCommandRunner([:])
+        #expect(try await Self.client(runner).pasteboardHolds("Team sync") == nil)
+        #expect(runner.recordedCalls.isEmpty)
     }
 
     @Test(
