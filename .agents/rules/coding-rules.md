@@ -74,7 +74,7 @@ conventions live in `swift-coding.md`; lint-enforced details in `lint-and-format
 
 ## Tests
 
-The policy is the Testing section of `CLAUDE.md`: the real-simulator E2E run (`mise run e2e`) is the primary means of
+The policy is the Testing section of `CLAUDE.md`: an agent's run of `jev-sim-use` on a real simulator is the primary means of
 verification; unit tests guard concrete failure modes; a new isolated test starts from its written list of failure
 modes, before the code.
 
@@ -82,4 +82,4 @@ modes, before the code.
   target covers argument parsing.
 - Unit tests do not use the network or the developer's home directory; file-system tests use a temporary directory.
 - Anything that needs a real external tool (a simulator, `sim-use`, a live API) is an integration or contract test in
-  its own clearly named task (`mise run contract-test`, `mise run e2e`), not part of the default unit run or CI.
+  its own clearly named task (`mise run contract-test`), or an agent E2E run, not part of the default unit run or CI.

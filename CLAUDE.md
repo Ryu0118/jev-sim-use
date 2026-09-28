@@ -12,7 +12,6 @@ per tap. Keep it that way: one Jev request per step, no extra round trips, and d
 - `mise run setup` — install tools, configure Git hooks
 - `mise run check` — format, lint, AST lint, build, test, docsync
 - `mise run test` — run the test suite
-- `mise run e2e -- <udid>` — the real-simulator E2E run (see Testing); not in CI
 - `mise run contract-test` — check the installed sim-use against `SimUseContract` (needs a booted device); run it after upgrading sim-use, then bump `SimUseBootstrap.testedVersion`
 - See `.mise.toml` for the full task list (`mise tasks`)
 - Git hooks in `.githooks/`: pre-commit runs gitleaks, format, lint, AST lint, docsync; pre-push runs AST lint
@@ -24,18 +23,15 @@ E2E is the primary proof of behaviour. Unit tests are only for what truly needs 
 guards, edge cases, and paths the E2E never runs): list those failure modes first, write their tests, then implement.
 Never write unit tests after the code.
 
-- E2E: `mise run e2e -- <udid>` (`scripts/e2e-simulator.sh`) runs locally against a real simulator with the real
-  sim-use and the real Jev API (`TYPESAFE_API_KEY`). The release binary works through a fixed set of goals in the
-  simulator's built-in Settings app: a multi-screen route, a switch, a row reached by scrolling, typing into search
-  with `-t`, a hand-over followed by `session tell` / `resume`, and a goal already met. Goals in other built-in apps
-  cover what Settings lacks: Calendar (a typed title, the Alert and Repeat menus, then reopening and editing the
-  event), Maps (a typed search opened with Return; needs the network), Photos (a photo opened and closed), and
-  Reminders (a typed reminder deleted with its swipe action). Each app is relaunched in English with launch arguments,
-  so the simulator's language stays as it is, and each goal deletes what it created. Each goal runs once (`-r 1`)
-  and `-g` selects goals. Each goal is judged by reading
-  the screen afterwards, never by the exit status alone, and keeps its exit status, stdout / stderr with timed step
-  lines, Jev cost, `session show`, the final `sim-use ui` reading, and a screen recording under `.e2e/<timestamp>/`
-  (gitignored). It is not in CI; paste its summary table into every behaviour-changing PR. Keep raw logs local.
+- E2E is done by an agent, not a script: the verifying agent runs the built `jev-sim-use` itself on a real
+  simulator with the real sim-use and the real Jev API (`TYPESAFE_API_KEY`), on goals that exercise the change,
+  including multi-step flows in real apps. It judges each goal by reading the final screen with `sim-use ui`, never
+  by the exit status alone, and when a run stops it reads the screen and says why (the tool, Jev's judgement, or the
+  environment). Every behaviour-changing PR carries that report: goals, results, steps, and wall time. Keep raw logs
+  and recordings local. A scripted harness was removed: its setup (relaunching apps, pulling lists, deleting
+  leftovers) failed more often than the tool and hid real problems.
+- Before an agent E2E, check the environment: one simulator per agent, its window open in Simulator with a hardware
+  keyboard connected, and Xcode 27's Device Hub closed (its `dtuhidd` freezes the simulator's pasteboard).
 - Unit tests run in CI with build and lint.
 - `mise run contract-test` guards the sim-use output contract (`SimUseContract`) against the installed sim-use.
 
