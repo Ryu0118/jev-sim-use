@@ -35,9 +35,10 @@ extension SimUseError: CustomStringConvertible {
             """
         case .pasteboardUnavailable:
             """
-            Typed text never reached the field: sim-use pastes through the simulator's pasteboard, and on this \
-            simulator the pasteboard did not take the text (`xcrun simctl pbpaste <udid>` stays empty after a paste). \
-            Restart the simulator (or use another one), then run `jev-sim-use session resume`.
+            Typed text never reached the field: text a US keyboard cannot type is pasted through the simulator's \
+            pasteboard, and on this simulator the pasteboard did not take it (`xcrun simctl pbpaste <udid>` still \
+            shows older text). Xcode 27's Device Hub freezes it while open: quit Device Hub, restart the simulator, \
+            then run `jev-sim-use session resume`.
             """
         case .typedTextNotLanded:
             """

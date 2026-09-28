@@ -42,8 +42,9 @@ jev-sim-use doctor     # sim-use installed, one usable device, TYPESAFE_API_KEY 
 - Give the simulator what the app needs from the device. An app that records location or motion does nothing
   useful on a simulator with no location set; set one (and a moving route when the task needs movement) with
   `xcrun simctl location`, as its `--help` describes.
-- Typing pastes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
-  (exit 2) instead of silently typing nothing.
+- Typing goes through the simulator's hardware keyboard. Without one connected, the run stops with a setup error
+  (exit 2) instead of silently typing nothing. Text a US keyboard cannot type is pasted, and Xcode 27's Device Hub
+  freezes the simulator's pasteboard while it is open: quit it and restart the simulator if a run says so.
 
 ## Choose the goal's form: an end state or numbered steps
 
