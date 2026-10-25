@@ -42,6 +42,10 @@ Claude Code (`.claude/settings.json`) and Codex (`.codex/hooks.json`) run the sa
 
 ## CI
 
-- `.github/workflows/test.yml`: SwiftFormat `--lint`, SwiftLint `--strict`, and AST lint, then build and test.
+- `.github/workflows/test.yml`: on a push or pull request to `main` that matches the workflow's path filter
+  (`Sources`, `Tests`, `Package.swift`, `Package.resolved`, `BuildPlugins`, `skills`, `scripts/build-release.sh`,
+  `.swiftformat`, `.swiftlint.yml`, `.my-swift-linter.yml`, `.mise.toml`, and the test and release workflows),
+  SwiftFormat `--lint`, SwiftLint `--strict`, and AST lint, then build and test alongside the `Universal Release
+  Build` job (`scripts/build-release.sh`).
 - `.github/workflows/docsync-check.yml`: `docsync check`.
 - `.github/workflows/gitleaks.yml`: secret scan of the full history on every push and pull request.

@@ -90,8 +90,8 @@ jobs:
       - name: Test
         run: swift test
 
-  # The release workflow's universal build, run on every change, so a build-system or plugin problem shows here
-  # instead of in a release.
+  # The release workflow's universal build. This workflow is path-filtered, so a build-system or plugin
+  # problem in a matching change shows here instead of in a release.
   release-build:
     name: Universal Release Build
     needs: lint
