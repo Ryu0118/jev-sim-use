@@ -329,6 +329,9 @@ Read these before writing or reviewing code. They are the source of truth (`.cla
 
 Access policy: use `package` for anything shared across modules in this package; `public` only for symbols consumed outside it.
 
+When documentation and the existing code disagree, follow the conventions used in the existing code, and in your final
+reply list every inconsistency you found between the documentation and the code.
+
 ## Public writing
 
 Commits, PR titles and bodies, issues, review comments, code, tests, and docs are public. Never name or describe
