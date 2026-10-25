@@ -345,6 +345,9 @@ pop-up menu", "the dismiss button") and keep raw logs local.
 version (frontmatter and its `--version` line), `apm.yml`, and the plugin manifests, in the build job (so the embedded
 skill matches) and again in the job that commits the bump.
 It builds the universal binary with `scripts/build-release.sh` (`--build-system swiftbuild`: Swift 6.3's default
-build system cannot resolve the EmbedSkill plugin in a multi-arch build), which CI's `Universal Release Build` job
-also runs on every change.
+build system cannot resolve the EmbedSkill plugin in a multi-arch build). CI's `Universal Release Build` job
+(`.github/workflows/test.yml`) runs that script on a push or pull request to `main` only when the change matches
+the workflow's path filter: `Sources`, `Tests`, `Package.swift`, `Package.resolved`, `BuildPlugins`, `skills`,
+`scripts/build-release.sh`, `.swiftformat`, `.swiftlint.yml`, `.my-swift-linter.yml`, `.mise.toml`, and the test
+and release workflows.
 Keep `THIRD_PARTY_LICENSES` in sync when dependencies change.
